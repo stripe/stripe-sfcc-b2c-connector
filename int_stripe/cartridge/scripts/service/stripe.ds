@@ -1,0 +1,181 @@
+/**
+* Main Stripe Script File
+*
+*/
+var logger = require('dw/system/Logger').getLogger('Stripe', 'stripe');
+var ServiceRegistry = require('dw/svc/ServiceRegistry');
+var Transaction = require('dw/system/Transaction');
+
+function addCard(args : Object) {
+	var currentCustomer = customer;
+	if (!empty(currentCustomer)) {
+		if (currentCustomer.authenticated && 'stripeCustomerID' in customer.profile.custom && !empty(customer.profile.custom.stripeCustomerID)) {
+	        var stripeCustomerID : String = customer.profile.custom.stripeCustomerID;
+        	try {
+        		var service : Service = ServiceRegistry.get('stripe.http.addCard');
+        		var params : Object = {
+        			source: args.StripeToken,
+        			customerID: stripeCustomerID
+        		};
+			    // send request
+			    var result : dw.svc.Result = service.call(params);
+			    if (result.isOk()) {
+			    	var response = JSON.parse(result.object);
+			    	var paymentInstrument = args.PaymentInstrument;
+			    	if (!empty(paymentInstrument)) {
+			    		Transaction.wrap(function () {
+					        paymentInstrument.custom.stripeCardID = response.id;
+					    });
+			    	}
+				    logger.info('Credit Card {0} was successfully added', response.id);
+			    	return PIPELET_NEXT;
+			    } else {
+			    	logger.error('Error: {0}', result.msg);
+			    	return PIPELET_ERROR;
+			    }
+        	} catch (e) {
+        		logger.error('Error: {0}', e.message);
+        		return PIPELET_ERROR;
+        	}
+	    } else {
+			try {
+				var service : Service = ServiceRegistry.get('stripe.http.createCustomer');
+			    // send request
+			    var result : dw.svc.Result = service.call();
+			    if (result.isOk()) {
+			    	var response = JSON.parse(result.object);
+			    	var id = response.id;
+			    	if (currentCustomer.authenticated) {
+			    		Transaction.wrap(function () {
+					        currentCustomer.profile.custom.stripeCustomerID = id;
+					    });
+			    	}
+				    return PIPELET_NEXT;
+			    } else {
+			    	logger.error('Error: {0}', result.msg);
+			    	return PIPELET_ERROR;
+			    }
+			} catch (e) {
+				var err = e;
+				logger.error('Error: {0}', e.message);
+				return PIPELET_ERROR;
+			}
+	    }
+	} else {
+		return PIPELET_ERROR;
+	}
+}
+
+function fetchCards() {
+	var currentCustomer = customer;
+	if (!empty(currentCustomer) && currentCustomer.authenticated) {
+		if ('stripeCustomerID' in customer.profile.custom && !empty(customer.profile.custom.stripeCustomerID)) {
+			var stripeCustomerID : String = customer.profile.custom.stripeCustomerID;
+			try {
+				var service : Service = ServiceRegistry.get('stripe.http.fetchCustomerCards');
+				var params : Object = {
+        			customerID: stripeCustomerID
+        		};
+        		// send request
+				var result : dw.svc.Result = service.call(params);
+				if (result.isOk()) {
+					var paymentInstruments = new dw.util.ArrayList();
+					var response = JSON.parse(result.object);
+					var listOfCards = response.data;
+					for each (var card in listOfCards) {
+						var cardObj : Object = new Object();
+						cardObj['creditCardType'] = card.brand;
+						cardObj['creditCardHolder'] = card.name;
+						cardObj['creditCardExpirationYear'] = card.exp_year;
+						cardObj['creditCardExpirationMonth'] = card.exp_month;
+						cardObj['creditCardNumberLastDigits'] = card.last4;
+						cardObj['maskedCreditCardNumber'] = '************' + card.last4;
+						cardObj['stripeCardID'] = card.id;
+						cardObj['UUID'] = card.id;
+						paymentInstruments.add(cardObj);
+					}
+					return paymentInstruments;
+				} else {
+					logger.error('Error: {0}', result.msg);
+					return PIPELET_ERROR;
+				}
+			} catch (e) {
+				logger.error('Error: {0}', e.message);
+				return PIPELET_ERROR;
+			}
+		} else {
+			return PIPELET_ERROR;
+		}
+	} else {
+		return PIPELET_ERROR;
+	}
+}
+
+function deleteCard(args : Object) {
+	var currentCustomer = customer;
+	if (!empty(currentCustomer) && currentCustomer.authenticated) {
+		if ('stripeCustomerID' in customer.profile.custom && !empty(customer.profile.custom.stripeCustomerID)) {
+	        var stripeCustomerID : String = customer.profile.custom.stripeCustomerID;
+	        try {
+				var service : Service = ServiceRegistry.get('stripe.http.deleteCard');
+				var params : Object = {
+        			customerID: stripeCustomerID,
+        			cardID: args.card.stripeCardID
+        		};
+        		// send request
+				var result : dw.svc.Result = service.call(params);
+				if (result.isOk()) {
+					var response = JSON.parse(result.object);
+					logger.info('Credit Card {0} was successfully deleted', response.id);
+					return PIPELET_NEXT;
+				} else {
+					logger.error('Error: {0}', result.msg);
+					return PIPELET_ERROR;
+				}
+			} catch (e) {
+				logger.error('Error: {0}', e.message);
+				return PIPELET_ERROR;
+			}
+	    } else {
+	    	return PIPELET_ERROR;
+	    }
+	}
+}
+
+function authorizePayment(args : Object) {
+    try {
+    	var currentCustomer = customer;
+		var service : Service = ServiceRegistry.get('stripe.http.authorizePayment');
+		var paymentInstrument : dw.order.PaymentInstrument = args.PaymentInstrument;
+		var amount : Number = paymentInstrument.getPaymentTransaction().getAmount().getValue();
+		var params : dw.util.HashMap = new dw.util.HashMap();
+		params.put('amount', dw.util.StringUtils.formatNumber(amount * 100, '0'));
+		params.put('currency', paymentInstrument.getPaymentTransaction().getAmount().getCurrencyCode());
+		if (!empty(currentCustomer) && currentCustomer.authenticated && 'stripeCustomerID' in currentCustomer.profile.custom && !empty(currentCustomer.profile.custom.stripeCustomerID)) {
+			params.put('customer', currentCustomer.profile.custom.stripeCustomerID);
+			params.put('source', paymentInstrument.custom.stripeCardID);
+		} else {
+			params.put('source', paymentInstrument.creditCardToken);
+		}
+		// send request
+		var result : dw.svc.Result = service.call(params);
+		if (result.isOk()) {
+			var response = JSON.parse(result.object);
+			return {'transactionID':response.balance_transaction};
+		} else {
+			logger.error('Error: {0}', result.msg);
+			return PIPELET_ERROR;
+		}
+	} catch (e) {
+		logger.error('Error: {0}', e.message);
+		return PIPELET_ERROR;
+	}
+}
+
+/*
+ * Module exports
+ */
+exports.AddCard = addCard;
+exports.DeleteCard = deleteCard;
+exports.FetchCards = fetchCards;
+exports.AuthorizePayment = authorizePayment;

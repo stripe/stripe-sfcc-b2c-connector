@@ -1,0 +1,55 @@
+/**
+* Demandware Script File
+* Contains helper functions
+*
+*/
+importPackage( dw.system );
+importPackage( dw.svc );
+
+function setServiceHeaders(service : HTTPService) : HTTPService
+{
+	var apiKey : String = getApiKey();
+    service.addHeader('apiKey', apiKey);
+    service.addHeader('Authorization', 'Bearer ' + apiKey);
+    
+    return service;
+}
+
+function setServiceParams(service : HTTPService, params : dw.util.HashMap) : HTTPService
+{
+	var paramsIter : dw.util.Iterator = params.keySet().iterator();
+	while (paramsIter.hasNext()) {
+		var key = paramsIter.next();
+		service.addParam(key, params.get(key));
+	}
+	
+	return service;
+}
+
+function getApiKey() : String
+{
+	var apiKey : String = '';
+	if ('stripeApiKey' in Site.current.preferences.custom && !empty(Site.current.preferences.custom.stripeApiKey)) {
+		apiKey = Site.current.preferences.custom.stripeApiKey;
+	}
+	return apiKey;
+}
+
+function isStripeEnabled() : Boolean
+{
+	var ccPaymentMethod : dw.order.PaymentMethod = dw.order.PaymentMgr.getPaymentMethod('CREDIT_CARD');
+	if (!empty(ccPaymentMethod)) {
+		var paymentProcessor : dw.order.PaymentProcessor = ccPaymentMethod.getPaymentProcessor();
+		if (!empty(paymentProcessor) && paymentProcessor.ID.equals('STRIPE_CREDIT')) {
+			return true;
+		} else {
+			return false;
+		}
+	} else {
+		return false;
+	}
+}
+
+exports.SetServiceHeaders = setServiceHeaders;
+exports.SetServiceParams = setServiceParams;
+exports.IsStripeEnabled = isStripeEnabled;
