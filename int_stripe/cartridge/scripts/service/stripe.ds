@@ -148,9 +148,11 @@ function authorizePayment(args : Object) {
 		var service : Service = ServiceRegistry.get('stripe.http.authorizePayment');
 		var paymentInstrument : dw.order.PaymentInstrument = args.PaymentInstrument;
 		var amount : Number = paymentInstrument.getPaymentTransaction().getAmount().getValue();
+		var capture : Boolean = empty(dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture')) ? false : dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
 		var params : dw.util.HashMap = new dw.util.HashMap();
 		params.put('amount', dw.util.StringUtils.formatNumber(amount * 100, '0'));
 		params.put('currency', paymentInstrument.getPaymentTransaction().getAmount().getCurrencyCode());
+		params.put('capture', capture);
 		if (!empty(currentCustomer) && currentCustomer.authenticated && 'stripeCustomerID' in currentCustomer.profile.custom && !empty(currentCustomer.profile.custom.stripeCustomerID)) {
 			params.put('customer', currentCustomer.profile.custom.stripeCustomerID);
 			params.put('source', paymentInstrument.custom.stripeCardID);
