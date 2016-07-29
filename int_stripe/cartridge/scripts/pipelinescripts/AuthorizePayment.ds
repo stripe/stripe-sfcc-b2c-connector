@@ -1,0 +1,25 @@
+/**
+* Demandware Script File
+* Authorizes / captures charge from the credit card
+*
+* @input PaymentInstrument : dw.order.PaymentInstrument
+* @output TransactionID : String
+*
+*/
+importPackage( dw.system );
+
+/* Stripe include */
+var Stripe = require('int_stripe/cartridge/scripts/service/stripe');
+
+function execute( pdict : PipelineDictionary ) : Number
+{
+	var result = Stripe.AuthorizePayment({'PaymentInstrument':pdict.PaymentInstrument});
+	
+	if (result === PIPELET_ERROR) {
+		return PIPELET_ERROR;
+	} else {
+		pdict.TransactionID = result.transactionID;
+		return PIPELET_NEXT;
+	}
+
+}

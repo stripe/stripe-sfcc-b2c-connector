@@ -102,11 +102,18 @@
 				};
 			</isscript>
 			<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.cvn}" type="input" rowclass="cvn" dynamicname="true" help="${help}"/>
-			<input type="hidden" name="stripeToken"/>
-			<input type="hidden" name="stripeCardID"/>
 			
-			<isif condition="${pdict.CurrentCustomer.authenticated}">
-				<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.saveCard}" type="checkbox"/>
+			<isscript>
+				var stripeEnabled = require('int_stripe/cartridge/scripts/stripeHelper').IsStripeEnabled();
+			</isscript>
+
+			<isif condition="${stripeEnabled}">
+				<input type="hidden" name="stripeToken"/>
+				<input type="hidden" name="stripeCardID"/>
+			<iselse/>
+				<isif condition="${pdict.CurrentCustomer.authenticated}">
+					<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.saveCard}" type="checkbox"/>
+				</isif>
 			</isif>
 
 		</div>

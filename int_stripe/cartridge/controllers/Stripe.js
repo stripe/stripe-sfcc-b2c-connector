@@ -3,7 +3,6 @@
 /* Script Modules */
 var app = require('app_storefront_controllers/cartridge/scripts/app');
 var guard = require('app_storefront_controllers/cartridge/scripts/guard');
-
 var stripe = require('~/cartridge/scripts/service/stripe');
 
 /**

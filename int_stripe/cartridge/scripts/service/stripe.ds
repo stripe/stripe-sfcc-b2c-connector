@@ -6,6 +6,10 @@ var logger = require('dw/system/Logger').getLogger('Stripe', 'stripe');
 var ServiceRegistry = require('dw/svc/ServiceRegistry');
 var Transaction = require('dw/system/Transaction');
 
+/**
+* Adds new credit card to the Customer object.
+* Creates new Customer object if it doesn't exists.
+*/
 function addCard(args : Object) {
 	var currentCustomer = customer;
 	if (!empty(currentCustomer)) {
@@ -66,6 +70,9 @@ function addCard(args : Object) {
 	}
 }
 
+/**
+* Fetches Customer's credit cards.
+*/
 function fetchCards() {
 	var currentCustomer = customer;
 	if (!empty(currentCustomer) && currentCustomer.authenticated) {
@@ -111,6 +118,9 @@ function fetchCards() {
 	}
 }
 
+/**
+* Removes Customer's credit card.
+*/
 function deleteCard(args : Object) {
 	var currentCustomer = customer;
 	if (!empty(currentCustomer) && currentCustomer.authenticated) {
@@ -142,6 +152,9 @@ function deleteCard(args : Object) {
 	}
 }
 
+/**
+* Captures or authorizes credit card charge (depends on the "stripeChargeCapture" site preference).
+*/
 function authorizePayment(args : Object) {
     try {
     	var currentCustomer = customer;
@@ -163,7 +176,7 @@ function authorizePayment(args : Object) {
 		var result : dw.svc.Result = service.call(params);
 		if (result.isOk()) {
 			var response = JSON.parse(result.object);
-			return {'transactionID':response.balance_transaction};
+			return {'transactionID':response.id};
 		} else {
 			logger.error('Error: {0}', result.msg);
 			return PIPELET_ERROR;

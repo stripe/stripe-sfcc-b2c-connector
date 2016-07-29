@@ -1,0 +1,18 @@
+/**
+* Demandware Script File
+* Fetches Customer's credit cards
+*
+* @output PaymentInstruments : dw.util.ArrayList
+*
+*/
+importPackage( dw.system );
+
+/* Stripe include */
+var Stripe = require('int_stripe/cartridge/scripts/service/stripe');
+
+function execute( pdict : PipelineDictionary ) : Number
+{
+	pdict.PaymentInstruments = Stripe.FetchCards();
+
+    return PIPELET_NEXT;
+}
