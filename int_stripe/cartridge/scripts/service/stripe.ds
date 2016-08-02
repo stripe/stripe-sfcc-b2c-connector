@@ -6,6 +6,10 @@ var logger = require('dw/system/Logger').getLogger('Stripe', 'stripe');
 var ServiceRegistry = require('dw/svc/ServiceRegistry');
 var Transaction = require('dw/system/Transaction');
 
+/**
+* Adds new credit card to the Customer object.
+* Creates new Customer object if it doesn't exists.
+*/
 function addCard(args : Object) {
 	var currentCustomer = customer;
 	if (!empty(currentCustomer)) {
@@ -41,7 +45,7 @@ function addCard(args : Object) {
 			try {
 				var service : Service = ServiceRegistry.get('stripe.http.createCustomer');
 			    // send request
-			    var result : dw.svc.Result = service.call();
+			    var result : dw.svc.Result = service.call({'source':args.StripeToken});
 			    if (result.isOk()) {
 			    	var response = JSON.parse(result.object);
 			    	var id = response.id;
@@ -66,8 +70,12 @@ function addCard(args : Object) {
 	}
 }
 
+/**
+* Fetches Customer's credit cards.
+*/
 function fetchCards() {
 	var currentCustomer = customer;
+	var paymentInstruments = new dw.util.ArrayList();
 	if (!empty(currentCustomer) && currentCustomer.authenticated) {
 		if ('stripeCustomerID' in customer.profile.custom && !empty(customer.profile.custom.stripeCustomerID)) {
 			var stripeCustomerID : String = customer.profile.custom.stripeCustomerID;
@@ -79,7 +87,6 @@ function fetchCards() {
         		// send request
 				var result : dw.svc.Result = service.call(params);
 				if (result.isOk()) {
-					var paymentInstruments = new dw.util.ArrayList();
 					var response = JSON.parse(result.object);
 					var listOfCards = response.data;
 					for each (var card in listOfCards) {
@@ -97,20 +104,23 @@ function fetchCards() {
 					return paymentInstruments;
 				} else {
 					logger.error('Error: {0}', result.msg);
-					return PIPELET_ERROR;
+					return paymentInstruments;
 				}
 			} catch (e) {
 				logger.error('Error: {0}', e.message);
-				return PIPELET_ERROR;
+				return paymentInstruments;
 			}
 		} else {
-			return PIPELET_ERROR;
+			return paymentInstruments;
 		}
 	} else {
 		return PIPELET_ERROR;
 	}
 }
 
+/**
+* Removes Customer's credit card.
+*/
 function deleteCard(args : Object) {
 	var currentCustomer = customer;
 	if (!empty(currentCustomer) && currentCustomer.authenticated) {
@@ -142,15 +152,20 @@ function deleteCard(args : Object) {
 	}
 }
 
+/**
+* Captures or authorizes credit card charge (depends on the "stripeChargeCapture" site preference).
+*/
 function authorizePayment(args : Object) {
     try {
     	var currentCustomer = customer;
 		var service : Service = ServiceRegistry.get('stripe.http.authorizePayment');
 		var paymentInstrument : dw.order.PaymentInstrument = args.PaymentInstrument;
 		var amount : Number = paymentInstrument.getPaymentTransaction().getAmount().getValue();
+		var capture : Boolean = empty(dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture')) ? false : dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
 		var params : dw.util.HashMap = new dw.util.HashMap();
 		params.put('amount', dw.util.StringUtils.formatNumber(amount * 100, '0'));
 		params.put('currency', paymentInstrument.getPaymentTransaction().getAmount().getCurrencyCode());
+		params.put('capture', capture);
 		if (!empty(currentCustomer) && currentCustomer.authenticated && 'stripeCustomerID' in currentCustomer.profile.custom && !empty(currentCustomer.profile.custom.stripeCustomerID)) {
 			params.put('customer', currentCustomer.profile.custom.stripeCustomerID);
 			params.put('source', paymentInstrument.custom.stripeCardID);
@@ -161,7 +176,7 @@ function authorizePayment(args : Object) {
 		var result : dw.svc.Result = service.call(params);
 		if (result.isOk()) {
 			var response = JSON.parse(result.object);
-			return {'transactionID':response.balance_transaction};
+			return {'transactionID':response.id};
 		} else {
 			logger.error('Error: {0}', result.msg);
 			return PIPELET_ERROR;

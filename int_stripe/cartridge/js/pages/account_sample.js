@@ -142,7 +142,9 @@ function initPaymentEvents() {
         dialog.open({
             url: $(e.target).attr('href'),
             callback: function () {
-            	stripe.initMyAccount();
+            	if (SitePreferences.STRIPE_ENABLED) {
+            		stripe.initMyAccount();
+            	}
             }
         });
     });

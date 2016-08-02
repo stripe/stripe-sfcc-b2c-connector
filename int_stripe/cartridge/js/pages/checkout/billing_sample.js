@@ -198,6 +198,7 @@ exports.init = function () {
             $addGiftCert.click();
         }
     });
-        
-    stripe.initBilling();
+    if (SitePreferences.STRIPE_ENABLED) {
+    	stripe.initBilling();
+    }
 };

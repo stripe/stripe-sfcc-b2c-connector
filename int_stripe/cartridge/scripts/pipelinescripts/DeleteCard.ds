@@ -1,0 +1,16 @@
+/**
+* Demandware Script File
+* Deletes credit card from the Customer object.
+*
+* @input Card : Object
+*
+*/
+importPackage( dw.system );
+
+/* Stripe include */
+var Stripe = require('int_stripe/cartridge/scripts/service/stripe');
+
+function execute( pdict : PipelineDictionary ) : Number
+{
+   return Stripe.DeleteCard({'card':pdict.Card});
+}

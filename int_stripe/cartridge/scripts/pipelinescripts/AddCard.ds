@@ -1,0 +1,27 @@
+/**
+* Demandware Script File
+* Adds credit card into Customer object.
+* Creates a new Customer object if it doesn't exists.
+*
+* @input StripeToken : String
+* @input PaymentInstrument : dw.order.PaymentInstrument
+*
+*/
+importPackage( dw.system );
+
+/* Stripe includes */
+var Stripe = require('int_stripe/cartridge/scripts/service/stripe');
+var StripeHelper = require('int_stripe/cartridge/scripts/stripeHelper');
+
+function execute( pdict : PipelineDictionary ) : Number
+{
+	if (StripeHelper.IsStripeEnabled()) {
+        var params = {
+            StripeToken: pdict.StripeToken,
+            PaymentInstrument: pdict.PaymentInstrument
+        };
+        return Stripe.AddCard(params);
+	}
+
+	return PIPELET_NEXT;
+}

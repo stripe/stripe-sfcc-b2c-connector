@@ -40,13 +40,21 @@
 			<isdynamicform formobject="${pdict.CurrentForms.paymentinstruments.creditcards.newcreditcard.expiration}" formdata="${currentCountry.dynamicForms.expirationInfo}" />
 			
 			<isscript>
-				var help = {
-					label: Resource.msg('billing.linkcvn', 'checkout', null),
-					cid: 'checkout-security-code'
-				};
+				var stripeEnabled = require('int_stripe/cartridge/scripts/stripeHelper').IsStripeEnabled();
 			</isscript>
 			
-			<isinputfield formfield="${pdict.CurrentForms.paymentinstruments.creditcards.newcreditcard.cvn}" type="input" rowclass="cvn" dynamicname="true" help="${help}"/>
+			<isif condition="${stripeEnabled}">
+				<isscript>
+					var help = {
+						label: Resource.msg('billing.linkcvn', 'checkout', null),
+						cid: 'checkout-security-code'
+					};
+				</isscript>
+
+				<isinputfield formfield="${pdict.CurrentForms.paymentinstruments.creditcards.newcreditcard.cvn}" type="input" rowclass="cvn" dynamicname="true" help="${help}"/>
+				<input type="hidden" name="stripeToken"/>
+			</isif>
+
 			
 			<div class="form-row form-row-button">
 				<button id="applyBtn" type="submit" name="${pdict.CurrentForms.paymentinstruments.creditcards.create.htmlName}" value="${Resource.msg('global.apply','locale',null)}">
@@ -57,7 +65,6 @@
 				</button>
 			</div>
 			<input type="hidden" name="${pdict.CurrentForms.paymentinstruments.secureKeyHtmlName}" value="${pdict.CurrentForms.paymentinstruments.secureKeyValue}"/>
-			<input type="hidden" name="stripeToken"/>
 		</fieldset>
 	</form>
 

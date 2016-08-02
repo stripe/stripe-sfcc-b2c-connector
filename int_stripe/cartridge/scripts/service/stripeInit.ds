@@ -7,13 +7,14 @@ importPackage( dw.net );
 var StripeHelper = require('../stripeHelper');
    
 /**
-* HTTP Service for creating new Customer
+* HTTP Service for creating new Customer object
 */
 ServiceRegistry.configure('stripe.http.createCustomer', {
-	createRequest: function(svc : HTTPService) {
+	createRequest: function(svc : HTTPService, args : Object) {
 		var baseUrl : String = svc.getURL();
 		var URL : String = baseUrl + '/customers';
 		svc.setURL(URL);
+		svc.addParam('source', args.source);
 		StripeHelper.SetServiceHeaders(svc);
 	},
 	parseResponse: function(svc : HTTPService, client : HTTPClient) {
@@ -86,7 +87,7 @@ ServiceRegistry.configure('stripe.http.createCustomer', {
 });
 
 /**
-* HTTP Service for creating new Customer
+* HTTP Service for fetching a list of Customer's cards
 */
 ServiceRegistry.configure('stripe.http.fetchCustomerCards', {
 	createRequest: function(svc : HTTPService, args : Object) {
@@ -141,7 +142,7 @@ ServiceRegistry.configure('stripe.http.fetchCustomerCards', {
 });
 
 /**
-* HTTP Service for adding new Credit Card to Customer
+* HTTP Service for adding new Credit Card to the Customer object
 */
 ServiceRegistry.configure('stripe.http.addCard', {
 	createRequest: function(svc : HTTPService, args : Object) {
@@ -189,7 +190,7 @@ ServiceRegistry.configure('stripe.http.addCard', {
 });
 
 /**
-* HTTP Service for fetching a list of Customer's cards
+* HTTP Service for deleting credit card from the Customer's object
 */
 ServiceRegistry.configure('stripe.http.deleteCard', {
 	createRequest: function(svc : HTTPService, args : Object) {
@@ -216,7 +217,7 @@ ServiceRegistry.configure('stripe.http.deleteCard', {
 });
 
 /**
-* HTTP Service for payment authorizing
+* HTTP Service for the payment authorizing
 */
 ServiceRegistry.configure('stripe.http.authorizePayment', {
 	createRequest: function(svc : HTTPService, args : Object) {

@@ -1,11 +1,14 @@
 /**
 * Demandware Script File
-* Contains helper functions
+* Contains helper functions.
 *
 */
 importPackage( dw.system );
 importPackage( dw.svc );
 
+/**
+* Sets service headers.
+*/
 function setServiceHeaders(service : HTTPService) : HTTPService
 {
 	var apiKey : String = getApiKey();
@@ -15,6 +18,9 @@ function setServiceHeaders(service : HTTPService) : HTTPService
     return service;
 }
 
+/**
+* Sets service parameters.
+*/
 function setServiceParams(service : HTTPService, params : dw.util.HashMap) : HTTPService
 {
 	var paramsIter : dw.util.Iterator = params.keySet().iterator();
@@ -26,6 +32,9 @@ function setServiceParams(service : HTTPService, params : dw.util.HashMap) : HTT
 	return service;
 }
 
+/**
+* Gets the StripeAPI key.
+*/
 function getApiKey() : String
 {
 	var apiKey : String = '';
@@ -35,6 +44,9 @@ function getApiKey() : String
 	return apiKey;
 }
 
+/**
+* Checks if Stripe is enabled.
+*/
 function isStripeEnabled() : Boolean
 {
 	var ccPaymentMethod : dw.order.PaymentMethod = dw.order.PaymentMgr.getPaymentMethod('CREDIT_CARD');
@@ -50,6 +62,9 @@ function isStripeEnabled() : Boolean
 	}
 }
 
+/*
+ * Module exports
+ */
 exports.SetServiceHeaders = setServiceHeaders;
 exports.SetServiceParams = setServiceParams;
 exports.IsStripeEnabled = isStripeEnabled;

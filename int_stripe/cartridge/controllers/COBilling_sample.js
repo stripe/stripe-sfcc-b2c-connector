@@ -20,12 +20,12 @@ var StringUtils = require('dw/util/StringUtils');
 var Transaction = require('dw/system/Transaction');
 var URLUtils = require('dw/web/URLUtils');
 var Countries = require('app_storefront_core/cartridge/scripts/util/Countries');
-var Stripe = require('int_stripe/cartridge/scripts/service/stripe');
-var StripeHelper = require('int_stripe/cartridge/scripts/stripeHelper');
 
 /* Script Modules */
 var app = require('~/cartridge/scripts/app');
 var guard = require('~/cartridge/scripts/guard');
+var Stripe = require('int_stripe/cartridge/scripts/service/stripe');
+var StripeHelper = require('int_stripe/cartridge/scripts/stripeHelper');
 
 /**
  * Initializes the address form. If the customer chose "use as billing

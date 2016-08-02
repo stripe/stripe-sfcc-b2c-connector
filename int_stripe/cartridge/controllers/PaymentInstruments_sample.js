@@ -13,12 +13,12 @@ var PaymentStatusCodes = require('dw/order/PaymentStatusCodes');
 var Status = require('dw/system/Status');
 var Transaction = require('dw/system/Transaction');
 var URLUtils = require('dw/web/URLUtils');
-var Stripe = require('int_stripe/cartridge/scripts/service/stripe');
-var StripeHelper = require('int_stripe/cartridge/scripts/stripeHelper');
 
 /* Script Modules */
 var app = require('~/cartridge/scripts/app');
 var guard = require('~/cartridge/scripts/guard');
+var Stripe = require('int_stripe/cartridge/scripts/service/stripe');
+var StripeHelper = require('int_stripe/cartridge/scripts/stripeHelper');
 
 
 /**
