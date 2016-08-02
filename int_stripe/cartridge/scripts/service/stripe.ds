@@ -45,7 +45,7 @@ function addCard(args : Object) {
 			try {
 				var service : Service = ServiceRegistry.get('stripe.http.createCustomer');
 			    // send request
-			    var result : dw.svc.Result = service.call();
+			    var result : dw.svc.Result = service.call({'source':args.StripeToken});
 			    if (result.isOk()) {
 			    	var response = JSON.parse(result.object);
 			    	var id = response.id;
@@ -75,6 +75,7 @@ function addCard(args : Object) {
 */
 function fetchCards() {
 	var currentCustomer = customer;
+	var paymentInstruments = new dw.util.ArrayList();
 	if (!empty(currentCustomer) && currentCustomer.authenticated) {
 		if ('stripeCustomerID' in customer.profile.custom && !empty(customer.profile.custom.stripeCustomerID)) {
 			var stripeCustomerID : String = customer.profile.custom.stripeCustomerID;
@@ -86,7 +87,6 @@ function fetchCards() {
         		// send request
 				var result : dw.svc.Result = service.call(params);
 				if (result.isOk()) {
-					var paymentInstruments = new dw.util.ArrayList();
 					var response = JSON.parse(result.object);
 					var listOfCards = response.data;
 					for each (var card in listOfCards) {
@@ -104,14 +104,14 @@ function fetchCards() {
 					return paymentInstruments;
 				} else {
 					logger.error('Error: {0}', result.msg);
-					return PIPELET_ERROR;
+					return paymentInstruments;
 				}
 			} catch (e) {
 				logger.error('Error: {0}', e.message);
-				return PIPELET_ERROR;
+				return paymentInstruments;
 			}
 		} else {
-			return PIPELET_ERROR;
+			return paymentInstruments;
 		}
 	} else {
 		return PIPELET_ERROR;

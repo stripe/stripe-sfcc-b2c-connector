@@ -10,10 +10,11 @@ var StripeHelper = require('../stripeHelper');
 * HTTP Service for creating new Customer object
 */
 ServiceRegistry.configure('stripe.http.createCustomer', {
-	createRequest: function(svc : HTTPService) {
+	createRequest: function(svc : HTTPService, args : Object) {
 		var baseUrl : String = svc.getURL();
 		var URL : String = baseUrl + '/customers';
 		svc.setURL(URL);
+		svc.addParam('source', args.source);
 		StripeHelper.SetServiceHeaders(svc);
 	},
 	parseResponse: function(svc : HTTPService, client : HTTPClient) {
