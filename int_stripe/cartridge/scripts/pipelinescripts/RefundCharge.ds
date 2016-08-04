@@ -1,0 +1,21 @@
+/**
+* Demandware Script File
+* Refunds a charge that has previously been created.
+*
+* @input PaymentInstrument : dw.order.PaymentInstrument
+*
+*/
+importPackage( dw.system );
+
+/* Stripe include */
+var Stripe = require('int_stripe/cartridge/scripts/service/stripe');
+var StripeHelper = require('int_stripe/cartridge/scripts/stripeHelper');
+
+function execute( pdict : PipelineDictionary ) : Number
+{
+	if (StripeHelper.IsStripeEnabled()) {
+		return Stripe.RefundCharge({PaymentInstrument:pdict.PaymentInstrument});
+    }
+    
+    return PIPELET_NEXT;
+}

@@ -67,6 +67,7 @@
           <key-binding alias="null" key="ScriptLog"/>
           <key-binding alias="CurrentHttpParameterMap.stripeToken.value" key="StripeToken"/>
           <key-binding alias="Basket.getPaymentInstruments(dw.order.PaymentInstrument.METHOD_CREDIT_CARD)[0]" key="PaymentInstrument"/>
+          <key-binding alias="CurrentHttpParameterMap.stripeCardID.value" key="StripeCardID"/>
         </pipelet-node>
         <node-display x="0" y="1"/>
         <branch basename="b2" source-connector="error">
@@ -160,6 +161,53 @@
           <key-binding alias="null" key="ScriptLog"/>
           <key-binding alias="TransactionID" key="TransactionID"/>
           <key-binding alias="PaymentInstrument" key="PaymentInstrument"/>
+          <key-binding alias="Order" key="Order"/>
+        </pipelet-node>
+        <node-display x="0" y="1"/>
+        <branch basename="b2" source-connector="error">
+          <transition target-connector="in">
+            <transition-display>
+              <bend-point relative-to="source" x="2" y="0"/>
+              <bend-point relative-to="target" x="0" y="-1"/>
+            </transition-display>
+          </transition>
+          <segment>
+            <node>
+              <end-node name="error"/>
+              <node-display x="1" y="1"/>
+            </node>
+          </segment>
+        </branch>
+      </node>
+      <simple-transition>
+        <transition-display>
+          <bend-point relative-to="source" x="0" y="1"/>
+        </transition-display>
+      </simple-transition>
+      <node>
+        <end-node/>
+        <node-display x="0" y="1"/>
+      </node>
+    </segment>
+  </branch>
+  <branch basename="RefundCharge">
+    <segment>
+      <node>
+        <start-node call-mode="private" name="RefundCharge" secure="false"/>
+        <node-display x="4" y="6"/>
+      </node>
+      <simple-transition>
+        <transition-display>
+          <bend-point relative-to="source" x="0" y="1"/>
+        </transition-display>
+      </simple-transition>
+      <node>
+        <pipelet-node pipelet-name="Script" pipelet-set-identifier="bc_api">
+          <config-property key="Transactional" value="false"/>
+          <config-property key="OnError" value="PIPELET_ERROR"/>
+          <config-property key="ScriptFile" value="pipelinescripts/RefundCharge.ds"/>
+          <key-binding alias="null" key="ScriptLog"/>
+          <key-binding alias="PaymentInstrument" key="PaymentInstrument"/>
         </pipelet-node>
         <node-display x="0" y="1"/>
         <branch basename="b2" source-connector="error">
@@ -192,7 +240,7 @@
     <segment>
       <node>
         <start-node call-mode="private" name="GenerateProductFeed" secure="false"/>
-        <node-display x="4" y="6"/>
+        <node-display x="7" y="6"/>
       </node>
       <simple-transition>
         <transition-display>

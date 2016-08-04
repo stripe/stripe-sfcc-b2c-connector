@@ -3,6 +3,7 @@
 * Authorizes / captures charge from the credit card
 *
 * @input PaymentInstrument : dw.order.PaymentInstrument
+* @input Order : dw.order.Order
 * @output TransactionID : String
 *
 */
@@ -13,7 +14,12 @@ var Stripe = require('int_stripe/cartridge/scripts/service/stripe');
 
 function execute( pdict : PipelineDictionary ) : Number
 {
-	var result = Stripe.AuthorizePayment({'PaymentInstrument':pdict.PaymentInstrument});
+	var params = {
+    		Order: pdict.Order,
+    		PaymentInstrument: pdict.PaymentInstrument
+    };
+    
+	var result = Stripe.AuthorizePayment(params);
 	
 	if (result === PIPELET_ERROR) {
 		return PIPELET_ERROR;

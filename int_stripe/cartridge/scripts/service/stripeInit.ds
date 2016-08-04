@@ -303,3 +303,40 @@ ServiceRegistry.configure('stripe.http.authorizePayment', {
 		};
 	}
 });
+
+/**
+* HTTP Service for refunding a charge
+*/
+ServiceRegistry.configure('stripe.http.refundCharge', {
+	createRequest: function(svc : HTTPService, args : Object) {
+		var baseUrl : String = svc.getURL();
+		var URL : String = baseUrl + '/refunds';
+		svc.setURL(URL);
+		svc.addParam('charge', args.charge);
+		StripeHelper.SetServiceHeaders(svc);
+	},
+	parseResponse: function(svc : HTTPService, client : HTTPClient) {
+		return client.text;
+	},
+	mockCall: function(svc : HTTPService, client : HTTPClient) {
+		var mockedResponse = {
+			"id": "re_18eNr32eZvKYlo2CQWSVfyL9",
+			"object": "refund",
+			"amount": 32548,
+			"balance_transaction": null,
+			"charge": "ch_18bqWC2eZvKYlo2CSX893lSx",
+			"created": 1470224889,
+			"currency": "usd",
+			"metadata": {
+			},
+			"reason": null,
+			"receipt_number": null,
+			"status": "succeeded"
+		};
+		return {
+			statusCode: 200,
+			statusMessage: 'Success',
+			text: JSON.stringify(mockedResponse)
+		};
+	}
+});

@@ -31,7 +31,7 @@ function addCard(args : Object) {
 					        paymentInstrument.custom.stripeCardID = response.id;
 					    });
 			    	}
-				    logger.info('Credit Card {0} was successfully added', response.id);
+				    logger.info('Credit Card "{0}" was successfully added', response.id);
 			    	return PIPELET_NEXT;
 			    } else {
 			    	logger.error('Error: {0}', result.msg);
@@ -45,14 +45,20 @@ function addCard(args : Object) {
 			try {
 				var service : Service = ServiceRegistry.get('stripe.http.createCustomer');
 			    // send request
-			    var result : dw.svc.Result = service.call({'source':args.StripeToken});
+			    var result : dw.svc.Result = service.call({source:args.StripeToken});
 			    if (result.isOk()) {
 			    	var response = JSON.parse(result.object);
-			    	var id = response.id;
 			    	if (currentCustomer.authenticated) {
 			    		Transaction.wrap(function () {
-					        currentCustomer.profile.custom.stripeCustomerID = id;
+					        currentCustomer.profile.custom.stripeCustomerID = response.id;
 					    });
+			    	} else {
+			    		var paymentInstrument = args.PaymentInstrument;
+				    	if (!empty(paymentInstrument)) {
+				    		Transaction.wrap(function () {
+						        paymentInstrument.custom.stripeCustomerID = response.id;
+						    });
+				    	}
 			    	}
 				    return PIPELET_NEXT;
 			    } else {
@@ -60,7 +66,6 @@ function addCard(args : Object) {
 			    	return PIPELET_ERROR;
 			    }
 			} catch (e) {
-				var err = e;
 				logger.error('Error: {0}', e.message);
 				return PIPELET_ERROR;
 			}
@@ -136,7 +141,7 @@ function deleteCard(args : Object) {
 				var result : dw.svc.Result = service.call(params);
 				if (result.isOk()) {
 					var response = JSON.parse(result.object);
-					logger.info('Credit Card {0} was successfully deleted', response.id);
+					logger.info('Credit Card "{0}" was successfully deleted', response.id);
 					return PIPELET_NEXT;
 				} else {
 					logger.error('Error: {0}', result.msg);
@@ -158,25 +163,59 @@ function deleteCard(args : Object) {
 function authorizePayment(args : Object) {
     try {
     	var currentCustomer = customer;
+    	var currentRequest = request;
 		var service : Service = ServiceRegistry.get('stripe.http.authorizePayment');
 		var paymentInstrument : dw.order.PaymentInstrument = args.PaymentInstrument;
 		var amount : Number = paymentInstrument.getPaymentTransaction().getAmount().getValue();
 		var capture : Boolean = empty(dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture')) ? false : dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
+		var customerEmail : String = args.Order.getCustomerEmail();
 		var params : dw.util.HashMap = new dw.util.HashMap();
-		params.put('amount', dw.util.StringUtils.formatNumber(amount * 100, '0'));
-		params.put('currency', paymentInstrument.getPaymentTransaction().getAmount().getCurrencyCode());
-		params.put('capture', capture);
 		if (!empty(currentCustomer) && currentCustomer.authenticated && 'stripeCustomerID' in currentCustomer.profile.custom && !empty(currentCustomer.profile.custom.stripeCustomerID)) {
 			params.put('customer', currentCustomer.profile.custom.stripeCustomerID);
 			params.put('source', paymentInstrument.custom.stripeCardID);
+			params.put('external_id', currentCustomer.profile.custom.stripeCustomerID);
 		} else {
-			params.put('source', paymentInstrument.creditCardToken);
+			params.put('customer', paymentInstrument.custom.stripeCustomerID);
 		}
+		params.put('amount', dw.util.StringUtils.formatNumber(amount * 100, '0'));
+		params.put('currency', paymentInstrument.getPaymentTransaction().getAmount().getCurrencyCode());
+		params.put('capture', capture);
+		params.put('receipt_email', customerEmail);
+		params.put('ip', currentRequest.httpRemoteAddress);
+		params.put('referrer', currentRequest.httpReferer);
+		params.put('user_agent', currentRequest.httpUserAgent);
+		params.put('description', 'Charge for ' + customerEmail);
 		// send request
 		var result : dw.svc.Result = service.call(params);
 		if (result.isOk()) {
 			var response = JSON.parse(result.object);
 			return {'transactionID':response.id};
+		} else {
+			logger.error('Error: {0}', result.msg);
+			return PIPELET_ERROR;
+		}
+	} catch (e) {
+		logger.error('Error: {0}', e.message);
+		return PIPELET_ERROR;
+	}
+}
+
+/**
+* Refunds a charge that has previously been created.
+*/
+function refundCharge(args : Object) {
+    var paymentInstrument : dw.order.PaymentInstrument = args.PaymentInstrument;
+    try {
+		var service : Service = ServiceRegistry.get('stripe.http.refundCharge');
+		var params : Object = {
+			charge: paymentInstrument.paymentTransaction.transactionID,
+		};
+		// send request
+		var result : dw.svc.Result = service.call(params);
+		if (result.isOk()) {
+			var response = JSON.parse(result.object);
+			logger.info('Charge "{0}" was successfully refunded', response.charge);
+			return PIPELET_NEXT;
 		} else {
 			logger.error('Error: {0}', result.msg);
 			return PIPELET_ERROR;
@@ -194,3 +233,4 @@ exports.AddCard = addCard;
 exports.DeleteCard = deleteCard;
 exports.FetchCards = fetchCards;
 exports.AuthorizePayment = authorizePayment;
+exports.RefundCharge = refundCharge;

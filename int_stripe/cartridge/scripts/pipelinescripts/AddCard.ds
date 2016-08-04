@@ -15,7 +15,7 @@ var StripeHelper = require('int_stripe/cartridge/scripts/stripeHelper');
 
 function execute( pdict : PipelineDictionary ) : Number
 {
-	if (StripeHelper.IsStripeEnabled()) {
+	if (StripeHelper.IsStripeEnabled() && !empty(pdict.StripeToken)) {
         var params = {
             StripeToken: pdict.StripeToken,
             PaymentInstrument: pdict.PaymentInstrument

@@ -12,5 +12,5 @@ var Stripe = require('int_stripe/cartridge/scripts/service/stripe');
 
 function execute( pdict : PipelineDictionary ) : Number
 {
-   return Stripe.DeleteCard({'card':pdict.Card});
+   return Stripe.DeleteCard({card:pdict.Card});
 }

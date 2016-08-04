@@ -55,8 +55,13 @@ function Authorize(args) {
     var orderNo = args.OrderNo;
     var paymentInstrument = args.PaymentInstrument;
     var paymentProcessor = PaymentMgr.getPaymentMethod(paymentInstrument.getPaymentMethod()).getPaymentProcessor();
+    
+    var params = {
+    		Order: args.Order,
+    		PaymentInstrument: paymentInstrument
+    };
 
-    var result = Stripe.AuthorizePayment({'PaymentInstrument':paymentInstrument});
+    var result = Stripe.AuthorizePayment(params);
     
     if (result === PIPELET_ERROR) {
     	return {error: true};
