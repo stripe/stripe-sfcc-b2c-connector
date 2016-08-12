@@ -201,4 +201,10 @@ exports.init = function () {
     if (SitePreferences.STRIPE_ENABLED) {
     	stripe.initBilling();
     }
+
+    var $selectedNumber = $("#creditCardList option:selected");
+    var cardVal = $selectedNumber.val();
+    if (cardVal.length !== 0) {
+    	$('#creditCardList').trigger('change');
+    }
 };

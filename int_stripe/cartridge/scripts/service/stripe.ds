@@ -85,6 +85,17 @@ function fetchCards() {
 		if ('stripeCustomerID' in customer.profile.custom && !empty(customer.profile.custom.stripeCustomerID)) {
 			var stripeCustomerID : String = customer.profile.custom.stripeCustomerID;
 			try {
+				var serviceCustomer : Service = ServiceRegistry.get('stripe.http.retrieveCustomer');
+				var params : Object = {
+        			customerID: stripeCustomerID
+        		};
+				var resultCustomer : dw.svc.Result = serviceCustomer.call(params);
+				if (resultCustomer.isOk()) {
+					var responseCustomer = JSON.parse(resultCustomer.object);
+					var defaultCard : String = responseCustomer.default_source;
+				}
+				
+				
 				var service : Service = ServiceRegistry.get('stripe.http.fetchCustomerCards');
 				var params : Object = {
         			customerID: stripeCustomerID
@@ -103,6 +114,11 @@ function fetchCards() {
 						cardObj['creditCardNumberLastDigits'] = card.last4;
 						cardObj['maskedCreditCardNumber'] = '************' + card.last4;
 						cardObj['stripeCardID'] = card.id;
+						if (card.id === defaultCard) {
+							cardObj['stripeDefaultCard'] = true;
+						} else {
+							cardObj['stripeDefaultCard'] = false;
+						}
 						cardObj['UUID'] = card.id;
 						paymentInstruments.add(cardObj);
 					}
@@ -120,6 +136,39 @@ function fetchCards() {
 		}
 	} else {
 		return PIPELET_ERROR;
+	}
+}
+
+function makeDefault(cardId : String)
+{
+	var currentCustomer = customer;
+	var cardId = cardId;
+	if (!empty(currentCustomer) && currentCustomer.authenticated) {
+		if ('stripeCustomerID' in customer.profile.custom && !empty(customer.profile.custom.stripeCustomerID)) {
+			var stripeCustomerID : String = customer.profile.custom.stripeCustomerID;
+	        try {
+				var service : Service = ServiceRegistry.get('stripe.http.updateCustomer');
+				var params : Object = {
+					customerID: stripeCustomerID,
+	        		cardId: cardId
+	        	};
+	        	// send request
+				var result : dw.svc.Result = service.call(params);
+				if (result.isOk()) {
+					var response = JSON.parse(result.object);
+					logger.info('Credit Card "{0}" was successfully mark as default', cardId);
+					return PIPELET_NEXT;
+				} else {
+					logger.error('Error: {0}', result.msg);
+					return PIPELET_ERROR;
+				}
+			} catch (e) {
+				logger.error('Error: {0}', e.message);
+				return PIPELET_ERROR;
+			}
+		} else {
+	    	return PIPELET_ERROR;
+	    }
 	}
 }
 
@@ -232,5 +281,6 @@ function refundCharge(args : Object) {
 exports.AddCard = addCard;
 exports.DeleteCard = deleteCard;
 exports.FetchCards = fetchCards;
+exports.MakeDefault = makeDefault;
 exports.AuthorizePayment = authorizePayment;
 exports.RefundCharge = refundCharge;

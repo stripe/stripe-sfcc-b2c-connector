@@ -72,6 +72,16 @@ function add(clearForm) {
     }).render('account/payment/paymentinstrumentdetails');
 }
 
+function makeDefault()
+{
+	if (StripeHelper.IsStripeEnabled()) {
+		var cardId = request.httpParameterMap.get("cardId");
+		Stripe.MakeDefault(cardId.stringValue);
+
+	    response.redirect(URLUtils.https('PaymentInstruments-List'));
+	}
+}
+
 /**
  * Form handler for the paymentinstruments form. Handles the following actions:
  * - __create__ - calls the {@link module:controllers/PaymentInstruments~create|create} function to create a payment instrument
@@ -267,6 +277,9 @@ exports.List = guard.ensure(['https', 'get', 'loggedIn'], list);
 /** Adds a new credit card payment instrument to the saved payment instruments of the current customer.
  * @see module:controllers/PaymentInstruments~add */
 exports.Add = guard.ensure(['https', 'get', 'loggedIn'], add);
+/** Make new default credit card and saved changes to the stripe customer object.
+ * @see module:controllers/PaymentInstruments~makeDefault */
+exports.MakeDefault = guard.ensure(['https', 'get', 'loggedIn'], makeDefault);
 /** Handles the submitted form for creating payment instruments.
  * @see module:controllers/PaymentInstruments~handlePaymentForm */
 exports.PaymentForm = guard.ensure(['https', 'post', 'loggedIn'], handlePaymentForm);
