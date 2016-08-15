@@ -297,34 +297,69 @@
         <start-node name="MakeDefault" secure="false"/>
         <node-display x="1" y="11"/>
       </node>
-      <simple-transition>
-        <transition-display>
-          <bend-point relative-to="source" x="0" y="1"/>
-        </transition-display>
-      </simple-transition>
+      <simple-transition/>
       <node>
         <pipelet-node pipelet-name="Script" pipelet-set-identifier="bc_api">
           <config-property key="Transactional" value="false"/>
           <config-property key="OnError" value="PIPELET_ERROR"/>
-          <config-property key="ScriptFile" value="pipelinescripts/MakeDefault.ds"/>
-          <key-binding alias="null" key="ScriptLog"/>
-          <key-binding alias="CurrentHttpParameterMap.cardId.value" key="cardId"/>
+          <config-property key="ScriptFile" value="int_stripe:pipelinescripts/IsStripeEnabled.ds"/>
+          <key-binding alias="ScriptLog" key="ScriptLog"/>
+          <key-binding alias="StripeEnabled" key="IsStripeEnabled"/>
         </pipelet-node>
         <node-display x="0" y="1"/>
         <branch basename="b2" source-connector="error">
-          <transition target-connector="in">
+          <transition target-connector="in1" target-path="./+1">
             <transition-display>
               <bend-point relative-to="source" x="2" y="0"/>
-              <bend-point relative-to="target" x="0" y="-1"/>
             </transition-display>
           </transition>
+        </branch>
+      </node>
+      <simple-transition/>
+      <node>
+        <decision-node condition-key="StripeEnabled" condition-operator="expr"/>
+        <node-display x="0" y="1"/>
+        <branch basename="b3" source-connector="yes">
+          <transition target-connector="in"/>
           <segment>
             <node>
-              <end-node name="ERROR"/>
-              <node-display x="1" y="1"/>
+              <pipelet-node pipelet-name="Script" pipelet-set-identifier="bc_api">
+                <config-property key="Transactional" value="false"/>
+                <config-property key="OnError" value="PIPELET_ERROR"/>
+                <config-property key="ScriptFile" value="pipelinescripts/MakeDefault.ds"/>
+                <key-binding alias="null" key="ScriptLog"/>
+                <key-binding alias="CurrentHttpParameterMap.cardId.value" key="cardId"/>
+              </pipelet-node>
+              <node-display x="0" y="1"/>
+              <branch basename="b2" source-connector="error">
+                <transition target-connector="in1" target-path="../+2"/>
+              </branch>
+            </node>
+            <simple-transition>
+              <transition-display>
+                <bend-point relative-to="source" x="0" y="1"/>
+              </transition-display>
+            </simple-transition>
+            <node>
+              <end-node name="OK"/>
+              <node-display x="0" y="1"/>
             </node>
           </segment>
         </branch>
+      </node>
+      <transition target-connector="in1" target-path="./+1"/>
+    </segment>
+    <segment>
+      <node>
+        <join-node/>
+        <node-display x="1" y="0"/>
+      </node>
+      <transition target-connector="in1" target-path="./+1"/>
+    </segment>
+    <segment>
+      <node>
+        <join-node/>
+        <node-display x="0" y="1"/>
       </node>
       <simple-transition>
         <transition-display>
@@ -332,7 +367,7 @@
         </transition-display>
       </simple-transition>
       <node>
-        <end-node name="OK"/>
+        <end-node name="ERROR"/>
         <node-display x="0" y="1"/>
       </node>
     </segment>
