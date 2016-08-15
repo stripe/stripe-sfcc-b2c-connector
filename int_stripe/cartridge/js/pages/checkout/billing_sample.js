@@ -18,7 +18,7 @@ function setCCFields(data) {
     $creditCard.find('input[name*="_creditCard_number"]').val(data.maskedNumber).trigger('change');
     $creditCard.find('[name$="_month"]').val(data.expirationMonth).trigger('change');
     $creditCard.find('[name$="_year"]').val(data.expirationYear).trigger('change');
-    $creditCard.find('input[name$="_cvn"]').val('').trigger('change');
+    $creditCard.find('input[name*="_cvn"]').val('123');
     $creditCard.find('input[name="stripeCardID"]').val(data.stripeCardID);
 }
 
@@ -92,9 +92,16 @@ exports.init = function () {
     });
 
     // select credit card from list
-    $('#creditCardList').on('change', function () {
+    $checkoutForm.find('input[name$="_creditCardList"]').on('change', function () {
         var cardUUID = $(this).val();
         if (!cardUUID) {return;}
+        if (cardUUID === 'newCard') {
+        	stripe.clearCCFields();
+        	$('.card-details').show();
+        	return;
+        } else {
+        	$('.card-details').hide();
+        }
         populateCreditCardForm(cardUUID);
 
         // remove server side error
@@ -200,11 +207,12 @@ exports.init = function () {
     });
     if (SitePreferences.STRIPE_ENABLED) {
     	stripe.initBilling();
+
+        var $selectedNumber = $('.checkout-billing').find('input[name$="_creditCardList"]:checked');
+        var cardVal = $selectedNumber.val();
+        if (cardVal.length !== 0) {
+        	$selectedNumber.trigger('change');
+        }
     }
 
-    var $selectedNumber = $("#creditCardList option:selected");
-    var cardVal = $selectedNumber.val();
-    if (cardVal.length !== 0) {
-    	$('#creditCardList').trigger('change');
-    }
 };

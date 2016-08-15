@@ -44,20 +44,41 @@
 			<iscomment>display select box with stored credit cards if customer is authenticated</iscomment>
 			<isif condition="${pdict.CurrentCustomer.authenticated && !empty(pdict.ApplicableCreditCards)}">
 
-				<div class="form-row">
-					<label class="label">${Resource.msg('billing.selectcreditcard','checkout',null)}</label>
-					<div class="field-wrapper">
-						<select name="${pdict.CurrentForms.billing.paymentMethods.creditCardList.htmlName}" id="creditCardList" class="input-select">
-							<option value="" selected="selected">${Resource.msg('billing.creditcardlistselect','checkout',null)}</option>
-							<isloop items="${pdict.ApplicableCreditCards}" var="creditCardInstr">
-								<isif condition="${creditCardInstr.stripeDefaultCard === true}">
-									<option value="${creditCardInstr.UUID}" selected="selected">(<isprint value="${creditCardInstr.creditCardType}"/>) <isprint value="${creditCardInstr.maskedCreditCardNumber}"/> - ${Resource.msg('billing.creditcardlistexp','checkout',null)} <isprint value="${creditCardInstr.creditCardExpirationMonth}" formatter="00" />.<isprint value="${creditCardInstr.creditCardExpirationYear}" formatter="0000" /></option>
-								<iselse/>
-									<option value="${creditCardInstr.UUID}">(<isprint value="${creditCardInstr.creditCardType}"/>) <isprint value="${creditCardInstr.maskedCreditCardNumber}"/> - ${Resource.msg('billing.creditcardlistexp','checkout',null)} <isprint value="${creditCardInstr.creditCardExpirationMonth}" formatter="00" />.<isprint value="${creditCardInstr.creditCardExpirationYear}" formatter="0000" /></option>
-								</isif>
-							</isloop>
-						</select>
-					</div>
+				<div class="form-row">	
+					<table width="100%">
+						<tr>
+							<th>&nbsp;</th>
+							<th>&nbsp;</th>
+							<th>${Resource.msg('billing.nameoncard','checkout',null)}</th>
+							<th>${Resource.msg('billing.expireson','checkout',null)}</th>
+						</tr>
+						<isloop items="${pdict.ApplicableCreditCards}" var="creditCardInstr">
+							<tr>								
+								<td>
+									<input type="radio" ${creditCardInstr.stripeDefaultCard === true ? 'checked=checked' : ''} name="${pdict.CurrentForms.billing.paymentMethods.creditCardList.htmlName}"	value="${creditCardInstr.UUID}">
+								</td>
+								<td>
+									<isprint value="${creditCardInstr.creditCardType}"/> ending in <isprint value="${creditCardInstr.creditCardNumberLastDigits}"/>
+								</td>
+								<td>
+									<isprint value="${creditCardInstr.creditCardHolder}"/>
+								</td>
+								<td>
+									<isprint value="${creditCardInstr.creditCardExpirationMonth}" formatter="00" />/<isprint value="${creditCardInstr.creditCardExpirationYear}" formatter="0000" />
+								</td>						
+							</tr>
+						</isloop>
+						<tr>
+							<td>
+								<input type="radio" ${pdict.ApplicableCreditCards.size() === 0 ? 'checked=checked' : ''} name="${pdict.CurrentForms.billing.paymentMethods.creditCardList.htmlName}"	value="newCard"/> 
+							</td>
+							<td>
+								${Resource.msg('billing.usedifferentcard','checkout',null)}
+							</td>
+							<td>&nbsp;</td>
+							<td>&nbsp;</td>
+						</tr>
+					</table>	
 				</div>
 
 				<div class="form-row form-row-button">
@@ -75,37 +96,38 @@
 						</a>
 					</isloop>
 				</iscomment>
-
 			</isif>
-			
-			<span class="payment-errors"></span>
 
-			<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.owner}" type="input"/>
-
-			<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.type}" type="select"/>
-
-			<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.number}" type="input" dynamicname="true"/>
-
-			<div class="form-row required">
-				<label>
-					<span class="required-indicator">${Resource.msg('billing.requiredindicator','checkout',null)}</span>
-					<span>${Resource.msg('billing.creditcardlistexpdate', 'checkout', null)}</span>
-				</label>
+			<div class="card-details" ${pdict.CurrentCustomer.authenticated && !empty(pdict.ApplicableCreditCards) ? "style='display:none;'" : ""}>			
+				<span class="payment-errors"></span>
+	
+				<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.owner}" type="input"/>
+	
+				<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.type}" type="select"/>
+	
+				<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.number}" type="input" dynamicname="true"/>
+	
+				<div class="form-row required">
+					<label>
+						<span class="required-indicator">${Resource.msg('billing.requiredindicator','checkout',null)}</span>
+						<span>${Resource.msg('billing.creditcardlistexpdate', 'checkout', null)}</span>
+					</label>
+					<isscript>
+						var currentCountry = require('~/cartridge/scripts/util/Countries').getCurrent(pdict);
+					</isscript>
+	
+					<isdynamicform formobject="${pdict.CurrentForms.billing.paymentMethods.creditCard.expiration}" formdata="${currentCountry.dynamicForms.expirationInfo}"/>
+	
+				</div>
+	
 				<isscript>
-					var currentCountry = require('~/cartridge/scripts/util/Countries').getCurrent(pdict);
+					var help = {
+						label: Resource.msg('billing.linkcvn', 'checkout', null),
+						cid: 'checkout-security-code'
+					};
 				</isscript>
-
-				<isdynamicform formobject="${pdict.CurrentForms.billing.paymentMethods.creditCard.expiration}" formdata="${currentCountry.dynamicForms.expirationInfo}"/>
-
+				<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.cvn}" type="input" rowclass="cvn" dynamicname="true" help="${help}"/>
 			</div>
-
-			<isscript>
-				var help = {
-					label: Resource.msg('billing.linkcvn', 'checkout', null),
-					cid: 'checkout-security-code'
-				};
-			</isscript>
-			<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.cvn}" type="input" rowclass="cvn" dynamicname="true" help="${help}"/>
 			
 			<isscript>
 				var stripeEnabled = require('int_stripe/cartridge/scripts/stripeHelper').IsStripeEnabled();

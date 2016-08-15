@@ -148,6 +148,21 @@ var stripeResponseHandlerBilling = function(status, response) {
 
 /**
  * @function
+ * @description Clears Credit Card Fields
+ */
+function clearCCFields() {
+    var $creditCard = $('[data-method="CREDIT_CARD"]');
+    $creditCard.find('input[name$="creditCard_owner"]').val('');
+    $creditCard.find('select[name$="_type"]').val('');
+    $creditCard.find('input[name*="_creditCard_number"]').val('');
+    $creditCard.find('[name$="_month"]').val('');
+    $creditCard.find('[name$="_year"]').val('');
+    $creditCard.find('input[name*="_cvn"]').val('');
+    $creditCard.find('input[name="stripeCardID"]').val('');
+}
+
+/**
+ * @function
  * @description Initializes Stripe My Account events
  */
 exports.initMyAccount = function () {
@@ -160,4 +175,12 @@ exports.initMyAccount = function () {
  */
 exports.initBilling = function () {
 	initializeBillingEvents();
+};
+
+/**
+ * @function
+ * @description Clears Credit Card Fields
+ */
+exports.clearCCFields = function () {
+	clearCCFields();
 };
