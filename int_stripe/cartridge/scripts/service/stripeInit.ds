@@ -87,6 +87,61 @@ ServiceRegistry.configure('stripe.http.createCustomer', {
 });
 
 /**
+* HTTP Service for fetching a list of Customer's cards
+*/
+ServiceRegistry.configure('stripe.http.fetchCustomerCards', {
+	createRequest: function(svc : HTTPService, args : Object) {
+		var baseUrl : Sting = svc.getURL();
+		var URL : String = baseUrl + '/customers/' + args.customerID + '/sources?object=card';
+		svc.setURL(URL);
+		svc.setRequestMethod('GET');
+		StripeHelper.SetServiceHeaders(svc);
+	},
+	parseResponse: function(svc : HTTPService, client : HTTPClient) {
+		return client.text;
+	},
+	mockCall: function(svc : HTTPService, client : HTTPClient) {
+		var mockedResponse = {
+			"object": "list",
+			"url": "/v1/customers/cus_8mB7HEGeM8dWZA/sources",
+			"has_more": false,
+			"data": [
+			  {
+			    "id": "card_18UckS2eZvKYlo2C9P1M9ugc",
+			    "object": "card",
+			    "address_city": null,
+			    "address_country": null,
+			    "address_line1": null,
+			    "address_line1_check": null,
+			    "address_line2": null,
+			    "address_state": null,
+			    "address_zip": null,
+			    "address_zip_check": null,
+			    "brand": "Visa",
+			    "country": "US",
+			    "customer": "cus_8mB7HEGeM8dWZA",
+			    "cvc_check": "unchecked",
+			    "dynamic_last4": null,
+			    "exp_month": 12,
+			    "exp_year": 2019,
+			    "funding": "credit",
+			    "last4": "4242",
+			    "metadata": {
+			    },
+			    "name": "John Doe",
+			    "tokenization_method": null
+			  }
+			]
+		};
+		return {
+			statusCode: 200,
+			statusMessage: 'Success',
+			text: JSON.stringify(mockedResponse)
+		};
+	}
+});
+
+/**
 * HTTP Service for retrieve Customer object
 */
 ServiceRegistry.configure('stripe.http.retrieveCustomer', {
@@ -102,7 +157,7 @@ ServiceRegistry.configure('stripe.http.retrieveCustomer', {
 });
 
 /**
-* HTTP Service for retrieve Customer object
+* HTTP Service for update Customer object
 */
 ServiceRegistry.configure('stripe.http.updateCustomer', {
 	createRequest: function(svc : HTTPService, args : Object) {
@@ -125,6 +180,7 @@ ServiceRegistry.configure('stripe.http.addCard', {
 		var baseUrl : String = svc.getURL();
 		var URL : String = baseUrl + '/customers/' + args.customerID + '/sources';
 		svc.setURL(URL);
+		svc.addParam('source', args.source);
 	    StripeHelper.SetServiceHeaders(svc);
 	},
 	parseResponse: function(svc : HTTPService, client : HTTPClient) {
