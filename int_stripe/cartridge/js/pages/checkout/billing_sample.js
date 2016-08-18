@@ -18,8 +18,13 @@ function setCCFields(data) {
     $creditCard.find('input[name*="_creditCard_number"]').val(data.maskedNumber).trigger('change');
     $creditCard.find('[name$="_month"]').val(data.expirationMonth).trigger('change');
     $creditCard.find('[name$="_year"]').val(data.expirationYear).trigger('change');
-    $creditCard.find('input[name*="_cvn"]').val('123');
-    $creditCard.find('input[name="stripeCardID"]').val(data.stripeCardID);
+    if (SitePreferences.STRIPE_ENABLED) {
+        $creditCard.find('input[name*="_cvn"]').val('123');
+        $creditCard.find('input[name="stripeCardID"]').val(data.stripeCardID);
+    	
+    } else {
+        $creditCard.find('input[name$="_cvn"]').val('').trigger('change');
+    }
 }
 
 /**
@@ -92,23 +97,36 @@ exports.init = function () {
     });
 
     // select credit card from list
-    $checkoutForm.find('input[name$="_creditCardList"]').on('change', function () {
-        var cardUUID = $(this).val();
-        if (!cardUUID) {return;}
-        if (cardUUID === 'newCard') {
-        	stripe.clearCCFields();
-        	$('.card-details').show();
-        	return;
-        } else {
-        	$('.card-details').hide();
-        }
-        populateCreditCardForm(cardUUID);
+    if (SitePreferences.STRIPE_ENABLED) {
+        $checkoutForm.find('input[name$="_creditCardList"]').on('change', function () {
+            var cardUUID = $(this).val();
+            if (!cardUUID) {return;}
+            if (cardUUID === 'newCard') {
+            	stripe.clearCCFields();
+            	$('.card-details').show();
+            	return;
+            } else {
+            	$('.card-details').hide();
+            }
+            populateCreditCardForm(cardUUID);
 
-        // remove server side error
-        $('.required.error').removeClass('error');
-        $('.error-message').remove();
-    });
+            // remove server side error
+            $('.required.error').removeClass('error');
+            $('.error-message').remove();
+        });
+    } else {
+        $('#creditCardList').on('change', function () {
+            var cardUUID = $(this).val();
+            if (!cardUUID) {return;}
+            populateCreditCardForm(cardUUID);
 
+            // remove server side error
+            $('.required.error').removeClass('error');
+            $('.error-message').remove();
+        });
+
+    }
+    
     $('#check-giftcert').on('click', function (e) {
         e.preventDefault();
         var $balance = $('.balance');

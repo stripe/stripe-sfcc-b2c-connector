@@ -302,7 +302,7 @@
         <pipelet-node pipelet-name="Script" pipelet-set-identifier="bc_api">
           <config-property key="Transactional" value="false"/>
           <config-property key="OnError" value="PIPELET_ERROR"/>
-          <config-property key="ScriptFile" value="int_stripe:pipelinescripts/IsStripeEnabled.ds"/>
+          <config-property key="ScriptFile" value="pipelinescripts/IsStripeEnabled.ds"/>
           <key-binding alias="ScriptLog" key="ScriptLog"/>
           <key-binding alias="StripeEnabled" key="IsStripeEnabled"/>
         </pipelet-node>
