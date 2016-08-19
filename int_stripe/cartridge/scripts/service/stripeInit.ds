@@ -15,6 +15,7 @@ ServiceRegistry.configure('stripe.http.createCustomer', {
 		var URL : String = baseUrl + '/customers';
 		svc.setURL(URL);
 		svc.addParam('source', args.source);
+		svc.addParam('email', args.customerEmail);
 		StripeHelper.SetServiceHeaders(svc);
 	},
 	parseResponse: function(svc : HTTPService, client : HTTPClient) {

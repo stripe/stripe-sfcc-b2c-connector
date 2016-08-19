@@ -45,7 +45,7 @@ function addCard(args : Object) {
 			try {
 				var service : Service = ServiceRegistry.get('stripe.http.createCustomer');
 			    // send request
-			    var result : dw.svc.Result = service.call({source:args.StripeToken});
+			    var result : dw.svc.Result = service.call({source:args.StripeToken, customerEmail:args.CustomerEmail});
 			    if (result.isOk()) {
 			    	var response = JSON.parse(result.object);
 			    	if (currentCustomer.authenticated) {
@@ -229,7 +229,6 @@ function authorizePayment(args : Object) {
 		params.put('amount', dw.util.StringUtils.formatNumber(amount * 100, '0'));
 		params.put('currency', paymentInstrument.getPaymentTransaction().getAmount().getCurrencyCode());
 		params.put('capture', capture);
-		params.put('receipt_email', customerEmail);
 		params.put('ip', currentRequest.httpRemoteAddress);
 		params.put('referrer', currentRequest.httpReferer);
 		params.put('user_agent', currentRequest.httpUserAgent);
