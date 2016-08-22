@@ -3,6 +3,10 @@
 		{
 			"name": "app.payment.processor.STRIPE_CREDIT",
 			"script": "./payment/processor/STRIPE_CREDIT"
+		},
+		{
+			"name": "dw.order.hooks.PaymentHooks.authorizeCreditCard",
+			"script":"./hooks/authorizeCreditCard.js"
 		}
 	]
 }
