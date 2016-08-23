@@ -1,0 +1,8 @@
+<!--- TEMPLATENAME: displayProductFeed.isml --->
+<isinclude template="util/modules"/>
+<isscript>
+	var lines = pdict.Lines;
+</isscript>
+<isloop items="${lines}" var="fileRecord"> 
+	<isprint value="${fileRecord}" />
+</isloop>

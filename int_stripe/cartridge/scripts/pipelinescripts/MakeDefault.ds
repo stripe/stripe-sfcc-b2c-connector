@@ -11,7 +11,7 @@ var Stripe = require('int_stripe/cartridge/scripts/service/stripe');
 function execute( pdict : PipelineDictionary ) : Number
 {
 	var cartId : String = args.cardId;
-	pdict.PaymentInstruments = Stripe.MakeDefault(cardId);
+	Stripe.MakeDefault(cardId);
 
     return PIPELET_NEXT;
 }

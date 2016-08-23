@@ -294,7 +294,7 @@
   <branch basename="MakeDefault">
     <segment>
       <node>
-        <start-node name="MakeDefault" secure="false"/>
+        <start-node call-mode="private" name="MakeDefault" secure="false"/>
         <node-display x="1" y="11"/>
       </node>
       <simple-transition/>
@@ -368,6 +368,50 @@
       </simple-transition>
       <node>
         <end-node name="ERROR"/>
+        <node-display x="0" y="1"/>
+      </node>
+    </segment>
+  </branch>
+  <branch basename="DisplayProductFeed">
+    <segment>
+      <node>
+        <start-node name="DisplayProductFeed" secure="false"/>
+        <node-display x="5" y="11"/>
+      </node>
+      <simple-transition>
+        <transition-display>
+          <bend-point relative-to="source" x="0" y="1"/>
+        </transition-display>
+      </simple-transition>
+      <node>
+        <pipelet-node pipelet-name="Script" pipelet-set-identifier="bc_api">
+          <config-property key="Transactional" value="false"/>
+          <config-property key="OnError" value="PIPELET_ERROR"/>
+          <config-property key="ScriptFile" value="pipelinescripts/DisplayProductFeed.ds"/>
+          <key-binding alias="log" key="ScriptLog"/>
+          <key-binding alias="Lines" key="Lines"/>
+        </pipelet-node>
+        <node-display x="0" y="1"/>
+        <branch basename="b2" source-connector="error">
+          <transition target-connector="in2" target-path="./+1">
+            <transition-display>
+              <bend-point relative-to="target" x="1" y="0"/>
+            </transition-display>
+          </transition>
+        </branch>
+      </node>
+      <transition target-connector="in1" target-path="./+1"/>
+    </segment>
+    <segment>
+      <node>
+        <join-node/>
+        <node-display x="0" y="1"/>
+      </node>
+      <simple-transition/>
+      <node>
+        <interaction-node transaction-required="false">
+          <template buffered="true" dynamic="false" name="feed/displayProductFeed"/>
+        </interaction-node>
         <node-display x="0" y="1"/>
       </node>
     </segment>

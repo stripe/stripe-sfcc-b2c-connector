@@ -5,6 +5,8 @@
 */
 importPackage( dw.system );
 importPackage( dw.svc );
+importPackage( dw.io );
+importPackage( dw.util );
 
 /**
 * Sets service headers.
@@ -61,10 +63,28 @@ function isStripeEnabled() : Boolean
 		return false;
 	}
 }
+/**
+* Return list of records from product feed file
+*/
+function displayProductFeed() : List
+{
+	var filePath : String = empty(Site.getCurrent().getCustomPreferenceValue('stripeProductFeedDirectory')) ? 'src/stripe/feed' : Site.getCurrent().getCustomPreferenceValue('stripeProductFeedDirectory');
+	var fileObject : File = new File(File.IMPEX + File.SEPARATOR + filePath + File.SEPARATOR);
+	var files = fileObject.list();
+	var lines : List = new ArrayList();
+	for each (var fileName : String in files) {
+		var file : File = new File(File.IMPEX + File.SEPARATOR + filePath + File.SEPARATOR + fileName);
+		var reader : FileReader = new FileReader(file);
+		var lines : List = reader.getLines();
+		break;
+	}
+	return lines;
+}
 
 /*
  * Module exports
  */
+exports.DisplayProductFeed = displayProductFeed;
 exports.SetServiceHeaders = setServiceHeaders;
 exports.SetServiceParams = setServiceParams;
 exports.IsStripeEnabled = isStripeEnabled;

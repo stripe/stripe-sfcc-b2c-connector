@@ -4,6 +4,11 @@
 var app = require('app_storefront_controllers/cartridge/scripts/app');
 var guard = require('app_storefront_controllers/cartridge/scripts/guard');
 var stripe = require('~/cartridge/scripts/service/stripe');
+var StripeHelper = require('int_stripe/cartridge/scripts/stripeHelper');
+
+var dwsystem = require('dw/system');
+var dwio = require('dw/io');
+var dwweb = require('dw/web');
 
 /**
  * Selects a customer credit card and returns the details of the credit card as
@@ -55,4 +60,14 @@ function selectCreditCard() {
     }).render('checkout/billing/stripecreditcardjson');
 }
 
+/**
+ * Display Product Feed on storefront
+ */
+function displayProductFeed() {
+	var lines : List = StripeHelper.DisplayProductFeed();
+	app.getView({
+		Lines: lines
+	}).render('feed/displayProductFeed');
+}
+exports.DisplayProductFeed = guard.ensure(['https', 'get'], displayProductFeed);
 exports.SelectCreditCard = guard.ensure(['https', 'get'], selectCreditCard);

@@ -1,0 +1,23 @@
+/**
+* Display product feed file content on storefront
+*
+*-   @input ExampleIn : String This is a sample comment.
+*   @output Lines : dw.util.List
+*
+*/
+importPackage( dw.system );
+importPackage( dw.util );
+
+/* Stripe includes */
+var StripeHelper = require('int_stripe/cartridge/scripts/stripeHelper');
+
+function execute( pdict : PipelineDictionary ) : Number
+{
+	if (StripeHelper.IsStripeEnabled()) {
+        pdict.Lines = StripeHelper.DisplayProductFeed();
+	} else {
+		pdict.Lines = new ArrayList();
+	}
+
+	return PIPELET_NEXT;
+}

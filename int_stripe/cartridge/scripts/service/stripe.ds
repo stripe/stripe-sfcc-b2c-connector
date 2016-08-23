@@ -19,7 +19,8 @@ function addCard(args : Object) {
         		var service : Service = ServiceRegistry.get('stripe.http.addCard');
         		var params : Object = {
         			source: args.StripeToken,
-        			customerID: stripeCustomerID
+        			customerID: stripeCustomerID,
+        			customerEmail : customer.profile.email
         		};
 			    // send request
 			    var result : dw.svc.Result = service.call(params);
