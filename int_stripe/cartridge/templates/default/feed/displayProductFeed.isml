@@ -1,8 +1,7 @@
-<!--- TEMPLATENAME: displayProductFeed.isml --->
-<isinclude template="util/modules"/>
+<iscontent type="text/tab-separated-values" />
 <isscript>
 	var lines = pdict.Lines;
 </isscript>
-<isloop items="${lines}" var="fileRecord"> 
+<isloop items="${lines}" var="fileRecord">
 	<isprint value="${fileRecord}" />
 </isloop>
