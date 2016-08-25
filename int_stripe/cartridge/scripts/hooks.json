@@ -9,6 +9,10 @@
 			"script":"./hooks/authorizeCreditCard.js"
 		},
 		{
+			"name": "dw.order.payment.authorize",
+			"script":"./hooks/authorize.js"
+		},
+		{
 			"name": "dw.ocapi.shop.order.afterPostPaymentInstrument",
 			"script":"./hooks/afterPostPaymentInstrument.js"
 		},

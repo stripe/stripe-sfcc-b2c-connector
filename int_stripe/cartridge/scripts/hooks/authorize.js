@@ -9,8 +9,8 @@ var PaymentMgr = require('dw/order/PaymentMgr');
 
 var Stripe = require('~/cartridge/scripts/service/stripe');
  
-exports.authorizeCreditCard = function (order, paymentDetails) : Status {
-    Logger.debug("@@@@@ authorizeCreditCard hook order =" + order + " paymentinstrument =" + paymentDetails);
+exports.authorize = function (order, paymentDetails) : Status {
+    Logger.debug("@@@@@ authorize hook order =" + order + " paymentinstrument =" + paymentDetails);
 
     var params = {
     		Order: order,
