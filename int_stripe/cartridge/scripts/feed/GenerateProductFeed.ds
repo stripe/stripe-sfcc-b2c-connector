@@ -12,9 +12,9 @@ importPackage( dw.io );
 
 function execute( pdict : PipelineDictionary ) : Number {
 	
-	var timestamp : String = StringUtils.formatCalendar(new Calendar(), 'yyyyMMddHHmmss');
+	//var timestamp : String = StringUtils.formatCalendar(new Calendar(), 'yyyyMMddHHmmss');timestamp
 	var filePath : String = empty(Site.getCurrent().getCustomPreferenceValue('stripeProductFeedDirectory')) ? 'src/stripe/feed' : Site.getCurrent().getCustomPreferenceValue('stripeProductFeedDirectory');
-	var fileName : String = empty(Site.getCurrent().getCustomPreferenceValue('stripeProductFeedFileName')) ? 'stripeProductFeed' + timestamp + '.txt' : Site.getCurrent().getCustomPreferenceValue('stripeProductFeedFileName') + timestamp + '.txt';
+	var fileName : String = empty(Site.getCurrent().getCustomPreferenceValue('stripeProductFeedFileName')) ? 'stripeProductFeed' + '.txt' : Site.getCurrent().getCustomPreferenceValue('stripeProductFeedFileName') + '.txt';
 	var defaultBrandName : String = empty(Site.getCurrent().getCustomPreferenceValue('stripeProductFeedDefaultBrandName')) ? 'brand' : Site.getCurrent().getCustomPreferenceValue('stripeProductFeedDefaultBrandName');
 	var logger : Logger = Logger.getLogger('StripeProductFeed', 'stripe');
 	

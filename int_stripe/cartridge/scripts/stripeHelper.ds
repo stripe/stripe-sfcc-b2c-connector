@@ -69,15 +69,10 @@ function isStripeEnabled() : Boolean
 function displayProductFeed() : List
 {
 	var filePath : String = empty(Site.getCurrent().getCustomPreferenceValue('stripeProductFeedDirectory')) ? 'src/stripe/feed' : Site.getCurrent().getCustomPreferenceValue('stripeProductFeedDirectory');
-	var fileObject : File = new File(File.IMPEX + File.SEPARATOR + filePath + File.SEPARATOR);
-	var files = fileObject.list();
-	var lines : List = new ArrayList();
-	for each (var fileName : String in files) {
-		var file : File = new File(File.IMPEX + File.SEPARATOR + filePath + File.SEPARATOR + fileName);
-		var reader : FileReader = new FileReader(file);
-		var lines : List = reader.getLines();
-		break;
-	}
+	var fileName : String = empty(Site.getCurrent().getCustomPreferenceValue('stripeProductFeedFileName')) ? 'stripeProductFeed' + '.txt' : Site.getCurrent().getCustomPreferenceValue('stripeProductFeedFileName') + '.txt';
+	var file : File = new File(File.IMPEX + File.SEPARATOR + filePath + File.SEPARATOR + fileName);
+	var reader : FileReader = new FileReader(file);
+	var lines : List = reader.getLines();
 	return lines;
 }
 
