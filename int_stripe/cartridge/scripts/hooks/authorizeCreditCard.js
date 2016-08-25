@@ -1,6 +1,6 @@
 'use strict';
 
-var Logger = require('dw/system/Logger');
+var Logger = require('dw/system').Logger;
 var System = require('dw/system');
 var dworder = require('dw/order');
 var Status = require('dw/system/Status');
@@ -8,11 +8,9 @@ var Transaction = require('dw/system/Transaction');
 var PaymentMgr = require('dw/order/PaymentMgr');
 
 var Stripe = require('~/cartridge/scripts/service/stripe');
-
-
  
-exports.authorizeCreditCard = function (order : dworder.Order, paymentDetails : dworder.OrderPaymentInstrument, cvn : String) : Status {
-    Logger.debug("@@@@@ authorizeCreditCard order =" + order + " paymentinstrument =" + paymentinstrument);
+exports.authorizeCreditCard = function (order, paymentDetails) : Status {
+    Logger.debug("@@@@@ authorizeCreditCard hook order =" + order + " paymentinstrument =" + paymentinstrument);
 
     var params = {
     		Order: order,

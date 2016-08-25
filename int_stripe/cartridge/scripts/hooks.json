@@ -7,6 +7,14 @@
 		{
 			"name": "dw.order.hooks.PaymentHooks.authorizeCreditCard",
 			"script":"./hooks/authorizeCreditCard.js"
+		},
+		{
+			"name": "dw.ocapi.shop.order.afterPostPaymentInstrument",
+			"script":"./hooks/afterPostPaymentInstrument.js"
+		},
+		{
+			"name": "dw.ocapi.shop.basket.afterSetShippingAddress",
+			"script":"./hooks/afterSetShippingAddress.js"
 		}
 	]
 }
