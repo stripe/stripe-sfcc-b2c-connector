@@ -1,7 +1,3 @@
-<iscontent type="text/tab-separated-values" />
-<isscript>
-	var lines = pdict.Lines;
-</isscript>
-<isloop items="${lines}" var="fileRecord">
-	<isprint value="${fileRecord}" />
+<iscontent type="text/tab-separated-values" /><isscript>var lines = pdict.Lines;</isscript><isloop items="${lines}" var="fileRecord"><isprint value="${fileRecord}" />
 </isloop>
+<iscomment>The format of the code above is required to make sure the .tsv does not print additional blank lines</iscomment>
