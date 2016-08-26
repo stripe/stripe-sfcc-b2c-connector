@@ -5,7 +5,7 @@
 			"script": "./payment/processor/STRIPE_CREDIT"
 		},
 		{
-			"name": "dw.order.hooks.PaymentHooks.authorizeCreditCard",
+			"name": "dw.order.payment.authorizeCreditCard",
 			"script":"./hooks/authorizeCreditCard.js"
 		},
 		{
