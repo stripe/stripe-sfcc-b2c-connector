@@ -72,6 +72,10 @@ function add(clearForm) {
     }).render('account/payment/paymentinstrumentdetails');
 }
 
+/** 
+ * Make new default credit card and saved changes to the stripe customer object.
+ */
+/*
 function makeDefault()
 {
 	if (StripeHelper.IsStripeEnabled()) {
@@ -81,7 +85,7 @@ function makeDefault()
 	    response.redirect(URLUtils.https('PaymentInstruments-List'));
 	}
 }
-
+*/
 /**
  * Form handler for the paymentinstruments form. Handles the following actions:
  * - __create__ - calls the {@link module:controllers/PaymentInstruments~create|create} function to create a payment instrument
@@ -279,10 +283,10 @@ exports.List = guard.ensure(['https', 'get', 'loggedIn'], list);
 exports.Add = guard.ensure(['https', 'get', 'loggedIn'], add);
 /** Make new default credit card and saved changes to the stripe customer object.
  * @see module:controllers/PaymentInstruments~makeDefault */
-exports.MakeDefault = guard.ensure(['https', 'get', 'loggedIn'], makeDefault);
+//exports.MakeDefault = guard.ensure(['https', 'get', 'loggedIn'], makeDefault);
 /** Handles the submitted form for creating payment instruments.
  * @see module:controllers/PaymentInstruments~handlePaymentForm */
-exports.PaymentForm = guard.ensure(['https', 'post', 'loggedIn'], handlePaymentForm);
+exports.PaymentForm = guard.ensure(['https', 'post', 'loggedIn', 'csrf'], handlePaymentForm);
 /** Deletes a saved credit card payment instrument.
  * @see module:controllers/PaymentInstruments~Delete */
 exports.Delete = guard.ensure(['https', 'loggedIn'], Delete);

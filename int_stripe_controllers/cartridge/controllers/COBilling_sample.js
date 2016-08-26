@@ -26,6 +26,7 @@ var app = require('~/cartridge/scripts/app');
 var guard = require('~/cartridge/scripts/guard');
 var Stripe = require('int_stripe/cartridge/scripts/service/stripe');
 var StripeHelper = require('int_stripe/cartridge/scripts/stripeHelper');
+var StripeController = require('int_stripe_controllers/cartridge/controllers/Stripe')
 
 /**
  * Initializes the address form. If the customer chose "use as billing
@@ -555,18 +556,7 @@ function billing() {
                 // Mark step as fulfilled
                 app.getForm('billing').object.fulfilled.value = true;
                 
-                if (StripeHelper.IsStripeEnabled()) {
-                	var stripeToken = request.httpParameterMap.get('stripeToken');
-                    if (!stripeToken.isEmpty()) {
-                    	var cart = app.getModel('Cart').get();
-                        var paymentInstrument = cart.getPaymentInstruments(PaymentInstrument.METHOD_CREDIT_CARD)[0];
-                        var params = {
-                        		StripeToken: stripeToken.value,
-                        		PaymentInstrument: paymentInstrument
-                        };
-                        var result = Stripe.AddCard(params);
-                    }
-                }
+                StripeController.AfterSubmitBilling();
                 
                 // A successful billing page will jump to the next checkout step.
                 app.getController('COSummary').Start();
@@ -845,7 +835,7 @@ exports.UpdateSummary = guard.ensure(['https', 'get'], updateSummary);
 exports.UpdateAddressDetails = guard.ensure(['https', 'get'], updateAddressDetails);
 /** Renders a form dialog to edit an address.
  * @see module:controllers/COBilling~editAddress */
-exports.EditAddress = guard.ensure(['https', 'get'], editAddress);
+exports.EditAddress = guard.ensure(['https', 'get', 'csrf'], editAddress);
 /** Returns information of a gift certificate including its balance as JSON response.
  * @see module:controllers/COBilling~getGiftCertificateBalance */
 exports.GetGiftCertificateBalance = guard.ensure(['https', 'get'], getGiftCertificateBalance);
@@ -857,7 +847,7 @@ exports.SelectCreditCard = guard.ensure(['https', 'get'], selectCreditCard);
 exports.UpdateCreditCardSelection = guard.ensure(['https', 'get'], updateCreditCardSelection);
 /** Form handler for the billing form.
  * @see module:controllers/COBilling~billing */
-exports.Billing = guard.ensure(['https'], billing);
+exports.Billing = guard.ensure(['https', 'csrf'], billing);
 /** Form handler for the returnToForm form.
  * @see module:controllers/COBilling~editBillingAddress */
 exports.EditBillingAddress = guard.ensure(['https', 'post'], editBillingAddress);
