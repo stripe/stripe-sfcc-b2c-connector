@@ -10,7 +10,8 @@ var Transaction = require('dw/system/Transaction');
 * Adds new credit card to the Customer object.
 * Creates new Customer object if it doesn't exists.
 */
-function addCard(args : Object) {
+function addCard(args : Object) : Object{
+	var resultObj;
 	var currentCustomer = customer;
 	if (!empty(currentCustomer)) {
 		if (currentCustomer.authenticated && 'stripeCustomerID' in customer.profile.custom && !empty(customer.profile.custom.stripeCustomerID)) {
@@ -63,8 +64,13 @@ function addCard(args : Object) {
 			    	}
 				    return PIPELET_NEXT;
 			    } else {
-			    	logger.error('Error: {0}', result.msg);
-			    	return PIPELET_ERROR;
+			    	var response = JSON.parse(result.errorMessage);
+			    	logger.error('Error: {0}', response.error.message);
+			    	resultObj = {
+                		error: true,
+                		message : response.error.message
+		            };
+			    	return resultObj;
 			    }
 			} catch (e) {
 				logger.error('Error: {0}', e.message);
@@ -125,7 +131,8 @@ function fetchCards() {
 					}
 					return paymentInstruments;
 				} else {
-					logger.error('Error: {0}', result.msg);
+			    	var response = JSON.parse(result.errorMessage);
+			    	logger.error('Error: {0}', response.error.message);
 					return paymentInstruments;
 				}
 			} catch (e) {
@@ -160,7 +167,8 @@ function makeDefault(cardId : String)
 					logger.info('Credit Card "{0}" was successfully mark as default', cardId);
 					return PIPELET_NEXT;
 				} else {
-					logger.error('Error: {0}', result.msg);
+			    	var response = JSON.parse(result.errorMessage);
+			    	logger.error('Error: {0}', response.error.message);
 					return PIPELET_ERROR;
 				}
 			} catch (e) {
@@ -194,7 +202,8 @@ function deleteCard(args : Object) {
 					logger.info('Credit Card "{0}" was successfully deleted', response.id);
 					return PIPELET_NEXT;
 				} else {
-					logger.error('Error: {0}', result.msg);
+			    	var response = JSON.parse(result.errorMessage);
+			    	logger.error('Error: {0}', response.error.message);
 					return PIPELET_ERROR;
 				}
 			} catch (e) {
@@ -240,7 +249,8 @@ function authorizePayment(args : Object) {
 			var response = JSON.parse(result.object);
 			return {'transactionID':response.id};
 		} else {
-			logger.error('Error: {0}', result.msg);
+	    	var response = JSON.parse(result.errorMessage);
+	    	logger.error('Error: {0}', response.error.message);
 			return PIPELET_ERROR;
 		}
 	} catch (e) {
@@ -266,7 +276,8 @@ function refundCharge(args : Object) {
 			logger.info('Charge "{0}" was successfully refunded', response.charge);
 			return PIPELET_NEXT;
 		} else {
-			logger.error('Error: {0}', result.msg);
+	    	var response = JSON.parse(result.errorMessage);
+	    	logger.error('Error: {0}', response.error.message);
 			return PIPELET_ERROR;
 		}
 	} catch (e) {

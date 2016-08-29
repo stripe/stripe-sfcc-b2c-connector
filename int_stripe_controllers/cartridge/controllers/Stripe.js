@@ -90,6 +90,7 @@ function afterSubmitBilling()
             		CustomerEmail : customerEmail
             };
             var result = Stripe.AddCard(params);
+            return result
         }
     }	
 }
