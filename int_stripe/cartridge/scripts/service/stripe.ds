@@ -101,8 +101,8 @@ function fetchCards() {
 					var responseCustomer = JSON.parse(resultCustomer.object);
 					var defaultCard : String = responseCustomer.default_source;
 				}
-				
-				
+
+
 				var service : Service = ServiceRegistry.get('stripe.http.fetchCustomerCards');
 				var params : Object = {
         			customerID: stripeCustomerID
@@ -232,7 +232,7 @@ function authorizePayment(args : Object) {
 		if (!empty(currentCustomer) && currentCustomer.authenticated && 'stripeCustomerID' in currentCustomer.profile.custom && !empty(currentCustomer.profile.custom.stripeCustomerID)) {
 			params.put('customer', currentCustomer.profile.custom.stripeCustomerID);
 			params.put('source', paymentInstrument.custom.stripeCardID);
-			params.put('external_id', currentCustomer.profile.custom.stripeCustomerID);
+			params.put('external_id', currentCustomer.ID);
 		} else {
 			params.put('customer', paymentInstrument.custom.stripeCustomerID);
 		}
