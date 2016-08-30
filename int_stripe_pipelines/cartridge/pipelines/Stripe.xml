@@ -52,35 +52,44 @@
     <segment>
       <node>
         <start-node call-mode="private" name="AddCard" secure="false"/>
-        <node-display x="4" y="2"/>
+        <node-display x="4" y="1"/>
       </node>
-      <simple-transition>
-        <transition-display>
-          <bend-point relative-to="source" x="0" y="1"/>
-        </transition-display>
-      </simple-transition>
+      <simple-transition/>
+      <node>
+        <call-node start-name-ref="Cart-GetExistingBasket"/>
+        <node-display x="0" y="1"/>
+      </node>
+      <simple-transition/>
       <node>
         <pipelet-node pipelet-name="Script" pipelet-set-identifier="bc_api">
-          <config-property key="Transactional" value="false"/>
+          <config-property key="Transactional" value="true"/>
           <config-property key="OnError" value="PIPELET_ERROR"/>
           <config-property key="ScriptFile" value="pipelinescripts/AddCard.ds"/>
-          <key-binding alias="null" key="ScriptLog"/>
+          <key-binding alias="Log" key="ScriptLog"/>
           <key-binding alias="CurrentHttpParameterMap.stripeToken.value" key="StripeToken"/>
           <key-binding alias="Basket.getPaymentInstruments(dw.order.PaymentInstrument.METHOD_CREDIT_CARD)[0]" key="PaymentInstrument"/>
           <key-binding alias="CurrentHttpParameterMap.stripeCardID.value" key="StripeCardID"/>
+          <key-binding alias="Basket" key="Basket"/>
+          <key-binding alias="StripePaymentError" key="StripePaymentError"/>
         </pipelet-node>
         <node-display x="0" y="1"/>
         <branch basename="b2" source-connector="error">
-          <transition target-connector="in">
-            <transition-display>
-              <bend-point relative-to="source" x="2" y="0"/>
-              <bend-point relative-to="target" x="0" y="-1"/>
-            </transition-display>
-          </transition>
+          <transition target-connector="in"/>
           <segment>
             <node>
-              <end-node name="error"/>
+              <pipelet-node pipelet-name="ClearFormElement" pipelet-set-identifier="bc_api">
+                <key-binding alias="CurrentForms.billing.paymentMethods.creditCard" key="FormElement"/>
+              </pipelet-node>
               <node-display x="1" y="1"/>
+            </node>
+            <simple-transition>
+              <transition-display>
+                <bend-point relative-to="source" x="0" y="1"/>
+              </transition-display>
+            </simple-transition>
+            <node>
+              <end-node name="error"/>
+              <node-display x="0" y="1"/>
             </node>
           </segment>
         </branch>
@@ -190,52 +199,6 @@
       </node>
     </segment>
   </branch>
-  <branch basename="RefundCharge">
-    <segment>
-      <node>
-        <start-node call-mode="private" name="RefundCharge" secure="false"/>
-        <node-display x="4" y="6"/>
-      </node>
-      <simple-transition>
-        <transition-display>
-          <bend-point relative-to="source" x="0" y="1"/>
-        </transition-display>
-      </simple-transition>
-      <node>
-        <pipelet-node pipelet-name="Script" pipelet-set-identifier="bc_api">
-          <config-property key="Transactional" value="false"/>
-          <config-property key="OnError" value="PIPELET_ERROR"/>
-          <config-property key="ScriptFile" value="pipelinescripts/RefundCharge.ds"/>
-          <key-binding alias="null" key="ScriptLog"/>
-          <key-binding alias="PaymentInstrument" key="PaymentInstrument"/>
-        </pipelet-node>
-        <node-display x="0" y="1"/>
-        <branch basename="b2" source-connector="error">
-          <transition target-connector="in">
-            <transition-display>
-              <bend-point relative-to="source" x="2" y="0"/>
-              <bend-point relative-to="target" x="0" y="-1"/>
-            </transition-display>
-          </transition>
-          <segment>
-            <node>
-              <end-node name="error"/>
-              <node-display x="1" y="1"/>
-            </node>
-          </segment>
-        </branch>
-      </node>
-      <simple-transition>
-        <transition-display>
-          <bend-point relative-to="source" x="0" y="1"/>
-        </transition-display>
-      </simple-transition>
-      <node>
-        <end-node/>
-        <node-display x="0" y="1"/>
-      </node>
-    </segment>
-  </branch>
   <branch basename="GenerateProductFeed">
     <segment>
       <node>
@@ -281,7 +244,7 @@
       </node>
     </segment>
   </branch>
-  <branch basename="_ANONYMOUS_BRANCH_7">
+  <branch basename="_ANONYMOUS_BRANCH_6">
     <segment>
       <node>
         <text-node>
@@ -372,11 +335,57 @@
       </node>
     </segment>
   </branch>
+  <branch basename="RefundCharge">
+    <segment>
+      <node>
+        <start-node call-mode="private" name="RefundCharge" secure="false"/>
+        <node-display x="4" y="9"/>
+      </node>
+      <simple-transition>
+        <transition-display>
+          <bend-point relative-to="source" x="0" y="1"/>
+        </transition-display>
+      </simple-transition>
+      <node>
+        <pipelet-node pipelet-name="Script" pipelet-set-identifier="bc_api">
+          <config-property key="Transactional" value="false"/>
+          <config-property key="OnError" value="PIPELET_ERROR"/>
+          <config-property key="ScriptFile" value="pipelinescripts/RefundCharge.ds"/>
+          <key-binding alias="null" key="ScriptLog"/>
+          <key-binding alias="PaymentInstrument" key="PaymentInstrument"/>
+        </pipelet-node>
+        <node-display x="0" y="1"/>
+        <branch basename="b2" source-connector="error">
+          <transition target-connector="in">
+            <transition-display>
+              <bend-point relative-to="source" x="2" y="0"/>
+              <bend-point relative-to="target" x="0" y="-1"/>
+            </transition-display>
+          </transition>
+          <segment>
+            <node>
+              <end-node name="error"/>
+              <node-display x="1" y="1"/>
+            </node>
+          </segment>
+        </branch>
+      </node>
+      <simple-transition>
+        <transition-display>
+          <bend-point relative-to="source" x="0" y="1"/>
+        </transition-display>
+      </simple-transition>
+      <node>
+        <end-node/>
+        <node-display x="0" y="1"/>
+      </node>
+    </segment>
+  </branch>
   <branch basename="DisplayProductFeed">
     <segment>
       <node>
         <start-node name="DisplayProductFeed" secure="false"/>
-        <node-display x="5" y="11"/>
+        <node-display x="5" y="12"/>
       </node>
       <simple-transition>
         <transition-display>

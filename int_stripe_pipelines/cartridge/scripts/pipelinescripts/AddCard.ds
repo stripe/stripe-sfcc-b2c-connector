@@ -5,9 +5,12 @@
 *
 * @input StripeToken : String
 * @input PaymentInstrument : dw.order.PaymentInstrument
+* @input Basket : dw.order.Basket
+* @output StripePaymentError : Object
 *
 */
 importPackage( dw.system );
+importPackage( dw.order );
 
 /* Stripe includes */
 var Stripe = require('int_stripe/cartridge/scripts/service/stripe');
@@ -20,7 +23,13 @@ function execute( pdict : PipelineDictionary ) : Number
             StripeToken: pdict.StripeToken,
             PaymentInstrument: pdict.PaymentInstrument
         };
-        return Stripe.AddCard(params);
+        var result = Stripe.AddCard(params);
+         if (result.error) {
+         	var basket : Basket = pdict.Basket;
+         	basket.removePaymentInstrument(PaymentInstrument);
+         	pdict.StripePaymentError = result;
+         	return PIPELET_ERROR;
+         }
 	}
 
 	return PIPELET_NEXT;
