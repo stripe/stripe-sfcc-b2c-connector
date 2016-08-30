@@ -3,6 +3,10 @@
 /* Script Modules */
 var app = require('app_storefront_controllers/cartridge/scripts/app');
 var guard = require('app_storefront_controllers/cartridge/scripts/guard');
+var Transaction = require('dw/system/Transaction');
+var Resource = require('dw/web/Resource');
+var PaymentInstrument = require('dw/order/PaymentInstrument');
+var URLUtils = require('dw/web/URLUtils');
 var Stripe = require('int_stripe/cartridge/scripts/service/stripe');
 var StripeHelper = require('int_stripe/cartridge/scripts/stripeHelper');
 
@@ -90,8 +94,24 @@ function afterSubmitBilling()
             		CustomerEmail : customerEmail
             };
             var result = Stripe.AddCard(params);
-            return result
-        }
+            if (result.error) {
+            	Transaction.wrap(function () {
+            		cart.removePaymentInstrument(paymentInstrument);
+            	});
+            	if (app.getForm('billing').object.paymentMethods.selectedPaymentMethodID.value.equals(PaymentInstrument.METHOD_CREDIT_CARD)){
+            		app.getForm('billing').object.paymentMethods.creditCard.clearFormElement();
+            	}
+            	app.getForm('billing').object.fulfilled.value = false;
+            	
+                app.getView({
+                    Basket: cart.object,
+                    StripePaymentError: result,
+                    ContinueURL: URLUtils.https('COBilling-Billing')
+                }).render('checkout/billing/billing');
+
+            }
+            return result;
+        } 
     }	
 }
 

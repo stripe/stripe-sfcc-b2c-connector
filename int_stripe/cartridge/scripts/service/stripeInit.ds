@@ -182,7 +182,6 @@ ServiceRegistry.configure('stripe.http.addCard', {
 		var URL : String = baseUrl + '/customers/' + args.customerID + '/sources';
 		svc.setURL(URL);
 		svc.addParam('source', args.source);
-		svc.addParam('email', args.customerEmail);
 	    StripeHelper.SetServiceHeaders(svc);
 	},
 	parseResponse: function(svc : HTTPService, client : HTTPClient) {

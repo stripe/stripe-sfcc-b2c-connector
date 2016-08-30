@@ -20,8 +20,7 @@ function addCard(args : Object) : Object{
         		var service : Service = ServiceRegistry.get('stripe.http.addCard');
         		var params : Object = {
         			source: args.StripeToken,
-        			customerID: stripeCustomerID,
-        			customerEmail : customer.profile.email
+        			customerID: stripeCustomerID
         		};
 			    // send request
 			    var result : dw.svc.Result = service.call(params);
@@ -34,14 +33,27 @@ function addCard(args : Object) : Object{
 					    });
 			    	}
 				    logger.info('Credit Card "{0}" was successfully added', response.id);
-			    	return PIPELET_NEXT;
+				    resultObj = {
+						error: false
+                    };
+				    
+			    	return resultObj;
 			    } else {
-			    	logger.error('Error: {0}', result.msg);
-			    	return PIPELET_ERROR;
+			    	var response = JSON.parse(result.errorMessage);
+			    	logger.error('Error: {0}', response.error.message);
+                    resultObj = {
+						error: true,
+                        message : response.error.message
+                    };
+                    return resultObj;
 			    }
         	} catch (e) {
         		logger.error('Error: {0}', e.message);
-        		return PIPELET_ERROR;
+        		resultObj = {
+						error: true,
+                        message : e.message
+                    };
+        		return resultObj;
         	}
 	    } else {
 			try {
@@ -62,23 +74,34 @@ function addCard(args : Object) : Object{
 						    });
 				    	}
 			    	}
-				    return PIPELET_NEXT;
+				    resultObj = {
+						error: false
+                    };
+				    
+			    	return resultObj;
 			    } else {
 			    	var response = JSON.parse(result.errorMessage);
 			    	logger.error('Error: {0}', response.error.message);
-			    	resultObj = {
-                		error: true,
-                		message : response.error.message
-		            };
-			    	return resultObj;
+                    resultObj = {
+						error: true,
+                        message : response.error.message
+                    };
+                    return resultObj;
 			    }
 			} catch (e) {
 				logger.error('Error: {0}', e.message);
-				return PIPELET_ERROR;
+				resultObj = {
+					error: true,
+                    message : e.message
+                };
+                return resultObj;
 			}
 	    }
 	} else {
-		return PIPELET_ERROR;
+		resultObj = {
+			error: true
+		}
+		return resultObj;
 	}
 }
 
@@ -234,7 +257,11 @@ function authorizePayment(args : Object) {
 			params.put('source', paymentInstrument.custom.stripeCardID);
 			params.put('external_id', currentCustomer.ID);
 		} else {
-			params.put('customer', paymentInstrument.custom.stripeCustomerID);
+			if (!empty(paymentInstrument.custom.stripeCustomerID)){
+				params.put('customer', paymentInstrument.custom.stripeCustomerID);
+			} else {
+				return PIPELET_ERROR;
+			}
 		}
 		params.put('amount', dw.util.StringUtils.formatNumber(amount * 100, '0'));
 		params.put('currency', paymentInstrument.getPaymentTransaction().getAmount().getCurrencyCode());
