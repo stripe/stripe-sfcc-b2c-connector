@@ -260,7 +260,11 @@ function authorizePayment(args : Object) {
 			if (!empty(paymentInstrument.custom.stripeCustomerID)){
 				params.put('customer', paymentInstrument.custom.stripeCustomerID);
 			} else {
-				return PIPELET_ERROR;
+				if (!empty(paymentInstrument.creditCardToken)){
+					params.put('customer', paymentInstrument.creditCardToken);
+				} else {
+					return PIPELET_ERROR;
+				}
 			}
 		}
 		params.put('amount', dw.util.StringUtils.formatNumber(amount * 100, '0'));
