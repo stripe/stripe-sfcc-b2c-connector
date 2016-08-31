@@ -23,18 +23,15 @@ exports.authorizeCreditCard = function (order, paymentDetails) : Status {
 	
 	    if (System.Site.getCurrent().getCustomPreferenceValue('stripeRELAYProcessAuthorization')) {
 	        var result = Stripe.AuthorizePayment(params);
-	        Transaction.wrap(function () {
-	            paymentInstrument.paymentTransaction.transactionID = result.transactionID;
-	            paymentInstrument.paymentTransaction.paymentProcessor = paymentProcessor;
-	        });
+            paymentInstrument.paymentTransaction.transactionID = result.transactionID;
+            paymentInstrument.paymentTransaction.paymentProcessor = paymentProcessor;
 	    } else {
-	        Transaction.wrap(function () {
-	            paymentInstrument.paymentTransaction.transactionID = orderNo;
-	            paymentInstrument.paymentTransaction.paymentProcessor = paymentProcessor;
-	        });
-			
+            paymentInstrument.paymentTransaction.transactionID = orderNo;
+            paymentInstrument.paymentTransaction.paymentProcessor = paymentProcessor;
+		
 		}
     } catch (e) {
+    	var ex = e;
     	Logger.error("Error: " + e.message);
     }
 
