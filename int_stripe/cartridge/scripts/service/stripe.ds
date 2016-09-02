@@ -106,6 +106,55 @@ function addCard(args : Object) : Object{
 }
 
 /**
+* Update credit card to the Customer object.
+*/
+function updateCard(args : Object)
+{
+	var currentCustomer = customer;
+	if (!empty(currentCustomer)) {
+		if (currentCustomer.authenticated && 'stripeCustomerID' in customer.profile.custom && !empty(customer.profile.custom.stripeCustomerID)) {
+	        var stripeCustomerID : String = customer.profile.custom.stripeCustomerID;
+	    	var paymentInstrument = args.PaymentInstrument;
+	    	if (!empty(paymentInstrument) && !empty(paymentInstrument.custom.stripeCardID)) {
+	        	try {
+        		var service : Service = ServiceRegistry.get('stripe.http.updateCard');
+        		var params : Object = {
+        			cardID: paymentInstrument.custom.stripeCardID,
+        			customerID: stripeCustomerID,
+        			billingAddress: args.BillingAddress
+        		};
+			    // send request
+			    var result : dw.svc.Result = service.call(params);
+			    if (result.isOk()) {
+				    logger.info('Credit Card "{0}" was successfully updated', paymentInstrument.custom.stripeCardID);
+				    resultObj = {
+						error: false
+                    };
+				    
+			    	return resultObj;
+			    } else {
+			    	//TODO what should we do with error??
+			    	var response = JSON.parse(result.errorMessage);
+			    	logger.error('Error: {0}', response.error.message);
+                    resultObj = {
+						error: true,
+                        message : response.error.message
+                    };
+                    return resultObj;
+			    }
+	        	} catch (e) {
+	        		logger.error('Error: {0}', e.message);
+					resultObj = {
+						error: true,
+                    	message : e.message
+                	};
+                return resultObj;
+	        	}
+	    	}
+		}
+	}
+}
+/**
 * Fetches Customer's credit cards.
 */
 function fetchCards() {
@@ -379,6 +428,7 @@ function getStripeAvsZipFailures() : Array
  * Module exports
  */
 exports.AddCard = addCard;
+exports.UpdateCard = updateCard;
 exports.DeleteCard = deleteCard;
 exports.FetchCards = fetchCards;
 exports.MakeDefault = makeDefault;

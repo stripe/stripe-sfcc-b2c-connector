@@ -249,6 +249,28 @@ ServiceRegistry.configure('stripe.http.deleteCard', {
 });
 
 /**
+* HTTP Service for updating credit card from the Customer's object
+*/
+ServiceRegistry.configure('stripe.http.updateCard', {
+	createRequest: function(svc : HTTPService, args : Object) {
+		var baseUrl : String = svc.getURL();
+		var URL : String = baseUrl + '/customers/' + args.customerID + '/sources/' + args.cardID;
+		svc.setURL(URL);
+		svc.addParam('address_line1', args.billingAddress.addressFields.address1.value);
+		svc.addParam('address_line2', args.billingAddress.addressFields.address2.value);
+		svc.addParam('address_city', args.billingAddress.addressFields.city.value);
+		svc.addParam('address_state', args.billingAddress.addressFields.states.state.value);
+		svc.addParam('address_country', args.billingAddress.addressFields.country.value);
+		svc.addParam('address_zip', args.billingAddress.addressFields.postal.value);
+		StripeHelper.SetServiceHeaders(svc);
+	},
+	parseResponse: function(svc : HTTPService, client : HTTPClient) {
+		return client.text;
+	}
+});
+
+
+/**
 * HTTP Service for the payment authorizing
 */
 ServiceRegistry.configure('stripe.http.authorizePayment', {

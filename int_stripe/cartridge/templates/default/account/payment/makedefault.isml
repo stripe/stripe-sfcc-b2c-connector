@@ -1,0 +1,3 @@
+<!--- TEMPLATENAME: makedefault.isml --->
+<iscontent type="text/html" charset="UTF-8" compact="true"/>
+<isredirect location="${URLUtils.https('PaymentInstruments-List')}"/>

@@ -111,7 +111,26 @@ function afterSubmitBilling()
 
             }
             return result;
+        } else if (customer.authenticated) {
+        	var billingForm = app.getForm('billing').object;
+        	var cart = app.getModel('Cart').get();
+            var paymentInstrument = cart.getPaymentInstruments(dworder.PaymentInstrument.METHOD_CREDIT_CARD)[0];
+        	var result = Stripe.UpdateCard({PaymentInstrument : paymentInstrument, BillingAddress : billingForm.billingAddress});
+        	if (result.error) {
+                app.getView({
+                    Basket: cart.object,
+                    StripePaymentError: result,
+                    ContinueURL: URLUtils.https('COBilling-Billing')
+                }).render('checkout/billing/billing');
+        	}
+        	return result
+        } else {
+        	var result = {error:false};
+        	return result;
         } 
+    } else {
+    	var result = {error:false};
+    	return result;
     }	
 }
 
