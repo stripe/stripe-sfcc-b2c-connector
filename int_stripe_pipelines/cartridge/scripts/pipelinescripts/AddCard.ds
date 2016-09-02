@@ -6,6 +6,8 @@
 * @input StripeToken : String
 * @input PaymentInstrument : dw.order.PaymentInstrument
 * @input Basket : dw.order.Basket
+* @input Customer : dw.customer.Customer
+* @input BillingForm : dw.web.Form
 * @output StripePaymentError : Object
 *
 */
@@ -30,6 +32,15 @@ function execute( pdict : PipelineDictionary ) : Number
          	pdict.StripePaymentError = result;
          	return PIPELET_ERROR;
          }
+	} else if (pdict.Customer.authenticated) {
+        	var billingForm = pdict.BillingForm;
+            var paymentInstrument = pdict.PaymentInstrument;
+        	var result = Stripe.UpdateCard({PaymentInstrument : paymentInstrument, BillingAddress : billingForm.billingAddress});
+        	pdict.StripePaymentError = result;
+        	return PIPELET_ERROR;
+    } else {
+    	var result:Object = {error:false};
+    	pdict.StripePaymentError = result;
 	}
 
 	return PIPELET_NEXT;

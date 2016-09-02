@@ -116,7 +116,6 @@ function afterSubmitBilling()
         	var cart = app.getModel('Cart').get();
             var paymentInstrument = cart.getPaymentInstruments(dworder.PaymentInstrument.METHOD_CREDIT_CARD)[0];
         	var result = Stripe.UpdateCard({PaymentInstrument : paymentInstrument, BillingAddress : billingForm.billingAddress});
-        	//var result = {error:false};
         	if (result.error) {
                 app.getView({
                     Basket: cart.object,
@@ -125,7 +124,13 @@ function afterSubmitBilling()
                 }).render('checkout/billing/billing');
         	}
         	return result
+        } else {
+        	var result = {error:false};
+        	return result;
         } 
+    } else {
+    	var result = {error:false};
+    	return result;
     }	
 }
 
