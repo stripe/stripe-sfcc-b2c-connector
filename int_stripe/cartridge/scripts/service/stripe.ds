@@ -346,7 +346,6 @@ function authorizePayment(args : Object) {
 	}
 }
 
-
 /**
 * Handling Stripe AVS "check" Statuses when creating Charges
 * After receiving the response from the Stripe Charge submitted during Order placement, 
