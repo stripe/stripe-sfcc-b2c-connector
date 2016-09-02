@@ -10,7 +10,7 @@ var Stripe = require('int_stripe/cartridge/scripts/service/stripe');
 
 function execute( pdict : PipelineDictionary ) : Number
 {
-	var cartId : String = args.cardId;
+	var cardId : String = pdict.cardId;
 	Stripe.MakeDefault(cardId);
 
     return PIPELET_NEXT;
