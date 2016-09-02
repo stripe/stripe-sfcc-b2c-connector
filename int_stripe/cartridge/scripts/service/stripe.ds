@@ -278,6 +278,13 @@ function authorizePayment(args : Object) {
 		var result : dw.svc.Result = service.call(params);
 		if (result.isOk()) {
 			var response = JSON.parse(result.object);
+			var avsFailure : Boolean = handleAVSCheckStatuses(response);
+			if(avsFailure) 
+			{
+				logger.error('Error: {0}', 'Stripe AVS status returned "fail" for address');
+				return PIPELET_ERROR;
+			}
+			
 			return {'transactionID':response.id};
 		} else {
 	    	var response = JSON.parse(result.errorMessage);
@@ -288,6 +295,40 @@ function authorizePayment(args : Object) {
 		logger.error('Error: {0}', e.message);
 		return PIPELET_ERROR;
 	}
+}
+
+
+/**
+* Handling Stripe AVS "check" Statuses when creating Charges
+* After receiving the response from the Stripe Charge submitted during Order placement, 
+* compare values for StripeAvsAddressFail and StripeAvsZipFail, Stripe objects 
+* charge.source.address_line1_check and charge.source.address_line1_check, respectively.
+*/
+function handleAVSCheckStatuses(response) : Boolean 
+{
+	var hasAVSCheckStatusError : Boolean = false;
+	var addressLineCheck : String = response.source.address_line1_check;
+	var zipcodeCheck : String = response.source.address_zip_check;
+	var avsAddressFailures : Array = getStripeAvsAddressFailures();
+	var avsZipFailures : Array = getStripeAvsZipFailures();
+	
+	for (var i = 0; i < avsAddressFailures.length; i++)
+	{
+		if(addressLineCheck == avsAddressFailures[i].value)
+		{
+			hasAVSCheckStatusError = true;
+		}
+	}
+	
+	for (var i = 0; i < avsZipFailures.length; i++)
+	{
+		if(zipcodeCheck  == avsZipFailures[i].value)
+		{
+			hasAVSCheckStatusError = true;
+		}
+	}
+	
+	return hasAVSCheckStatusError;
 }
 
 /**
@@ -317,6 +358,23 @@ function refundCharge(args : Object) {
 	}
 }
 
+/**
+* Gets the StripeAvsAddressFail values for address line 1.
+*/
+function getStripeAvsAddressFailures() : Array
+{
+	var avsAddressFailures : Array = dw.system.Site.getCurrent().getCustomPreferenceValue("stripeAvsAddressFail") == null ? "" : dw.system.Site.getCurrent().getCustomPreferenceValue("stripeAvsAddressFail");
+	return avsAddressFailures;
+}
+
+/**
+* Gets the StripeAvsAddressFail values for the zip code.
+*/
+function getStripeAvsZipFailures() : Array
+{
+	var avsZipFailures : Array =  dw.system.Site.getCurrent().getCustomPreferenceValue("stripeAvsZipFail") == null ? "" : dw.system.Site.getCurrent().getCustomPreferenceValue("stripeAvsZipFail");
+	return avsZipFailures;
+}
 /*
  * Module exports
  */
