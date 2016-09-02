@@ -330,7 +330,7 @@ function authorizePayment(args : Object) {
 			var avsFailure : Boolean = handleAVSCheckStatuses(response);
 			if(avsFailure) 
 			{
-				logger.error('Error: {0}', 'Stripe AVS status returned "fail" for address');
+				logger.error('Error: {0}', dw.web.Resource.msgf('stripe.avsstatus', 'checkout',null));
 				return PIPELET_ERROR;
 			}
 			
