@@ -28,6 +28,7 @@ function execute( pdict : PipelineDictionary ) : Number {
 		// building up file header, it defines the attributes of the feed	
 		var header : ArrayList = new ArrayList();
 		header.add('id');
+		header.add('item_group_id');
 		header.add('title');
 		header.add('description');
 		header.add('product_type');
@@ -48,7 +49,8 @@ function execute( pdict : PipelineDictionary ) : Number {
 			var product : Product = products.next();
 			
 			if (!product.master && product.isOnline() && product.isSearchable()) {
-				var productID : String = empty(product.ID) ? '' : product.ID;			
+				var productID : String = empty(product.ID) ? '' : product.ID;
+				var masterProductId : String = product.masterProduct.ID;		
 				var title : String = empty(product.name) ? '' : product.name;
 				var description : String = getDescription(product);
 				var	productType : String = getCategoryPath(product);
@@ -64,6 +66,7 @@ function execute( pdict : PipelineDictionary ) : Number {
 					
 				var productLine : ArrayList = new ArrayList();
 				productLine.add(productID);
+				productLine.add(masterProductId);
 				productLine.add(title);
 				productLine.add(description);
 				productLine.add(productType);
