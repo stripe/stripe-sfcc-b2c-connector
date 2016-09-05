@@ -9,12 +9,12 @@ var util = require('./util'),
  */
 function initializeMyAccountEvents() {
 	var $form = $('#CreditCardForm');
-	
+
 	$form.on('click', '.cancel-button', function (e) {
         e.preventDefault();
         dialog.close();
     });
-	
+
 	 $form.find('#applyBtn').on('click', function(e) {
 		// Prevent the form from being submitted
 		e.preventDefault();
@@ -46,6 +46,7 @@ function initializeBillingEvents() {
 		    Stripe.card.createToken(formData, stripeResponseHandlerBilling);
 		}
 	});
+
 }
 
 /**
@@ -70,7 +71,7 @@ var getCCData = function ($form) {
 		formData['address_zip'] = $form.find('input[name$="_postal"]').val();
 		formData['address_country'] = $form.find('select[name$="_country"]').val();
 	}
-	
+
 	return formData;
 }
 
@@ -83,7 +84,7 @@ var initializeCCEvents = function () {
 	var CCObj = {
 		owner: $creditCard.find('input[name$="creditCard_owner"]'),
 		number: $creditCard.find('input[name*="_creditCard_number"]'),
-		type: $creditCard.find('select[name$="_type"]'),
+		type: $creditCard.find('input[name$="_type"]'),
 		month: $creditCard.find('[name$="_month"]'),
 		year: $creditCard.find('[name$="_year"]')
 	};
@@ -94,10 +95,45 @@ var initializeCCEvents = function () {
 	});
 }
 
+/**
+ * @function
+ * @description Handle Credit Card Type via Stripe's jquery.payment.js library
+ */
+function stripePaymentTypeCheck($form){
+	// gather relevant form fields
+	var $type = $form.find('input[name$="_type"]');
+	var $number = $form.find('input[name*="_number"]');
+
+	// check for valid payment type
+	// if valid, update form field
+	// otherwise, submit an error
+	if ($.payment.validateCardNumber($number.val())){
+		// Update the type field and continue
+		$type.val($.payment.cardType($number.val()));
+
+		return true;
+	} else {
+		// Reset the 'type' field and throw an error
+		$type.val('');
+		$number.addClass('error');
+		$('.payment-errors').html(Resources.VALIDATE_CREDITCARD);
+	    // Re-enable form submission
+	    $form.find('button[name$="_billing_save"],#applyBtn').prop('disabled', false);
+
+	    return false;
+	}
+}
+
 var stripeResponseHandlerMyAccount = function(status, response) {
     // Grab the form:
     var $form = $('#CreditCardForm');
-    if (response.error) {
+
+	// Check the payment type to make sure it's valid
+	if(!stripePaymentTypeCheck($form)){
+		return false;
+	}
+
+	if (response.error) {
         // Show the errors on the form:
         $form.find('.payment-errors').text(response.error.message);
         // Re-enable form submission
@@ -114,15 +150,21 @@ var stripeResponseHandlerMyAccount = function(status, response) {
             name: button.attr('name'),
             value: button.attr('value')
         }).appendTo($form);
-        
+
         // Submit the form:
         $form.submit();
     }
 }
 
 var stripeResponseHandlerBilling = function(status, response) {
-    // Grab the form:
+	// Grab the form:
 	var $form = $('.checkout-billing');
+
+	// Check the payment type to make sure it's valid
+	if(!stripePaymentTypeCheck($form)){
+		return false;
+	}
+
     if (response.error) {
         // Show the errors on the form:
         $form.find('.payment-errors').text(response.error.message);
@@ -140,7 +182,7 @@ var stripeResponseHandlerBilling = function(status, response) {
             name: button.attr('name'),
             value: button.attr('value')
         }).appendTo($form);
-        
+
         // Submit the form:
         $form.submit();
     }
@@ -153,13 +195,22 @@ var stripeResponseHandlerBilling = function(status, response) {
 function clearCCFields() {
     var $creditCard = $('[data-method="CREDIT_CARD"]');
     $creditCard.find('input[name$="creditCard_owner"]').val('');
-    $creditCard.find('select[name$="_type"]').val('');
+    $creditCard.find('input[name$="_type"]').val('');
     $creditCard.find('input[name*="_creditCard_number"]').val('');
     $creditCard.find('[name$="_month"]').val('');
     $creditCard.find('[name$="_year"]').val('');
     $creditCard.find('input[name*="_cvn"]').val('');
     $creditCard.find('input[name="stripeCardID"]').val('');
 }
+
+/**
+ * @function
+ * @description Initialize the Payment Type Handling Events
+ */
+function handlePaymentType() {
+
+}
+
 
 /**
  * @function

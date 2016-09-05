@@ -48,35 +48,35 @@
       cvcLength: [3],
       luhn: true
     }, {
-      type: 'visa',
+      type: 'Visa',
       patterns: [4],
       format: defaultFormat,
       length: [13, 16],
       cvcLength: [3],
       luhn: true
     }, {
-      type: 'mastercard',
+      type: 'Master Card',
       patterns: [51, 52, 53, 54, 55, 22, 23, 24, 25, 26, 27],
       format: defaultFormat,
       length: [16],
       cvcLength: [3],
       luhn: true
     }, {
-      type: 'amex',
+      type: 'Amex',
       patterns: [34, 37],
       format: /(\d{1,4})(\d{1,6})?(\d{1,5})?/,
       length: [15],
       cvcLength: [3, 4],
       luhn: true
     }, {
-      type: 'dinersclub',
+      type: 'DinersClub',
       patterns: [30, 36, 38, 39],
       format: /(\d{1,4})(\d{1,6})?(\d{1,4})?/,
       length: [14],
       cvcLength: [3],
       luhn: true
     }, {
-      type: 'discover',
+      type: 'Discover',
       patterns: [60, 64, 65, 622],
       format: defaultFormat,
       length: [16],

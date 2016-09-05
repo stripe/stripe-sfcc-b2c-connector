@@ -1,35 +1,38 @@
 <!--- TEMPLATENAME: stripe_paymentmethods.isml --->
-					<table width="100%">
-						<tr>
-							<th>&nbsp;</th>
-							<th>&nbsp;</th>
-							<th>${Resource.msg('billing.nameoncard','checkout',null)}</th>
-							<th>${Resource.msg('billing.expireson','checkout',null)}</th>
-						</tr>
-						<isloop items="${pdict.ApplicableCreditCards}" var="creditCardInstr">
-							<tr>								
-								<td>
-									<input type="radio" ${creditCardInstr.stripeDefaultCard === true ? 'checked=checked' : ''} name="${pdict.CurrentForms.billing.paymentMethods.creditCardList.htmlName}"	value="${creditCardInstr.UUID}">
-								</td>
-								<td>
-									<isprint value="${creditCardInstr.creditCardType}"/> ending in <isprint value="${creditCardInstr.creditCardNumberLastDigits}"/>
-								</td>
-								<td>
-									<isprint value="${creditCardInstr.creditCardHolder}"/>
-								</td>
-								<td>
-									<isprint value="${creditCardInstr.creditCardExpirationMonth}" formatter="00" />/<isprint value="${creditCardInstr.creditCardExpirationYear}" formatter="0000" />
-								</td>						
-							</tr>
-						</isloop>
-						<tr>
-							<td>
-								<input type="radio" ${pdict.ApplicableCreditCards.size() === 0 ? 'checked=checked' : ''} name="${pdict.CurrentForms.billing.paymentMethods.creditCardList.htmlName}"	value="newCard"/> 
-							</td>
-							<td>
-								${Resource.msg('billing.usedifferentcard','checkout',null)}
-							</td>
-							<td>&nbsp;</td>
-							<td>&nbsp;</td>
-						</tr>
-					</table>	
+<table width="100%">
+	<tr>
+		<th>&nbsp;</th>
+		<th>&nbsp;</th>
+		<th>${Resource.msg('billing.nameoncard','checkout',null)}</th>
+		<th>${Resource.msg('billing.expireson','checkout',null)}</th>
+	</tr>
+	<isloop items="${pdict.ApplicableCreditCards}" var="creditCardInstr">
+		<tr>
+			<td>
+				<input type="radio" ${creditCardInstr.stripeDefaultCard === true ? 'checked=checked' : ''} name="${pdict.CurrentForms.billing.paymentMethods.creditCardList.htmlName}"	value="${creditCardInstr.UUID}">
+			</td>
+			<td>
+				<isscript>
+					var cardtypeMsg = 'cardtype.' + creditCardInstr.creditCardType;
+				</isscript>
+				<isprint value="${Resource.msg(cardtypeMsg,'checkout',null)}"/> ending in <isprint value="${creditCardInstr.creditCardNumberLastDigits}"/>
+			</td>
+			<td>
+				<isprint value="${creditCardInstr.creditCardHolder}"/>
+			</td>
+			<td>
+				<isprint value="${creditCardInstr.creditCardExpirationMonth}" formatter="00" />/<isprint value="${creditCardInstr.creditCardExpirationYear}" formatter="0000" />
+			</td>
+		</tr>
+	</isloop>
+	<tr>
+		<td>
+			<input type="radio" ${pdict.ApplicableCreditCards.size() === 0 ? 'checked=checked' : ''} name="${pdict.CurrentForms.billing.paymentMethods.creditCardList.htmlName}"	value="newCard"/>
+		</td>
+		<td>
+			${Resource.msg('billing.usedifferentcard','checkout',null)}
+		</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+</table>

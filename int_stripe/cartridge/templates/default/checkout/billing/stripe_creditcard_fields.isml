@@ -1,35 +1,35 @@
 <!--- TEMPLATENAME: stripe_creditcard_fields.isml --->
-			<div class="card-details" ${pdict.CurrentCustomer.authenticated && !empty(pdict.ApplicableCreditCards) ? "style='display:none;'" : ""}>			
-				<isif condition="${pdict.StripePaymentError && pdict.StripePaymentError.error}">
-					<span class="payment-errors">${pdict.StripePaymentError.message}</span>
-				<iselse/>
-					<span class="payment-errors"></span>
-				</isif>
-	
-				<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.owner}" type="input"/>
-	
-				<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.type}" type="select"/>
-	
-				<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.number}" type="input" dynamicname="true"/>
-	
-				<div class="form-row required">
-					<label>
-						<span class="required-indicator">${Resource.msg('billing.requiredindicator','checkout',null)}</span>
-						<span>${Resource.msg('billing.creditcardlistexpdate', 'checkout', null)}</span>
-					</label>
-					<isscript>
-						var currentCountry = require('app_storefront_core/cartridge/scripts/util/Countries').getCurrent(pdict);
-					</isscript>
-	
-					<isdynamicform formobject="${pdict.CurrentForms.billing.paymentMethods.creditCard.expiration}" formdata="${currentCountry.dynamicForms.expirationInfo}"/>
-	
-				</div>
-	
-				<isscript>
-					var help = {
-						label: Resource.msg('billing.linkcvn', 'checkout', null),
-						cid: 'checkout-security-code'
-					};
-				</isscript>
-				<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.cvn}" type="input" rowclass="cvn" dynamicname="true" help="${help}"/>
-			</div>
+<div class="card-details" ${pdict.CurrentCustomer.authenticated && !empty(pdict.ApplicableCreditCards) ? "style='display:none;'" : ""}>
+	<isif condition="${pdict.StripePaymentError && pdict.StripePaymentError.error}">
+		<span class="payment-errors">${pdict.StripePaymentError.message}</span>
+	<iselse/>
+		<span class="payment-errors"></span>
+	</isif>
+
+	<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.owner}" type="input"/>
+
+	<input type="hidden" name="${pdict.CurrentForms.billing.paymentMethods.creditCard.type.htmlName}" value="${pdict.CurrentForms.billing.paymentMethods.creditCard.type.htmlValue}"/>
+
+	<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.number}" type="input" dynamicname="true"/>
+
+	<div class="form-row required">
+		<label>
+			<span class="required-indicator">${Resource.msg('billing.requiredindicator','checkout',null)}</span>
+			<span>${Resource.msg('billing.creditcardlistexpdate', 'checkout', null)}</span>
+		</label>
+		<isscript>
+			var currentCountry = require('app_storefront_core/cartridge/scripts/util/Countries').getCurrent(pdict);
+		</isscript>
+
+		<isdynamicform formobject="${pdict.CurrentForms.billing.paymentMethods.creditCard.expiration}" formdata="${currentCountry.dynamicForms.expirationInfo}"/>
+
+	</div>
+
+	<isscript>
+		var help = {
+			label: Resource.msg('billing.linkcvn', 'checkout', null),
+			cid: 'checkout-security-code'
+		};
+	</isscript>
+	<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.cvn}" type="input" rowclass="cvn" dynamicname="true" help="${help}"/>
+</div>
