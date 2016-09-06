@@ -8,7 +8,7 @@ var Transaction = require('dw/system/Transaction');
 var PaymentMgr = require('dw/order/PaymentMgr');
 
 var Stripe = require('~/cartridge/scripts/service/stripe');
- 
+
 exports.authorize = function (order, paymentDetails) : Status {
     Logger.debug("@@@@@ authorize hook order =" + order + " paymentinstrument =" + paymentDetails);
     try {
@@ -20,7 +20,7 @@ exports.authorize = function (order, paymentDetails) : Status {
 	    var orderNo = order.orderNo;
 	    var paymentInstrument = paymentDetails;
 	    var paymentProcessor = PaymentMgr.getPaymentMethod(paymentInstrument.getPaymentMethod()).getPaymentProcessor();
-	
+
 	    if (System.Site.getCurrent().getCustomPreferenceValue('stripeRELAYProcessAuthorization')) {
 	        var result = Stripe.AuthorizePayment(params);
             paymentInstrument.paymentTransaction.transactionID = result.transactionID;
@@ -28,10 +28,11 @@ exports.authorize = function (order, paymentDetails) : Status {
 	    } else {
             paymentInstrument.paymentTransaction.transactionID = orderNo;
             paymentInstrument.paymentTransaction.paymentProcessor = paymentProcessor;
-			
+
 		}
     } catch (e) {
     	Logger.error("Error: " + e.message);
+    	return new Status(Status.ERROR);
     }
 
     return new Status(Status.OK);

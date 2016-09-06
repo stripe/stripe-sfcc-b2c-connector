@@ -36,7 +36,7 @@ function addCard(args : Object) : Object{
 				    resultObj = {
 						error: false
                     };
-				    
+
 			    	return resultObj;
 			    } else {
 			    	var response = JSON.parse(result.errorMessage);
@@ -77,7 +77,7 @@ function addCard(args : Object) : Object{
 				    resultObj = {
 						error: false
                     };
-				    
+
 			    	return resultObj;
 			    } else {
 			    	var response = JSON.parse(result.errorMessage);
@@ -130,7 +130,7 @@ function updateCard(args : Object)
 				    resultObj = {
 						error: false
                     };
-				    
+
 			    	return resultObj;
 			    } else {
 			    	//TODO what should we do with error??
@@ -310,7 +310,7 @@ function authorizePayment(args : Object) {
 				params.put('customer', paymentInstrument.custom.stripeCustomerID);
 			} else {
 				if (!empty(paymentInstrument.creditCardToken)){
-					params.put('customer', paymentInstrument.creditCardToken);
+					params.put('source', paymentInstrument.creditCardToken);
 				} else {
 					return PIPELET_ERROR;
 				}
@@ -328,12 +328,12 @@ function authorizePayment(args : Object) {
 		if (result.isOk()) {
 			var response = JSON.parse(result.object);
 			var avsFailure : Boolean = handleAVSCheckStatuses(response);
-			if(avsFailure) 
+			if(avsFailure)
 			{
 				logger.error('Error: {0}', dw.web.Resource.msgf('stripe.avsstatus', 'checkout',null));
 				return PIPELET_ERROR;
 			}
-			
+
 			return {'transactionID':response.id};
 		} else {
 	    	var response = JSON.parse(result.errorMessage);
@@ -348,18 +348,18 @@ function authorizePayment(args : Object) {
 
 /**
 * Handling Stripe AVS "check" Statuses when creating Charges
-* After receiving the response from the Stripe Charge submitted during Order placement, 
-* compare values for StripeAvsAddressFail and StripeAvsZipFail, Stripe objects 
+* After receiving the response from the Stripe Charge submitted during Order placement,
+* compare values for StripeAvsAddressFail and StripeAvsZipFail, Stripe objects
 * charge.source.address_line1_check and charge.source.address_line1_check, respectively.
 */
-function handleAVSCheckStatuses(response) : Boolean 
+function handleAVSCheckStatuses(response) : Boolean
 {
 	var hasAVSCheckStatusError : Boolean = false;
 	var addressLineCheck : String = response.source.address_line1_check;
 	var zipcodeCheck : String = response.source.address_zip_check;
 	var avsAddressFailures : Array = getStripeAvsAddressFailures();
 	var avsZipFailures : Array = getStripeAvsZipFailures();
-	
+
 	for (var i = 0; i < avsAddressFailures.length; i++)
 	{
 		if(addressLineCheck == avsAddressFailures[i].value)
@@ -367,7 +367,7 @@ function handleAVSCheckStatuses(response) : Boolean
 			hasAVSCheckStatusError = true;
 		}
 	}
-	
+
 	for (var i = 0; i < avsZipFailures.length; i++)
 	{
 		if(zipcodeCheck  == avsZipFailures[i].value)
@@ -375,7 +375,7 @@ function handleAVSCheckStatuses(response) : Boolean
 			hasAVSCheckStatusError = true;
 		}
 	}
-	
+
 	return hasAVSCheckStatusError;
 }
 
