@@ -69,7 +69,7 @@ function displayProductFeed() {
 	var lines : List = StripeHelper.DisplayProductFeed();
 	app.getView({
 		Lines: lines
-	}).render('feed/displayProductFeed');
+	}).render('feed/displayproductfeed');
 }
 
 /**
@@ -85,7 +85,7 @@ function afterSubmitBilling()
         	if (!empty(cart.object.customerEmail)) {
         		customerEmail = cart.object.customerEmail;
         	} else if (customer.authenticated) {
-        		customerEmail = customer.profile.email;  
+        		customerEmail = customer.profile.email;
         	}
             var paymentInstrument = cart.getPaymentInstruments(dworder.PaymentInstrument.METHOD_CREDIT_CARD)[0];
             var params = {
@@ -102,7 +102,7 @@ function afterSubmitBilling()
             		app.getForm('billing').object.paymentMethods.creditCard.clearFormElement();
             	}
             	app.getForm('billing').object.fulfilled.value = false;
-            	
+
                 app.getView({
                     Basket: cart.object,
                     StripePaymentError: result,
@@ -127,11 +127,11 @@ function afterSubmitBilling()
         } else {
         	var result = {error:false};
         	return result;
-        } 
+        }
     } else {
     	var result = {error:false};
     	return result;
-    }	
+    }
 }
 
 /**
