@@ -10,7 +10,12 @@
 
 	<input type="hidden" name="${pdict.CurrentForms.billing.paymentMethods.creditCard.type.htmlName}" value="${pdict.CurrentForms.billing.paymentMethods.creditCard.type.htmlValue}"/>
 
-	<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.number}" type="input" dynamicname="true"/>
+	<isscript>
+	var attrFields = {
+		maxlength: pdict.CurrentForms.billing.paymentMethods.creditCard.number.maxLength
+	};
+	 </isscript>
+	<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.number}" attributes="${attrFields}" type="input" dynamicname="true"/>
 
 	<div class="form-row required">
 		<label>
