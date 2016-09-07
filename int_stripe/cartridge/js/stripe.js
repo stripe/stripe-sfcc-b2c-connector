@@ -62,8 +62,8 @@ var getCCData = function ($form) {
 	formData['exp_month'] = $form.find('select[name$="_expiration_month"]').val();
 	formData['exp_year'] = $form.find('select[name$="_expiration_year"]').val();
 	formData['cvc'] = $form.find('input[name*="_cvn"]').val();
-	//send additional information to the Stripe if AVS enabled
-	if (SitePreferences.STRIPE_AVS_ENABLED && $form.hasClass('checkout-billing')) {
+	//send additional information to the Stripe if on the billing form
+	$form.hasClass('checkout-billing')) {
 		formData['address_line1'] = $form.find('input[name$="_address1"]').val();
 		formData['address_line2'] = $form.find('input[name$="_address2"]').val();
 		formData['address_city'] = $form.find('input[name$="_city"]').val();
