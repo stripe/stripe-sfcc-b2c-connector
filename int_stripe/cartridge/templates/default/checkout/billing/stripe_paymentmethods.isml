@@ -1,5 +1,5 @@
 <!--- TEMPLATENAME: stripe_paymentmethods.isml --->
-<table width="100%">
+<table id="stripe-saved-cards" class="form-indent">
 	<tr>
 		<th>&nbsp;</th>
 		<th>&nbsp;</th>
