@@ -1,6 +1,6 @@
 'use strict';
 
-var Logger = require('dw/system').Logger;
+var Logger = require('dw/system/Logger').getLogger('Stripe', 'stripe');
 var System = require('dw/system');
 var dworder = require('dw/order');
 var Status = require('dw/system/Status');
