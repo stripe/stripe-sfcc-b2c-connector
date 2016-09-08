@@ -1,0 +1,123 @@
+{
+	"_v": "16.6",
+	"clients": [{
+		"client_id": "[Your OCAPI Client ID]",
+		"allowed_origins": [],
+		"resources": [{
+				"resource_id": "/basket/{id}",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["get"]
+			}, {
+				"resource_id": "/basket/{id}/add",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["post"]
+			}, {
+				"resource_id": "/baskets",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["post"]
+			},
+
+			{
+				"resource_id": "/baskets/{basket_id}",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["get"]
+			}, {
+				"resource_id": "/baskets/{basket_id}/items",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["post"]
+			}, {
+				"resource_id": "/baskets/{basket_id}/items/{item_id}",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["patch", "delete"]
+			}, {
+				"resource_id": "/baskets/{basket_id}/customer",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["put"]
+			}, {
+				"resource_id": "/baskets/{basket_id}/shipments/{shipment_id}/shipping_methods",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["get"]
+			}, {
+				"resource_id": "/baskets/{basket_id}/shipments/{shipment_id}/shipping_address",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["put"]
+			}, {
+				"resource_id": "/baskets/{basket_id}/shipments/{shipment_id}/shipping_method",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["put"]
+			}, {
+				"resource_id": "/baskets/{basket_id}/payment_methods",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["get"]
+			}, {
+				"resource_id": "/baskets/{basket_id}/payment_instruments",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["post"]
+			}, {
+				"resource_id": "/baskets/{basket_id}/payment_instruments/{payment_instrument_id}",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["delete", "patch"]
+			}, {
+				"resource_id": "/baskets/{basket_id}/billing_address",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["put"]
+			}, {
+				"resource_id": "/baskets/{basket_id}/submit",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["post"]
+			}, {
+				"resource_id": "/customers/auth",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"cache_time": 900,
+				"methods": ["post"]
+			}, {
+				"resource_id": "/orders/{order_no}/payment_instruments",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["post"]
+			}, {
+				"resource_id": "/orders/{order_no}/payment_instruments/{payment_instrument_id}",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["patch"]
+			}, {
+				"resource_id": "/orders/{order_no}/payment_authorize",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["post"]
+			}, {
+				"resource_id": "/orders/{order_no}",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["get"]
+			}, {
+				"resource_id": "/orders",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"methods": ["post"]
+			}, {
+				"resource_id": "/products/{id}",
+				"read_attributes": "(**)",
+				"write_attributes": "(**)",
+				"cache_time": 900,
+				"methods": ["get"]
+			}
+		]
+	}]
+}

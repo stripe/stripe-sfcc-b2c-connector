@@ -1,0 +1,12 @@
+<isscript>
+	var stripeEnabled = require('int_stripe/cartridge/scripts/stripeHelper').IsStripeEnabled();
+</isscript>
+<isif condition="${stripeEnabled}">
+	<isif condition="${creditcard.object.stripeDefaultCard === false}">
+		<a class="section-header-note make-default-card button" href="${URLUtils.url('Stripe-MakeDefault', 'cardId', creditcard.object.stripeCardID)}" title="${Resource.msg('account.paymentinstrumentlist.makedefault.label','account',null)}">
+			${Resource.msg('account.paymentinstrumentlist.makedefault.label','account',null)}
+		</a>
+	<iselse/>
+		${Resource.msg('account.paymentinstrumentlist.markedasdefault.label','account',null)}
+	</isif>
+</isif>

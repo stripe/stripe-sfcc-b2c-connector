@@ -16,6 +16,6 @@ function execute( pdict : PipelineDictionary ) : Number
 	if (StripeHelper.IsStripeEnabled()) {
 		return Stripe.RefundCharge({PaymentInstrument:pdict.PaymentInstrument});
     }
-    
+
     return PIPELET_NEXT;
 }

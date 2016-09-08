@@ -26,18 +26,18 @@ function execute( pdict : PipelineDictionary ) : Number
             PaymentInstrument: pdict.PaymentInstrument
         };
         var result = Stripe.AddCard(params);
-         if (result.error) {
+        if (result.error) {
          	var basket : Basket = pdict.Basket;
          	basket.removePaymentInstrument(PaymentInstrument);
          	pdict.StripePaymentError = result;
          	return PIPELET_ERROR;
-         }
-	} else if (pdict.Customer.authenticated) {
-        	var billingForm = pdict.BillingForm;
-            var paymentInstrument = pdict.PaymentInstrument;
-        	var result = Stripe.UpdateCard({PaymentInstrument : paymentInstrument, BillingAddress : billingForm.billingAddress});
-        	pdict.StripePaymentError = result;
-        	return PIPELET_ERROR;
+        }
+	} else if (StripeHelper.IsStripeEnabled() && pdict.Customer.authenticated) {
+    	var billingForm = pdict.BillingForm;
+        var paymentInstrument = pdict.PaymentInstrument;
+    	var result = Stripe.UpdateCard({PaymentInstrument : paymentInstrument, BillingAddress : billingForm.billingAddress});
+    	pdict.StripePaymentError = result;
+    	return PIPELET_ERROR;
     } else {
     	var result:Object = {error:false};
     	pdict.StripePaymentError = result;

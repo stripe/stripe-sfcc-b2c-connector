@@ -37,4 +37,8 @@
 		};
 	</isscript>
 	<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.cvn}" type="input" rowclass="cvn" dynamicname="true" help="${help}"/>
+
+	<input type="hidden" name="stripeToken"/>
+	<input type="hidden" name="stripeCardID"/>
+
 </div>
