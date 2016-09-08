@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schedules xmlns="http://www.demandware.com/xml/impex/schedules/2007-03-31">
+    <schedule schedule-id="GenerateStripeProductFeed">
+        <description/>
+        <enabled-flag>false</enabled-flag>
+        <execution-scope>site</execution-scope>
+        <pipeline>
+            <name>Stripe</name>
+            <startnode>GenerateProductFeed</startnode>
+        </pipeline>
+        <sites>
+            <site site-id="SiteGenesis"/>
+        </sites>
+        <run-once>2016-08-01T09:44:00.000Z</run-once>
+        <notification>
+            <enabled-flag>false</enabled-flag>
+            <hang-detection-enabled-flag>false</hang-detection-enabled-flag>
+        </notification>
+    </schedule>
+</schedules>
