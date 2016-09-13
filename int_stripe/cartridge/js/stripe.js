@@ -1,6 +1,7 @@
 'use strict';
 
-var util = require('./util'),
+var ajax = require('./ajax'),
+	util = require('./util'),
 	dialog = require('./dialog');
 
 /**
@@ -47,6 +48,60 @@ function initializeBillingEvents() {
 		}
 	});
 
+	// Saved Card functionality for showing new card form
+	$('input[name$="_creditCardList"]').on('change',function(){
+		var cardVal = $(this).filter(':checked').val();
+		if (cardVal !== undefined && cardVal.length !== 0) {
+			if (cardVal === 'newCard') {
+	        	clearCCFields();
+	        	$('.card-details').show();
+	        } else {
+	        	$('.card-details').hide();
+	        }
+		}
+		populateCreditCardForm(cardVal);
+        // remove server side error
+        $('.required.error').removeClass('error');
+        $('.error-message').remove();
+	});
+	$('input[name$="_creditCardList"]:checked').trigger('change');
+
+}
+
+/**
+ * @function
+ * @description Updates the credit card form with the attributes of a given card
+ * @param {String} cardID the credit card ID of a given card
+ */
+function populateCreditCardForm(cardID) {
+	var url = util.appendParamToURL(Urls.stripeBillingSelectCC, 'creditCardUUID', cardID);
+
+    ajax.getJson({
+        url: url,
+        callback: function (data) {
+            if (!data) {
+                window.alert(Resources.CC_LOAD_ERROR);
+                return false;
+            }
+            setCCFields(data);
+        }
+    });
+}
+
+/**
+ * @function
+ * @description Fills the Credit Card form with the passed data-parameter and clears the former cvn input
+ * @param {Object} data The Credit Card data (holder, type, masked number, expiration month/year)
+ */
+function setCCFields(data) {
+    var $creditCard = $('[data-method="CREDIT_CARD"]');
+    $creditCard.find('input[name$="creditCard_owner"]').val(data.holder).trigger('change');
+    $creditCard.find('input[name$="_type"]').val(data.type).trigger('change');
+    $creditCard.find('input[name*="_creditCard_number"]').val(data.maskedNumber).trigger('change');
+    $creditCard.find('[name$="_month"]').val(data.expirationMonth).trigger('change');
+    $creditCard.find('[name$="_year"]').val(data.expirationYear).trigger('change');
+    $creditCard.find('input[name*="_cvn"]').val('123');
+    $creditCard.find('input[name="stripeCardID"]').val(data.stripeCardID);
 }
 
 /**
