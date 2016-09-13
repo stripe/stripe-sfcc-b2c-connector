@@ -330,6 +330,8 @@ function authorizePayment(args : Object) {
 			var avsFailure : Boolean = handleAVSCheckStatuses(response);
 			if(avsFailure)
 			{
+				// Refund the Charge and return an error
+		        refundCharge({chargeID : response.id});
 				logger.error('Error: {0}', dw.web.Resource.msgf('stripe.avsstatus', 'checkout',null));
 				return PIPELET_ERROR;
 			}
@@ -383,11 +385,14 @@ function handleAVSCheckStatuses(response) : Boolean
 * Refunds a charge that has previously been created.
 */
 function refundCharge(args : Object) {
-    var paymentInstrument : dw.order.PaymentInstrument = args.PaymentInstrument;
+    var chargeID : String = args.chargeID;
+    if(chargeID == null){
+	    chargeID = args.PaymentInstrument.paymentTransaction.transactionID;
+    }
     try {
 		var service : Service = ServiceRegistry.get('stripe.http.refundCharge');
 		var params : Object = {
-			charge: paymentInstrument.paymentTransaction.transactionID,
+			charge: chargeID,
 		};
 		// send request
 		var result : dw.svc.Result = service.call(params);
