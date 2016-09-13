@@ -1,5 +1,5 @@
 {
-	"_v": "16.6",
+	"_v": "16.8”,
 	"clients": [{
 		"client_id": "[Your OCAPI Client ID]",
 		"allowed_origins": [],

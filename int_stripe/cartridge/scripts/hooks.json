@@ -17,8 +17,8 @@
 			"script":"./hooks/afterPostPaymentInstrument.js"
 		},
 		{
-			"name": "dw.ocapi.shop.basket.afterSetShippingAddress",
-			"script":"./hooks/afterSetShippingAddress.js"
+			"name": "dw.ocapi.shop.basket.afterPutShippingAddress",
+			"script":"./hooks/afterPutShippingAddress.js"
 		}
 	]
 }
