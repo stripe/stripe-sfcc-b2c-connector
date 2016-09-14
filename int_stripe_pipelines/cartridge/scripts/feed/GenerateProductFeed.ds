@@ -2,7 +2,7 @@
 *	Stripe Product Feed Script
 *	It is used to generate a text file containing a list of products and its attributes
 *
-*   @output OutFile : dw.io.File 
+*   @output OutFile : dw.io.File
 */
 importPackage( dw.system );
 importPackage( dw.catalog );
@@ -11,13 +11,13 @@ importPackage( dw.web );
 importPackage( dw.io );
 
 function execute( pdict : PipelineDictionary ) : Number {
-	
+
 	//var timestamp : String = StringUtils.formatCalendar(new Calendar(), 'yyyyMMddHHmmss');timestamp
 	var filePath : String = empty(Site.getCurrent().getCustomPreferenceValue('stripeProductFeedDirectory')) ? 'src/stripe/feed' : Site.getCurrent().getCustomPreferenceValue('stripeProductFeedDirectory');
 	var fileName : String = empty(Site.getCurrent().getCustomPreferenceValue('stripeProductFeedFileName')) ? 'stripeProductFeed' + '.txt' : Site.getCurrent().getCustomPreferenceValue('stripeProductFeedFileName') + '.txt';
 	var defaultBrandName : String = empty(Site.getCurrent().getCustomPreferenceValue('stripeProductFeedDefaultBrandName')) ? 'brand' : Site.getCurrent().getCustomPreferenceValue('stripeProductFeedDefaultBrandName');
 	var logger : Logger = Logger.getLogger('StripeProductFeed', 'stripe');
-	
+
 	try {
 		// creating feed directories
 		(new File(File.IMPEX + File.SEPARATOR + filePath)).mkdirs();
@@ -25,7 +25,7 @@ function execute( pdict : PipelineDictionary ) : Number {
 		var file : File = new File(File.IMPEX + File.SEPARATOR + filePath + File.SEPARATOR + fileName);
 		var exportFileWriter : FileWriter = new FileWriter(file);
 		var products : SeekableIterator = ProductMgr.queryAllSiteProducts();
-		// building up file header, it defines the attributes of the feed	
+		// building up file header, it defines the attributes of the feed
 		var header : ArrayList = new ArrayList();
 		header.add('id');
 		header.add('item_group_id');
@@ -41,16 +41,19 @@ function execute( pdict : PipelineDictionary ) : Number {
 		header.add('color');
 		header.add('size');
 		header.add('availability');
-		
+
 		exportFileWriter.writeLine(header.join('\t'));
-				
+
 		// the product attributes are being retrieved here
 		while (products.hasNext()) {
 			var product : Product = products.next();
-			
+
 			if (!product.master && product.isOnline() && product.isSearchable()) {
 				var productID : String = empty(product.ID) ? '' : product.ID;
-				var masterProductId : String = product.masterProduct.ID;		
+				var masterProductId : String = "";
+				if(product.isVariant()){
+					masterProductId = product.variationModel.master.ID;
+				}
 				var title : String = empty(product.name) ? '' : product.name;
 				var description : String = getDescription(product);
 				var	productType : String = getCategoryPath(product);
@@ -63,7 +66,7 @@ function execute( pdict : PipelineDictionary ) : Number {
 				var color : String = getProductAttributeDisplayValue(product, 'color');
 				var size : String = getProductAttributeDisplayValue(product, 'size');
 				var availability : String = getProductAvailability(product);
-					
+
 				var productLine : ArrayList = new ArrayList();
 				productLine.add(productID);
 				productLine.add(masterProductId);
@@ -79,11 +82,11 @@ function execute( pdict : PipelineDictionary ) : Number {
 				productLine.add(color);
 				productLine.add(size);
 				productLine.add(availability);
-				
+
 				exportFileWriter.writeLine(productLine.join('\t'));
 			}
 		}
-		
+
 	   exportFileWriter.flush();
 	   exportFileWriter.close();
 	   pdict.OutFile = file;
@@ -129,8 +132,8 @@ function getProductAttributeDisplayValue(product: Product, variationAttributeNam
 */
 function getProductAvailability(product: Product) : String {
 	var availability : String = 'out of stock';
-	var inventoryRecord: ProductInventoryRecord = ProductInventoryMgr.getInventoryList().getRecord(product); 
-	
+	var inventoryRecord: ProductInventoryRecord = ProductInventoryMgr.getInventoryList().getRecord(product);
+
 	if (!empty(inventoryRecord)) {
 		var quantity : Number = inventoryRecord.getATS().getValue();
 		if (quantity > 0) {
@@ -147,13 +150,13 @@ function getProductAvailability(product: Product) : String {
 * Gets product category path.
 */
 function getCategoryPath(product : Product) : String {
-	var categoryPath : String = '';	
+	var categoryPath : String = '';
 	var topProduct : Product = product;
-	
+
 	if (topProduct.isVariant()) {
-		topProduct = product.masterProduct;	
+		topProduct = product.masterProduct;
 	}
-	
+
 	var theCategory : Category = topProduct.getPrimaryCategory();
 	if (empty(theCategory)) {
 		var categories : Collection = topProduct.categories;
@@ -161,18 +164,18 @@ function getCategoryPath(product : Product) : String {
 			theCategory = categories[0];
 		}
 	}
-	
+
 	var category : Category = theCategory;
 	var path : ArrayList = new ArrayList();
-	
+
 	while (!empty(category.parent)) {
 		if (category.online) {
 			path.addAt(0, category.getDisplayName());
-		}	
+		}
 		category = category.parent;
 	}
-	
+
 	categoryPath = path.join('>');
-	
+
 	return categoryPath;
 }
