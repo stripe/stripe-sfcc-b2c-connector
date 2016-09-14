@@ -37,7 +37,9 @@ function execute( pdict : PipelineDictionary ) : Number
         var paymentInstrument = pdict.PaymentInstrument;
     	var result = Stripe.UpdateCard({PaymentInstrument : paymentInstrument, BillingAddress : billingForm.billingAddress});
     	pdict.StripePaymentError = result;
-    	return PIPELET_ERROR;
+    	if(result.error){
+	    	return PIPELET_ERROR;
+    	}
     } else {
     	var result:Object = {error:false};
     	pdict.StripePaymentError = result;
