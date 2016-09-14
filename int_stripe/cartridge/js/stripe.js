@@ -57,9 +57,9 @@ function initializeBillingEvents() {
 	        	$('.card-details').show();
 	        } else {
 	        	$('.card-details').hide();
+	    		populateCreditCardForm(cardVal);
 	        }
 		}
-		populateCreditCardForm(cardVal);
         // remove server side error
         $('.required.error').removeClass('error');
         $('.error-message').remove();
