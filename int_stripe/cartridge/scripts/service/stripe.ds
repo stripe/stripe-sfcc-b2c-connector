@@ -327,13 +327,14 @@ function authorizePayment(args : Object) {
 		var result : dw.svc.Result = service.call(params);
 		if (result.isOk()) {
 			var response = JSON.parse(result.object);
-			var avsFailure : Boolean = handleAVSCheckStatuses(response);
-			if(avsFailure)
+			var avsFailure : Object = handleAVSCheckStatuses(response);
+			if(avsFailure.error)
 			{
 				// Refund the Charge and return an error
 		        refundCharge({chargeID : response.id});
 				logger.error('Error: {0}', dw.web.Resource.msgf('stripe.avsstatus', 'checkout',null));
-				return PIPELET_ERROR;
+
+				return avsFailure;
 			}
 
 			return {'transactionID':response.id};
@@ -354,9 +355,10 @@ function authorizePayment(args : Object) {
 * compare values for StripeAvsAddressFail and StripeAvsZipFail, Stripe objects
 * charge.source.address_line1_check and charge.source.address_line1_check, respectively.
 */
-function handleAVSCheckStatuses(response) : Boolean
+function handleAVSCheckStatuses(response) : Object
 {
-	var hasAVSCheckStatusError : Boolean = false;
+	var AVSCheckStatusError : Object = {};
+	AVSCheckStatusError.error = false;
 	var addressLineCheck : String = response.source.address_line1_check;
 	var zipcodeCheck : String = response.source.address_zip_check;
 	var avsAddressFailures : Array = getStripeAvsAddressFailures();
@@ -366,7 +368,8 @@ function handleAVSCheckStatuses(response) : Boolean
 	{
 		if(addressLineCheck == avsAddressFailures[i].value)
 		{
-			hasAVSCheckStatusError = true;
+			AVSCheckStatusError.error = true;
+			AVSCheckStatusError.errormessage = 'stripe.addressfailure';
 		}
 	}
 
@@ -374,11 +377,12 @@ function handleAVSCheckStatuses(response) : Boolean
 	{
 		if(zipcodeCheck  == avsZipFailures[i].value)
 		{
-			hasAVSCheckStatusError = true;
+			AVSCheckStatusError.error = true;
+			AVSCheckStatusError.errormessage = 'stripe.zipcodefailure';
 		}
 	}
 
-	return hasAVSCheckStatusError;
+	return AVSCheckStatusError;
 }
 
 /**

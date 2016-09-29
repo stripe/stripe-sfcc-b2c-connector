@@ -62,11 +62,11 @@ function Authorize(args) {
     };
 
     var result = Stripe.AuthorizePayment(params);
-    
-    if (result === PIPELET_ERROR) {
-    	return {error: true};
+
+    if (result.error) {
+    	return result;
     }
-    
+
     Transaction.wrap(function () {
         paymentInstrument.paymentTransaction.transactionID = result.transactionID;
         paymentInstrument.paymentTransaction.paymentProcessor = paymentProcessor;
