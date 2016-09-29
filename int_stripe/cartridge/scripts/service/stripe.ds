@@ -325,6 +325,8 @@ function authorizePayment(args : Object) {
 		params.put('description', 'Charge for ' + customerEmail);
 		// send request
 		var result : dw.svc.Result = service.call(params);
+		var statusCode = service.getClient().statusCode;
+		var statusMessage = service.getClient().statusMessage;
 		if (result.isOk()) {
 			var response = JSON.parse(result.object);
 			var avsFailure : Object = handleAVSCheckStatuses(response);
@@ -341,7 +343,12 @@ function authorizePayment(args : Object) {
 		} else {
 	    	var response = JSON.parse(result.errorMessage);
 	    	logger.error('Error: {0}', response.error.message);
-			return PIPELET_ERROR;
+	    	if(response.error.code == 'card_declined') {
+	    		var result : Object = {};
+	    		result.error = true;
+	    		result.errormessage = response.error.message;
+	    	}
+			return result;
 		}
 	} catch (e) {
 		logger.error('Error: {0}', e.message);
