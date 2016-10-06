@@ -5,6 +5,7 @@
 * @input PaymentInstrument : dw.order.PaymentInstrument
 * @input Order : dw.order.Order
 * @output TransactionID : String
+* @output AuthError : Object
 *
 */
 importPackage( dw.system );
@@ -18,11 +19,18 @@ function execute( pdict : PipelineDictionary ) : Number
     		Order: pdict.Order,
     		PaymentInstrument: pdict.PaymentInstrument
     };
-    
+
 	var result = Stripe.AuthorizePayment(params);
-	
-	if (result === PIPELET_ERROR) {
-		return PIPELET_ERROR;
+
+    if(result.error)
+    {
+    	if(!empty(result.errorMessage))
+    	{
+    		result.errorMessage = 'confirm.error.technical';
+    	}
+    	pdict.AuthError = result;
+
+	   	return PIPELET_ERROR;
 	} else {
 		pdict.TransactionID = result.transactionID;
 		return PIPELET_NEXT;

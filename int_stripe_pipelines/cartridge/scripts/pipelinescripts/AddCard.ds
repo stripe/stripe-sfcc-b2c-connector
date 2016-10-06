@@ -28,7 +28,7 @@ function execute( pdict : PipelineDictionary ) : Number
         var result = Stripe.AddCard(params);
         if (result.error) {
          	var basket : Basket = pdict.Basket;
-         	basket.removePaymentInstrument(PaymentInstrument);
+         	basket.removePaymentInstrument(params.PaymentInstrument);
          	pdict.StripePaymentError = result;
          	return PIPELET_ERROR;
         }
