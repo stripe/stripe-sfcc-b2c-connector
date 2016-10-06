@@ -64,7 +64,17 @@ function initializeBillingEvents() {
         $('.required.error').removeClass('error');
         $('.error-message').remove();
 	});
-	$('input[name$="_creditCardList"]:checked').trigger('change');
+
+	// On load, show/hide the 'new card' form
+	// If there is an error message, then show the card form.
+	// Otherwise, use default behavior
+	var $errors = $('.card-details .payment-errors');
+	if($errors.length > 0 && $errors.text().length > 0) {
+		$('input[value="newCard"]').prop('checked',true);
+    	$('.card-details').show();
+	} else {
+		$('input[name$="_creditCardList"]:checked').trigger('change');
+	}
 
 }
 
