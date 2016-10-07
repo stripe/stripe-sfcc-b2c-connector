@@ -3,7 +3,7 @@
 
     <type-extension type-id="OrderPaymentInstrument">
         <custom-attribute-definitions>
-            <attribute-definition attribute-id="stripeCardID">
+            <attribute-definition attribute-id=" ">
                 <display-name xml:lang="x-default">Stripe Card ID</display-name>
                 <type>string</type>
                 <mandatory-flag>false</mandatory-flag>
@@ -160,6 +160,9 @@
                 <attribute attribute-id="stripePublicKey"/>
                 <attribute attribute-id="stripeAvsAddressFail"/>
                 <attribute attribute-id="stripeAvsZipFail"/>
+            </attribute-group>
+            <attribute-group group-id="Stripe Relay Configs">
+                <display-name xml:lang="x-default">Stripe Relay Configurations</display-name>
                 <attribute attribute-id="stripeRELAYProcessAuthorization"/>
                 <attribute attribute-id="stripeProductFeedDirectory"/>
                 <attribute attribute-id="stripeProductFeedFileName"/>
