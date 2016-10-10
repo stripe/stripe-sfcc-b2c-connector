@@ -103,9 +103,11 @@ function afterSubmitBilling()
             	}
             	app.getForm('billing').object.fulfilled.value = false;
 
+            	var stripeCreditCards = Stripe.FetchCards();
                 app.getView({
                     Basket: cart.object,
                     StripePaymentError: result,
+                	ApplicableCreditCards: stripeCreditCards,
                     ContinueURL: URLUtils.https('COBilling-Billing')
                 }).render('checkout/billing/billing');
 
