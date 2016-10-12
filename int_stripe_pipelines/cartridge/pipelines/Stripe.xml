@@ -176,7 +176,11 @@
         <call-node start-name-ref="Cart-GetExistingBasket"/>
         <node-display x="0" y="1"/>
       </node>
-      <simple-transition/>
+      <simple-transition>
+        <transition-display>
+          <bend-point relative-to="source" x="0" y="1"/>
+        </transition-display>
+      </simple-transition>
       <node>
         <pipelet-node pipelet-name="Script" pipelet-set-identifier="bc_api">
           <config-property key="Transactional" value="true"/>
@@ -184,7 +188,7 @@
           <config-property key="ScriptFile" value="pipelinescripts/AddCard.ds"/>
           <key-binding alias="Log" key="ScriptLog"/>
           <key-binding alias="CurrentHttpParameterMap.stripeToken.value" key="StripeToken"/>
-          <key-binding alias="Basket.getPaymentInstruments(dw.order.PaymentInstrument.METHOD_CREDIT_CARD)[0]" key="PaymentInstrument"/>
+          <key-binding alias="PaymentInstrument" key="PaymentInstrument"/>
           <key-binding alias="CurrentHttpParameterMap.stripeCardID.value" key="StripeCardID"/>
           <key-binding alias="Basket" key="Basket"/>
           <key-binding alias="StripePaymentError" key="StripePaymentError"/>
@@ -193,7 +197,11 @@
         </pipelet-node>
         <node-display x="0" y="1"/>
         <branch basename="b2" source-connector="error">
-          <transition target-connector="in"/>
+          <transition target-connector="in">
+            <transition-display>
+              <bend-point relative-to="source" x="1" y="0"/>
+            </transition-display>
+          </transition>
           <segment>
             <node>
               <pipelet-node pipelet-name="ClearFormElement" pipelet-set-identifier="bc_api">
@@ -203,6 +211,8 @@
             </node>
             <simple-transition>
               <transition-display>
+                <bend-point relative-to="source" x="1" y="0"/>
+                <bend-point relative-to="source" x="1" y="1"/>
                 <bend-point relative-to="source" x="0" y="1"/>
               </transition-display>
             </simple-transition>
@@ -215,12 +225,12 @@
       </node>
       <simple-transition>
         <transition-display>
-          <bend-point relative-to="source" x="0" y="1"/>
+          <bend-point relative-to="target" x="0" y="-1"/>
         </transition-display>
       </simple-transition>
       <node>
         <end-node/>
-        <node-display x="0" y="1"/>
+        <node-display x="0" y="2"/>
       </node>
     </segment>
   </branch>

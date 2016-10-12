@@ -55,8 +55,13 @@ function initializeBillingEvents() {
 			if (cardVal === 'newCard') {
 	        	clearCCFields();
 	        	$('.card-details').show();
-	        } else {
-	        	$('.card-details').hide();
+			} else {
+	        	var cardError = $('span.payment-errors').text();
+	        	if(cardError != "") {
+	        		$('.card-details').show();
+	        	} else {
+	        		$('.card-details').hide();
+	        	}
 	    		populateCreditCardForm(cardVal);
 	        }
 		}
