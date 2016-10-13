@@ -176,7 +176,147 @@
         <call-node start-name-ref="Cart-GetExistingBasket"/>
         <node-display x="0" y="1"/>
       </node>
-      <simple-transition/>
+      <simple-transition>
+        <transition-display>
+          <bend-point relative-to="source" x="0" y="1"/>
+        </transition-display>
+      </simple-transition>
+      <node>
+        <decision-node condition-key="TriggeredForm.submittedAction.formId == 'create'" condition-operator="expr"/>
+        <node-display x="0" y="1"/>
+        <branch basename="b2" source-connector="yes">
+          <transition target-connector="in">
+            <transition-display>
+              <bend-point relative-to="source" x="0" y="1"/>
+            </transition-display>
+          </transition>
+          <segment>
+            <node>
+              <pipelet-node pipelet-name="Assign" pipelet-set-identifier="bc_api">
+                <config-property key="Transactional" value="false"/>
+                <key-binding alias="true" key="From_0"/>
+                <key-binding alias="IsMyAccount" key="To_0"/>
+                <key-binding alias="null" key="From_1"/>
+                <key-binding alias="null" key="To_1"/>
+                <key-binding alias="null" key="From_2"/>
+                <key-binding alias="null" key="To_2"/>
+                <key-binding alias="null" key="From_3"/>
+                <key-binding alias="null" key="To_3"/>
+                <key-binding alias="null" key="From_4"/>
+                <key-binding alias="null" key="To_4"/>
+                <key-binding alias="null" key="From_5"/>
+                <key-binding alias="null" key="To_5"/>
+                <key-binding alias="null" key="From_6"/>
+                <key-binding alias="null" key="To_6"/>
+                <key-binding alias="null" key="From_7"/>
+                <key-binding alias="null" key="To_7"/>
+                <key-binding alias="null" key="From_8"/>
+                <key-binding alias="null" key="To_8"/>
+                <key-binding alias="null" key="From_9"/>
+                <key-binding alias="null" key="To_9"/>
+              </pipelet-node>
+              <node-display x="0" y="1"/>
+            </node>
+            <simple-transition>
+              <transition-display>
+                <bend-point relative-to="source" x="0" y="1"/>
+                <bend-point relative-to="source" x="-1" y="1"/>
+                <bend-point relative-to="target" x="-1" y="0"/>
+              </transition-display>
+            </simple-transition>
+            <node>
+              <decision-node condition-key="!empty(StripeToken)" condition-operator="expr"/>
+              <node-display orientation="horizontal" x="0" y="1"/>
+              <branch basename="b2" source-connector="yes">
+                <transition target-connector="in">
+                  <transition-display>
+                    <bend-point relative-to="source" x="1" y="0"/>
+                  </transition-display>
+                </transition>
+                <segment>
+                  <node>
+                    <pipelet-node pipelet-name="Assign" pipelet-set-identifier="bc_api">
+                      <config-property key="Transactional" value="false"/>
+                      <key-binding alias="null" key="From_0"/>
+                      <key-binding alias="StripePaymentError" key="To_0"/>
+                      <key-binding alias="null" key="From_1"/>
+                      <key-binding alias="null" key="To_1"/>
+                      <key-binding alias="null" key="From_2"/>
+                      <key-binding alias="null" key="To_2"/>
+                      <key-binding alias="null" key="From_3"/>
+                      <key-binding alias="null" key="To_3"/>
+                      <key-binding alias="null" key="From_4"/>
+                      <key-binding alias="null" key="To_4"/>
+                      <key-binding alias="null" key="From_5"/>
+                      <key-binding alias="null" key="To_5"/>
+                      <key-binding alias="null" key="From_6"/>
+                      <key-binding alias="null" key="To_6"/>
+                      <key-binding alias="null" key="From_7"/>
+                      <key-binding alias="null" key="To_7"/>
+                      <key-binding alias="null" key="From_8"/>
+                      <key-binding alias="null" key="To_8"/>
+                      <key-binding alias="null" key="From_9"/>
+                      <key-binding alias="null" key="To_9"/>
+                    </pipelet-node>
+                    <node-display orientation="horizontal" x="1" y="0"/>
+                  </node>
+                  <transition target-connector="in1" target-path="../../+1/b2.1">
+                    <transition-display>
+                      <bend-point relative-to="source" x="1" y="0"/>
+                      <bend-point relative-to="target" x="1" y="0"/>
+                    </transition-display>
+                  </transition>
+                </segment>
+              </branch>
+            </node>
+            <transition target-connector="in1" target-path="../+1"/>
+          </segment>
+        </branch>
+      </node>
+      <simple-transition>
+        <transition-display>
+          <bend-point relative-to="source" x="2" y="0"/>
+          <bend-point relative-to="target" x="0" y="-1"/>
+        </transition-display>
+      </simple-transition>
+      <node>
+        <pipelet-node pipelet-name="Assign" pipelet-set-identifier="bc_api">
+          <config-property key="Transactional" value="false"/>
+          <key-binding alias="false" key="From_0"/>
+          <key-binding alias="IsMyAccount" key="To_0"/>
+          <key-binding alias="null" key="From_1"/>
+          <key-binding alias="null" key="To_1"/>
+          <key-binding alias="null" key="From_2"/>
+          <key-binding alias="null" key="To_2"/>
+          <key-binding alias="null" key="From_3"/>
+          <key-binding alias="null" key="To_3"/>
+          <key-binding alias="null" key="From_4"/>
+          <key-binding alias="null" key="To_4"/>
+          <key-binding alias="null" key="From_5"/>
+          <key-binding alias="null" key="To_5"/>
+          <key-binding alias="null" key="From_6"/>
+          <key-binding alias="null" key="To_6"/>
+          <key-binding alias="null" key="From_7"/>
+          <key-binding alias="null" key="To_7"/>
+          <key-binding alias="null" key="From_8"/>
+          <key-binding alias="null" key="To_8"/>
+          <key-binding alias="null" key="From_9"/>
+          <key-binding alias="null" key="To_9"/>
+        </pipelet-node>
+        <node-display x="1" y="1"/>
+      </node>
+      <transition target-connector="in1" target-path="./+1"/>
+    </segment>
+    <segment>
+      <node>
+        <join-node/>
+        <node-display x="-1" y="2"/>
+      </node>
+      <simple-transition>
+        <transition-display>
+          <bend-point relative-to="source" x="0" y="1"/>
+        </transition-display>
+      </simple-transition>
       <node>
         <pipelet-node pipelet-name="Script" pipelet-set-identifier="bc_api">
           <config-property key="Transactional" value="true"/>
@@ -184,22 +324,37 @@
           <config-property key="ScriptFile" value="pipelinescripts/AddCard.ds"/>
           <key-binding alias="Log" key="ScriptLog"/>
           <key-binding alias="CurrentHttpParameterMap.stripeToken.value" key="StripeToken"/>
-          <key-binding alias="Basket.getPaymentInstruments(dw.order.PaymentInstrument.METHOD_CREDIT_CARD)[0]" key="PaymentInstrument"/>
+          <key-binding alias="PaymentInstrument" key="PaymentInstrument"/>
           <key-binding alias="CurrentHttpParameterMap.stripeCardID.value" key="StripeCardID"/>
           <key-binding alias="Basket" key="Basket"/>
           <key-binding alias="StripePaymentError" key="StripePaymentError"/>
           <key-binding alias="CurrentCustomer" key="Customer"/>
           <key-binding alias="CurrentForms.billing" key="BillingForm"/>
+          <key-binding alias="IsMyAccount" key="IsMyAccount"/>
         </pipelet-node>
         <node-display x="0" y="1"/>
         <branch basename="b2" source-connector="error">
-          <transition target-connector="in"/>
+          <transition target-connector="in1" transaction-control="begin">
+            <transition-display>
+              <bend-point relative-to="source" x="1" y="0"/>
+              <bend-point relative-to="target" x="-1" y="0"/>
+            </transition-display>
+          </transition>
           <segment>
+            <node>
+              <join-node/>
+              <node-display x="1" y="-1"/>
+            </node>
+            <simple-transition>
+              <transition-display>
+                <bend-point relative-to="source" x="0" y="1"/>
+              </transition-display>
+            </simple-transition>
             <node>
               <pipelet-node pipelet-name="ClearFormElement" pipelet-set-identifier="bc_api">
                 <key-binding alias="CurrentForms.billing.paymentMethods.creditCard" key="FormElement"/>
               </pipelet-node>
-              <node-display orientation="horizontal" x="1" y="0"/>
+              <node-display x="0" y="1"/>
             </node>
             <simple-transition>
               <transition-display>
@@ -300,16 +455,6 @@
       </node>
     </segment>
   </branch>
-  <branch basename="_ANONYMOUS_BRANCH_11">
-    <segment>
-      <node>
-        <text-node>
-          <description>Pipeline called by the custom Scheduled Job to Generate a Product Feed</description>
-        </text-node>
-        <node-display x="7" y="7"/>
-      </node>
-    </segment>
-  </branch>
   <branch basename="AuthorizePayment">
     <segment>
       <node>
@@ -404,48 +549,23 @@
       </node>
     </segment>
   </branch>
-  <branch basename="GenerateProductFeed">
+  <branch basename="_ANONYMOUS_BRANCH_13">
     <segment>
       <node>
-        <start-node call-mode="private" name="GenerateProductFeed" secure="false"/>
-        <node-display x="7" y="8"/>
+        <text-node>
+          <description>Adding in the transaction node on error as this pipeline is called after the transaction is started for Billing. But when not in billing context will error out when rolling back the transaction</description>
+        </text-node>
+        <node-display x="6" y="8"/>
       </node>
-      <simple-transition>
-        <transition-display>
-          <bend-point relative-to="source" x="0" y="1"/>
-        </transition-display>
-      </simple-transition>
+    </segment>
+  </branch>
+  <branch basename="_ANONYMOUS_BRANCH_14">
+    <segment>
       <node>
-        <pipelet-node pipelet-name="Script" pipelet-set-identifier="bc_api">
-          <config-property key="Transactional" value="false"/>
-          <config-property key="OnError" value="PIPELET_ERROR"/>
-          <config-property key="ScriptFile" value="feed/GenerateProductFeed.ds"/>
-          <key-binding alias="null" key="ScriptLog"/>
-        </pipelet-node>
-        <node-display x="0" y="1"/>
-        <branch basename="b2" source-connector="error">
-          <transition target-connector="in">
-            <transition-display>
-              <bend-point relative-to="source" x="2" y="0"/>
-              <bend-point relative-to="target" x="0" y="-1"/>
-            </transition-display>
-          </transition>
-          <segment>
-            <node>
-              <end-node name="error"/>
-              <node-display x="1" y="1"/>
-            </node>
-          </segment>
-        </branch>
-      </node>
-      <simple-transition>
-        <transition-display>
-          <bend-point relative-to="source" x="0" y="1"/>
-        </transition-display>
-      </simple-transition>
-      <node>
-        <end-node/>
-        <node-display x="0" y="1"/>
+        <text-node>
+          <description>Pipeline called by the custom Scheduled Job to Generate a Product Feed</description>
+        </text-node>
+        <node-display x="8" y="11"/>
       </node>
     </segment>
   </branch>
@@ -572,6 +692,51 @@
         <interaction-node transaction-required="false">
           <template buffered="true" dynamic="false" name="feed/displayproductfeed"/>
         </interaction-node>
+        <node-display x="0" y="1"/>
+      </node>
+    </segment>
+  </branch>
+  <branch basename="GenerateProductFeed">
+    <segment>
+      <node>
+        <start-node call-mode="private" name="GenerateProductFeed" secure="false"/>
+        <node-display x="8" y="12"/>
+      </node>
+      <simple-transition>
+        <transition-display>
+          <bend-point relative-to="source" x="0" y="1"/>
+        </transition-display>
+      </simple-transition>
+      <node>
+        <pipelet-node pipelet-name="Script" pipelet-set-identifier="bc_api">
+          <config-property key="Transactional" value="false"/>
+          <config-property key="OnError" value="PIPELET_ERROR"/>
+          <config-property key="ScriptFile" value="feed/GenerateProductFeed.ds"/>
+          <key-binding alias="null" key="ScriptLog"/>
+        </pipelet-node>
+        <node-display x="0" y="1"/>
+        <branch basename="b2" source-connector="error">
+          <transition target-connector="in">
+            <transition-display>
+              <bend-point relative-to="source" x="2" y="0"/>
+              <bend-point relative-to="target" x="0" y="-1"/>
+            </transition-display>
+          </transition>
+          <segment>
+            <node>
+              <end-node name="error"/>
+              <node-display x="1" y="1"/>
+            </node>
+          </segment>
+        </branch>
+      </node>
+      <simple-transition>
+        <transition-display>
+          <bend-point relative-to="source" x="0" y="1"/>
+        </transition-display>
+      </simple-transition>
+      <node>
+        <end-node/>
         <node-display x="0" y="1"/>
       </node>
     </segment>

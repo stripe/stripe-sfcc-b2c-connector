@@ -106,8 +106,8 @@ function afterSubmitBilling()
             	var stripeCreditCards = Stripe.FetchCards();
                 app.getView({
                     Basket: cart.object,
-                    StripePaymentError: result,
-                	ApplicableCreditCards: stripeCreditCards,
+                    StripePaymentError: result.message,
+     				ApplicableCreditCards: stripeCreditCards,
                     ContinueURL: URLUtils.https('COBilling-Billing')
                 }).render('checkout/billing/billing');
 
