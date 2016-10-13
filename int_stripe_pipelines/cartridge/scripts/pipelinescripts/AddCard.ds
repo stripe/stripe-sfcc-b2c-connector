@@ -8,6 +8,7 @@
 * @input Basket : dw.order.Basket
 * @input Customer : dw.customer.Customer
 * @input BillingForm : dw.web.Form
+* @input IsMyAccount : Boolean
 * @output StripePaymentError : Object
 *
 */
@@ -20,6 +21,8 @@ var StripeHelper = require('int_stripe/cartridge/scripts/stripeHelper');
 
 function execute( pdict : PipelineDictionary ) : Number
 {
+	var isMyAccount : Boolean = pdict.IsMyAccount;
+
 	if (StripeHelper.IsStripeEnabled() && !empty(pdict.StripeToken)) {
         var params = {
             StripeToken: pdict.StripeToken,
@@ -27,12 +30,15 @@ function execute( pdict : PipelineDictionary ) : Number
         };
         var result = Stripe.AddCard(params);
         if (result.error) {
-         	var basket : Basket = pdict.Basket;
-         	if(basket != null)
-         	{
-         		basket.removePaymentInstrument(params.PaymentInstrument);
+        	// if we are coming from My Account section we won't have payment instrument object yet
+        	if(!isMyAccount) {
+         		var basket : Basket = pdict.Basket;
+         		if(basket != null)
+         		{
+         			basket.removePaymentInstrument(params.PaymentInstrument);
+         		}
          	}
-         	pdict.StripePaymentError = result;
+         	pdict.StripePaymentError = result.message;
          	return PIPELET_ERROR;
         }
 	} else if (StripeHelper.IsStripeEnabled() && pdict.Customer.authenticated) {

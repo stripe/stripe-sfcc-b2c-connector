@@ -1,7 +1,8 @@
 <!--- TEMPLATENAME: stripe_creditcard_fields.isml --->
 <div class="card-details" ${pdict.CurrentCustomer.authenticated && !empty(pdict.ApplicableCreditCards) ? "style='display:none;'" : ""}>
-	<isif condition="${!empty(pdict.StripePaymentError) && !empty(pdict.StripePaymentError.message)}">
-		<span class="payment-errors">${pdict.StripePaymentError.message}</span>
+
+	<isif condition="${!empty(pdict.StripePaymentError) && !empty(pdict.StripePaymentError)}">
+		<span class="payment-errors">${pdict.StripePaymentError}</span>
 	<iselse/>
 		<span class="payment-errors"></span>
 	</isif>

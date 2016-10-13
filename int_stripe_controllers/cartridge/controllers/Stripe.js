@@ -105,7 +105,7 @@ function afterSubmitBilling()
 
                 app.getView({
                     Basket: cart.object,
-                    StripePaymentError: result,
+                    StripePaymentError: result.message,
                     ContinueURL: URLUtils.https('COBilling-Billing')
                 }).render('checkout/billing/billing');
 
