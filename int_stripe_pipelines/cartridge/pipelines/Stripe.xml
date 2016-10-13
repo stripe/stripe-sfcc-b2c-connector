@@ -334,7 +334,7 @@
         </pipelet-node>
         <node-display x="0" y="1"/>
         <branch basename="b2" source-connector="error">
-          <transition target-connector="in1" transaction-control="begin">
+          <transition target-connector="in1">
             <transition-display>
               <bend-point relative-to="source" x="1" y="0"/>
               <bend-point relative-to="target" x="-1" y="0"/>
@@ -553,23 +553,13 @@
     <segment>
       <node>
         <text-node>
-          <description>Adding in the transaction node on error as this pipeline is called after the transaction is started for Billing. But when not in billing context will error out when rolling back the transaction</description>
-        </text-node>
-        <node-display x="6" y="8"/>
-      </node>
-    </segment>
-  </branch>
-  <branch basename="_ANONYMOUS_BRANCH_14">
-    <segment>
-      <node>
-        <text-node>
           <description>Pipeline called by the custom Scheduled Job to Generate a Product Feed</description>
         </text-node>
         <node-display x="8" y="11"/>
       </node>
     </segment>
   </branch>
-  <branch basename="_ANONYMOUS_BRANCH_15">
+  <branch basename="_ANONYMOUS_BRANCH_14">
     <segment>
       <node>
         <text-node>
@@ -642,7 +632,7 @@
       </node>
     </segment>
   </branch>
-  <branch basename="_ANONYMOUS_BRANCH_17">
+  <branch basename="_ANONYMOUS_BRANCH_16">
     <segment>
       <node>
         <text-node>
