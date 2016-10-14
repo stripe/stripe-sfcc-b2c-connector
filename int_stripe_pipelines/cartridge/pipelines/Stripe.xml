@@ -220,56 +220,52 @@
             <simple-transition>
               <transition-display>
                 <bend-point relative-to="source" x="0" y="1"/>
-                <bend-point relative-to="source" x="-1" y="1"/>
-                <bend-point relative-to="target" x="-1" y="0"/>
               </transition-display>
             </simple-transition>
             <node>
-              <decision-node condition-key="!empty(StripeToken)" condition-operator="expr"/>
-              <node-display orientation="horizontal" x="0" y="1"/>
+              <decision-node condition-key="StripeToken" condition-operator="expr"/>
+              <node-display x="0" y="1"/>
               <branch basename="b2" source-connector="yes">
-                <transition target-connector="in">
-                  <transition-display>
-                    <bend-point relative-to="source" x="1" y="0"/>
-                  </transition-display>
-                </transition>
-                <segment>
-                  <node>
-                    <pipelet-node pipelet-name="Assign" pipelet-set-identifier="bc_api">
-                      <config-property key="Transactional" value="false"/>
-                      <key-binding alias="null" key="From_0"/>
-                      <key-binding alias="StripePaymentError" key="To_0"/>
-                      <key-binding alias="null" key="From_1"/>
-                      <key-binding alias="null" key="To_1"/>
-                      <key-binding alias="null" key="From_2"/>
-                      <key-binding alias="null" key="To_2"/>
-                      <key-binding alias="null" key="From_3"/>
-                      <key-binding alias="null" key="To_3"/>
-                      <key-binding alias="null" key="From_4"/>
-                      <key-binding alias="null" key="To_4"/>
-                      <key-binding alias="null" key="From_5"/>
-                      <key-binding alias="null" key="To_5"/>
-                      <key-binding alias="null" key="From_6"/>
-                      <key-binding alias="null" key="To_6"/>
-                      <key-binding alias="null" key="From_7"/>
-                      <key-binding alias="null" key="To_7"/>
-                      <key-binding alias="null" key="From_8"/>
-                      <key-binding alias="null" key="To_8"/>
-                      <key-binding alias="null" key="From_9"/>
-                      <key-binding alias="null" key="To_9"/>
-                    </pipelet-node>
-                    <node-display orientation="horizontal" x="1" y="0"/>
-                  </node>
-                  <transition target-connector="in1" target-path="../../+1/b2.1">
-                    <transition-display>
-                      <bend-point relative-to="source" x="1" y="0"/>
-                      <bend-point relative-to="target" x="1" y="0"/>
-                    </transition-display>
-                  </transition>
-                </segment>
+                <transition target-connector="in1" target-path="../+1"/>
               </branch>
             </node>
-            <transition target-connector="in1" target-path="../+1"/>
+            <simple-transition>
+              <transition-display>
+                <bend-point relative-to="source" x="1" y="0"/>
+              </transition-display>
+            </simple-transition>
+            <node>
+              <pipelet-node pipelet-name="Assign" pipelet-set-identifier="bc_api">
+                <config-property key="Transactional" value="false"/>
+                <key-binding alias="dw.web.Resource.msg('stripe.stripetokenfailure','stripe',null)" key="From_0"/>
+                <key-binding alias="StripePaymentError" key="To_0"/>
+                <key-binding alias="null" key="From_1"/>
+                <key-binding alias="null" key="To_1"/>
+                <key-binding alias="null" key="From_2"/>
+                <key-binding alias="null" key="To_2"/>
+                <key-binding alias="null" key="From_3"/>
+                <key-binding alias="null" key="To_3"/>
+                <key-binding alias="null" key="From_4"/>
+                <key-binding alias="null" key="To_4"/>
+                <key-binding alias="null" key="From_5"/>
+                <key-binding alias="null" key="To_5"/>
+                <key-binding alias="null" key="From_6"/>
+                <key-binding alias="null" key="To_6"/>
+                <key-binding alias="null" key="From_7"/>
+                <key-binding alias="null" key="To_7"/>
+                <key-binding alias="null" key="From_8"/>
+                <key-binding alias="null" key="To_8"/>
+                <key-binding alias="null" key="From_9"/>
+                <key-binding alias="null" key="To_9"/>
+              </pipelet-node>
+              <node-display orientation="horizontal" x="1" y="0"/>
+            </node>
+            <transition target-connector="in1" target-path="../+1/b2.1">
+              <transition-display>
+                <bend-point relative-to="source" x="1" y="0"/>
+                <bend-point relative-to="target" x="1" y="0"/>
+              </transition-display>
+            </transition>
           </segment>
         </branch>
       </node>
