@@ -2,7 +2,8 @@
 
 var ajax = require('./ajax'),
 	util = require('./util'),
-	dialog = require('./dialog');
+	dialog = require('./dialog'),
+	page = require('./page');
 
 /**
  * @function
@@ -16,7 +17,7 @@ function initializeMyAccountEvents() {
         dialog.close();
     });
 
-	 $form.find('#applyBtn').on('click', function(e) {
+	$form.find('#applyBtn').on('click', function(e) {
 		// Prevent the form from being submitted
 		e.preventDefault();
 		// Disable the submit button to prevent repeated clicks:
@@ -217,7 +218,36 @@ var stripeResponseHandlerMyAccount = function(status, response) {
         }).appendTo($form);
 
         // Submit the form:
-        $form.submit();
+        //$form.submit();
+        var url = util.appendParamToURL($form.attr('action'), 'format', 'ajax');
+        var applyName = $form.find('#applyBtn').attr('name');
+        var options = {
+            url: url,
+            data: $form.serialize() + '&' + applyName + '=x',
+            type: 'POST'
+        };
+        $.ajax(options).done(function (data) {
+            if (typeof(data) !== 'string') {
+                if (data.success) {
+                    dialog.close();
+                    page.refresh();
+                } else if (data.error) {
+                    page.redirect(Urls.csrffailed);
+                } else {
+                    window.alert(data.message);
+                    return false;
+                }
+            } else {
+            	// if success - meaning we have a card list, close the dialog
+            	// otherwise, keep it open
+            	if($(data).find('.paymentslist').length > 0) {
+            		page.refresh();
+            	} else {
+                    $('#dialog-container').html(data);
+                    initializeMyAccountEvents();
+            	}
+            }
+        });
     }
 }
 
