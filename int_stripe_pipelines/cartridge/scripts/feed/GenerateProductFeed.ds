@@ -86,10 +86,10 @@ function execute( pdict : PipelineDictionary ) : Number {
 				exportFileWriter.writeLine(productLine.join('\t'));
 			}
 		}
-
-	   exportFileWriter.flush();
-	   exportFileWriter.close();
-	   pdict.OutFile = file;
+		products.close();
+		exportFileWriter.flush();
+		exportFileWriter.close();
+		pdict.OutFile = file;
 
 	} catch(e) {
 		logger.error('Error product feed generating: {0}', e.message);

@@ -3,7 +3,7 @@
 
     <type-extension type-id="OrderPaymentInstrument">
         <custom-attribute-definitions>
-            <attribute-definition attribute-id=" ">
+            <attribute-definition attribute-id="stripeCardID">
                 <display-name xml:lang="x-default">Stripe Card ID</display-name>
                 <type>string</type>
                 <mandatory-flag>false</mandatory-flag>
