@@ -16,7 +16,7 @@ function setServiceHeaders(service : HTTPService) : HTTPService
 	var apiKey : String = getApiKey();
     service.addHeader('apiKey', apiKey);
     service.addHeader('Authorization', 'Bearer ' + apiKey);
-    
+
     return service;
 }
 
@@ -30,7 +30,7 @@ function setServiceParams(service : HTTPService, params : dw.util.HashMap) : HTT
 		var key = paramsIter.next();
 		service.addParam(key, params.get(key));
 	}
-	
+
 	return service;
 }
 
@@ -73,6 +73,7 @@ function displayProductFeed() : List
 	var file : File = new File(File.IMPEX + File.SEPARATOR + filePath + File.SEPARATOR + fileName);
 	var reader : FileReader = new FileReader(file);
 	var lines : List = reader.getLines();
+	reader.close();
 	return lines;
 }
 
