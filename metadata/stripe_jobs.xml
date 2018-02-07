@@ -1,20 +1,80 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schedules xmlns="http://www.demandware.com/xml/impex/schedules/2007-03-31">
-    <schedule schedule-id="GenerateStripeProductFeed">
+<jobs xmlns="http://www.demandware.com/xml/impex/jobs/2015-07-01">
+    <job job-id="stripe-delete-webhook-notifications" priority="0">
         <description/>
-        <enabled-flag>false</enabled-flag>
-        <execution-scope>site</execution-scope>
-        <pipeline>
-            <name>Stripe</name>
-            <startnode>GenerateProductFeed</startnode>
-        </pipeline>
-        <sites>
-            <site site-id="SiteGenesis"/>
-        </sites>
-        <run-once>2016-08-01T09:44:00.000Z</run-once>
-        <notification>
-            <enabled-flag>false</enabled-flag>
-            <hang-detection-enabled-flag>false</hang-detection-enabled-flag>
-        </notification>
-    </schedule>
-</schedules>
+        <parameters/>
+        <flow>
+            <context site-id="SiteGenesis"/>
+            <step step-id="DeleteCustomObjects" type="ExecuteScriptModule" enforce-restart="false">
+                <description/>
+                <parameters>
+                    <parameter name="ExecuteScriptModule.Module">int_stripe/cartridge/scripts/job/removeCustomObjects.ds</parameter>
+                    <parameter name="ExecuteScriptModule.FunctionName">execute</parameter>
+                    <parameter name="ExecuteScriptModule.Transactional">false</parameter>
+                    <parameter name="customObjectStatus">PROCESSED</parameter>
+                </parameters>
+            </step>
+        </flow>
+        <rules/>
+        <triggers>
+            <run-once enabled="true">
+                <date>2018-02-01Z</date>
+                <time>10:53:36.000Z</time>
+                <rules>
+                    <on-exit status="ERROR">
+                        <disable-trigger/>
+                    </on-exit>
+                </rules>
+            </run-once>
+        </triggers>
+    </job>
+
+    <job job-id="stripe-process-webhook-notifications" priority="0">
+        <description>Stripe Processing for Notifications</description>
+        <parameters/>
+        <flow>
+            <context site-id="SiteGenesis"/>
+            <step step-id="Process Payments" type="ExecuteScriptModule" enforce-restart="false">
+                <description/>
+                <parameters>
+                    <parameter name="ExecuteScriptModule.Module">int_stripe/cartridge/scripts/job/processPayments.ds</parameter>
+                    <parameter name="ExecuteScriptModule.FunctionName">execute</parameter>
+                    <parameter name="ExecuteScriptModule.Transactional">false</parameter>
+                </parameters>
+            </step>
+        </flow>
+        <rules/>
+        <triggers>
+            <run-recurring enabled="true">
+                <recurrence>
+                    <date-from>2018-01-19Z</date-from>
+                    <start-time>22:34:47.000Z</start-time>
+                    <interval>10m</interval>
+                    <day-of-week/>
+                </recurrence>
+            </run-recurring>
+        </triggers>
+    </job>
+
+    <job job-id="stripe-send-product-feed" priority="0">
+        <description/>
+        <parameters/>
+        <flow>
+            <context site-id="SiteGenesis"/>
+            <step step-id="GenerateProductFeed" type="ExecutePipeline" enforce-restart="false">
+                <description>Generate a Product Feed to Stripe</description>
+                <parameters>
+                    <parameter name="ExecutePipeline.Pipeline">Stripe-GenerateProductFeed</parameter>
+                </parameters>
+            </step>
+        </flow>
+        <rules/>
+        <triggers>
+            <run-once enabled="false">
+                <date>2018-02-07Z</date>
+                <time>16:08:26.000Z</time>
+            </run-once>
+        </triggers>
+    </job>
+
+</jobs>

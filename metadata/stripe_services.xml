@@ -3,7 +3,7 @@
     <service-credential service-credential-id="StripeCredentials">
         <url>https://api.stripe.com/v1</url>
         <user-id/>
-        <password encrypted="true" encryption-type="common.export">svwesssd0WVGNpwR/Txh+JlxDyvigk1GTRtWPBdnbgg=</password>
+        <password masked="true">********</password>
     </service-credential>
 
     <service-profile service-profile-id="StripeProfile">
@@ -19,8 +19,9 @@
     <service service-id="stripe.http.addCard">
         <service-type>HTTP</service-type>
         <enabled>true</enabled>
-        <log-prefix/>
-        <comm-log-enabled>false</comm-log-enabled>
+        <log-prefix>Stripe</log-prefix>
+        <comm-log-enabled>true</comm-log-enabled>
+        <force-prd-enabled>false</force-prd-enabled>
         <mock-mode-enabled>false</mock-mode-enabled>
         <profile-id>StripeProfile</profile-id>
         <credential-id>StripeCredentials</credential-id>
@@ -29,8 +30,20 @@
     <service service-id="stripe.http.authorizePayment">
         <service-type>HTTP</service-type>
         <enabled>true</enabled>
-        <log-prefix/>
-        <comm-log-enabled>false</comm-log-enabled>
+        <log-prefix>Stripe</log-prefix>
+        <comm-log-enabled>true</comm-log-enabled>
+        <force-prd-enabled>false</force-prd-enabled>
+        <mock-mode-enabled>false</mock-mode-enabled>
+        <profile-id>StripeProfile</profile-id>
+        <credential-id>StripeCredentials</credential-id>
+    </service>
+
+    <service service-id="stripe.http.createCharge">
+        <service-type>HTTP</service-type>
+        <enabled>true</enabled>
+        <log-prefix>Stripe</log-prefix>
+        <comm-log-enabled>true</comm-log-enabled>
+        <force-prd-enabled>false</force-prd-enabled>
         <mock-mode-enabled>false</mock-mode-enabled>
         <profile-id>StripeProfile</profile-id>
         <credential-id>StripeCredentials</credential-id>
@@ -39,8 +52,9 @@
     <service service-id="stripe.http.createCustomer">
         <service-type>HTTP</service-type>
         <enabled>true</enabled>
-        <log-prefix/>
-        <comm-log-enabled>false</comm-log-enabled>
+        <log-prefix>Stripe</log-prefix>
+        <comm-log-enabled>true</comm-log-enabled>
+        <force-prd-enabled>false</force-prd-enabled>
         <mock-mode-enabled>false</mock-mode-enabled>
         <profile-id>StripeProfile</profile-id>
         <credential-id>StripeCredentials</credential-id>
@@ -49,8 +63,9 @@
     <service service-id="stripe.http.deleteCard">
         <service-type>HTTP</service-type>
         <enabled>true</enabled>
-        <log-prefix/>
-        <comm-log-enabled>false</comm-log-enabled>
+        <log-prefix>Stripe</log-prefix>
+        <comm-log-enabled>true</comm-log-enabled>
+        <force-prd-enabled>false</force-prd-enabled>
         <mock-mode-enabled>false</mock-mode-enabled>
         <profile-id>StripeProfile</profile-id>
         <credential-id>StripeCredentials</credential-id>
@@ -59,8 +74,20 @@
     <service service-id="stripe.http.fetchCustomerCards">
         <service-type>HTTP</service-type>
         <enabled>true</enabled>
-        <log-prefix/>
-        <comm-log-enabled>false</comm-log-enabled>
+        <log-prefix>Stripe</log-prefix>
+        <comm-log-enabled>true</comm-log-enabled>
+        <force-prd-enabled>false</force-prd-enabled>
+        <mock-mode-enabled>false</mock-mode-enabled>
+        <profile-id>StripeProfile</profile-id>
+        <credential-id>StripeCredentials</credential-id>
+    </service>
+
+    <service service-id="stripe.http.fetchCustomerSources">
+        <service-type>HTTP</service-type>
+        <enabled>true</enabled>
+        <log-prefix>Stripe</log-prefix>
+        <comm-log-enabled>true</comm-log-enabled>
+        <force-prd-enabled>false</force-prd-enabled>
         <mock-mode-enabled>false</mock-mode-enabled>
         <profile-id>StripeProfile</profile-id>
         <credential-id>StripeCredentials</credential-id>
@@ -69,8 +96,9 @@
     <service service-id="stripe.http.refundCharge">
         <service-type>HTTP</service-type>
         <enabled>true</enabled>
-        <log-prefix/>
-        <comm-log-enabled>false</comm-log-enabled>
+        <log-prefix>Stripe</log-prefix>
+        <comm-log-enabled>true</comm-log-enabled>
+        <force-prd-enabled>false</force-prd-enabled>
         <mock-mode-enabled>false</mock-mode-enabled>
         <profile-id>StripeProfile</profile-id>
         <credential-id>StripeCredentials</credential-id>
@@ -79,8 +107,9 @@
     <service service-id="stripe.http.retrieveCustomer">
         <service-type>HTTP</service-type>
         <enabled>true</enabled>
-        <log-prefix/>
-        <comm-log-enabled>false</comm-log-enabled>
+        <log-prefix>Stripe</log-prefix>
+        <comm-log-enabled>true</comm-log-enabled>
+        <force-prd-enabled>false</force-prd-enabled>
         <mock-mode-enabled>false</mock-mode-enabled>
         <profile-id>StripeProfile</profile-id>
         <credential-id>StripeCredentials</credential-id>
@@ -89,8 +118,9 @@
     <service service-id="stripe.http.updateCard">
         <service-type>HTTP</service-type>
         <enabled>true</enabled>
-        <log-prefix/>
-        <comm-log-enabled>false</comm-log-enabled>
+        <log-prefix>Stripe</log-prefix>
+        <comm-log-enabled>true</comm-log-enabled>
+        <force-prd-enabled>false</force-prd-enabled>
         <mock-mode-enabled>false</mock-mode-enabled>
         <profile-id>StripeProfile</profile-id>
         <credential-id>StripeCredentials</credential-id>
@@ -99,8 +129,9 @@
     <service service-id="stripe.http.updateCustomer">
         <service-type>HTTP</service-type>
         <enabled>true</enabled>
-        <log-prefix/>
-        <comm-log-enabled>false</comm-log-enabled>
+        <log-prefix>Stripe</log-prefix>
+        <comm-log-enabled>true</comm-log-enabled>
+        <force-prd-enabled>false</force-prd-enabled>
         <mock-mode-enabled>false</mock-mode-enabled>
         <profile-id>StripeProfile</profile-id>
         <credential-id>StripeCredentials</credential-id>

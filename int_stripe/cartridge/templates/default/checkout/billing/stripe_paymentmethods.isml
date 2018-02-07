@@ -6,7 +6,11 @@
 		<th>${Resource.msg('billing.nameoncard','checkout',null)}</th>
 		<th>${Resource.msg('billing.expireson','checkout',null)}</th>
 	</tr>
+	<isset name="stripeDefaultCard" value="${''}" scope="pdict" />
 	<isloop items="${pdict.ApplicableCreditCards}" var="creditCardInstr">
+		<isif condition="${creditCardInstr.stripeDefaultCard === true}">
+			<isset name="stripeDefaultCard" value="${creditCardInstr}" scope="pdict" />
+		</isif>
 		<tr>
 			<td>
 				<input type="radio" ${creditCardInstr.stripeDefaultCard === true ? 'checked=checked' : ''} name="${pdict.CurrentForms.billing.paymentMethods.creditCardList.htmlName}"	value="${creditCardInstr.UUID}">

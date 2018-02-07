@@ -21,7 +21,7 @@ function selectCreditCard() {
     var cart, applicableCreditCards, selectedCreditCard, instrumentsIter, creditCardInstrument;
     cart = app.getModel('Cart').get();
 
-    var stripeCreditCards = Stripe.FetchCards();
+    var stripeCreditCards = Stripe.FetchCards(false);
     selectedCreditCard = null;
 
     // ensure mandatory parameter 'CreditCardUUID' and 'CustomerPaymentInstruments'
@@ -50,11 +50,7 @@ function selectCreditCard() {
             	creditCardInstrument.creditCardType = cardType;
                 selectedCreditCard = creditCardInstrument;
             }
-        }
-
-        if (selectedCreditCard) {
-            app.getForm('billing').object.paymentMethods.creditCard.number.value = selectedCreditCard.maskedCreditCardNumber;
-        }
+        } //end while
     }
 
     app.getView({
@@ -103,7 +99,7 @@ function afterSubmitBilling()
             	}
             	app.getForm('billing').object.fulfilled.value = false;
 
-            	var stripeCreditCards = Stripe.FetchCards();
+            	var stripeCreditCards = Stripe.FetchCards(false);
                 app.getView({
                     Basket: cart.object,
                     StripePaymentError: result.message,
@@ -150,8 +146,12 @@ function makeDefault()
 	}
 }
 
+function webHook() {
+	require('int_stripe/cartridge/scripts/webhook/webhook.ds').webhook({requestObj:request});
+}
 
 exports.MakeDefault = guard.ensure(['https', 'get', 'loggedIn'], makeDefault);
 exports.AfterSubmitBilling = afterSubmitBilling;
 exports.DisplayProductFeed = guard.ensure(['https', 'get'], displayProductFeed);
 exports.SelectCreditCard = guard.ensure(['https', 'get'], selectCreditCard);
+exports.WebHook = guard.ensure(['https', 'post'], webHook);

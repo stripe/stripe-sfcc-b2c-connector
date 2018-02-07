@@ -2,29 +2,74 @@
 <metadata xmlns="http://www.demandware.com/xml/impex/metadata/2006-10-31">
 
     <type-extension type-id="OrderPaymentInstrument">
-        <custom-attribute-definitions>
-            <attribute-definition attribute-id="stripeCardID">
-                <display-name xml:lang="x-default">Stripe Card ID</display-name>
-                <type>string</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-                <min-length>0</min-length>
-            </attribute-definition>
-            <attribute-definition attribute-id="stripeCustomerID">
-                <display-name xml:lang="x-default">Stripe Customer ID</display-name>
-                <type>string</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-                <min-length>0</min-length>
-            </attribute-definition>
-            <attribute-definition attribute-id="stripeDefaultCard">
-                <display-name xml:lang="x-default">Stripe Default Card</display-name>
-                <type>boolean</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-            </attribute-definition>
-        </custom-attribute-definitions>
-    </type-extension>
+            <system-attribute-definitions>
+                <attribute-definition attribute-id="UUID">
+                    <min-length>0</min-length>
+                    <field-length>28</field-length>
+                </attribute-definition>
+                <attribute-definition attribute-id="bankAccountDriversLicense">
+                    <min-length>0</min-length>
+                </attribute-definition>
+                <attribute-definition attribute-id="bankAccountDriversLicenseStateCode">
+                    <min-length>0</min-length>
+                </attribute-definition>
+                <attribute-definition attribute-id="bankAccountHolder">
+                    <min-length>0</min-length>
+                </attribute-definition>
+                <attribute-definition attribute-id="bankRoutingNumber">
+                    <min-length>0</min-length>
+                </attribute-definition>
+                <attribute-definition attribute-id="creationDate"/>
+                <attribute-definition attribute-id="creditCardExpirationMonth"/>
+                <attribute-definition attribute-id="creditCardExpirationYear"/>
+                <attribute-definition attribute-id="creditCardHolder">
+                    <min-length>0</min-length>
+                </attribute-definition>
+                <attribute-definition attribute-id="creditCardIssueNumber">
+                    <min-length>0</min-length>
+                </attribute-definition>
+                <attribute-definition attribute-id="creditCardNumber">
+                    <min-length>0</min-length>
+                </attribute-definition>
+                <attribute-definition attribute-id="creditCardType">
+                    <min-length>0</min-length>
+                </attribute-definition>
+                <attribute-definition attribute-id="creditCardValidFromMonth"/>
+                <attribute-definition attribute-id="creditCardValidFromYear"/>
+                <attribute-definition attribute-id="lastModified"/>
+                <attribute-definition attribute-id="paymentMethod">
+                    <min-length>0</min-length>
+                </attribute-definition>
+            </system-attribute-definitions>
+            <custom-attribute-definitions>
+                <attribute-definition attribute-id="stripeCardID">
+                    <display-name xml:lang="x-default">Stripe Card ID</display-name>
+                    <type>string</type>
+                    <mandatory-flag>false</mandatory-flag>
+                    <externally-managed-flag>false</externally-managed-flag>
+                    <min-length>0</min-length>
+                </attribute-definition>
+                <attribute-definition attribute-id="stripeCustomerID">
+                    <display-name xml:lang="x-default">Stripe Customer ID</display-name>
+                    <type>string</type>
+                    <mandatory-flag>false</mandatory-flag>
+                    <externally-managed-flag>false</externally-managed-flag>
+                    <min-length>0</min-length>
+                </attribute-definition>
+                <attribute-definition attribute-id="stripeDefaultCard">
+                    <display-name xml:lang="x-default">Stripe Default Card</display-name>
+                    <type>boolean</type>
+                    <mandatory-flag>false</mandatory-flag>
+                    <externally-managed-flag>false</externally-managed-flag>
+                </attribute-definition>
+                <attribute-definition attribute-id="stripePRUsed">
+                    <display-name xml:lang="x-default">From Payment Request Button</display-name>
+                    <description xml:lang="x-default">If this is true, it was either google or apple pay</description>
+                    <type>boolean</type>
+                    <mandatory-flag>false</mandatory-flag>
+                    <externally-managed-flag>false</externally-managed-flag>
+                </attribute-definition>
+            </custom-attribute-definitions>
 
     <type-extension type-id="Profile">
         <custom-attribute-definitions>
@@ -44,112 +89,78 @@
         </group-definitions>
     </type-extension>
 
-    <type-extension type-id="SitePreferences">
+ <type-extension type-id="SitePreferences">
         <custom-attribute-definitions>
-            <attribute-definition attribute-id="stripeApiKey">
-                <display-name xml:lang="x-default">Stripe API Key</display-name>
+            <attribute-definition attribute-id="stripeAccountCountryCode">
+                <display-name xml:lang="x-default">Country Code (Stripe Payment Request Button)</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+                <default-value>US</default-value>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeAllowedAPMMethods">
+                <display-name xml:lang="x-default">Allowed APM Methods</display-name>
+                <description xml:lang="x-default">Enumeration of allowed Payment Methods from the Stripe API.&#13;
+&#13;
+See more here:  https://stripe.com/docs/sources&#13;
+&#13;
+{&#13;
+  "default": [&#13;
+    "p24",&#13;
+    "eps",&#13;
+    "sepa_debit",&#13;
+    "ideal",&#13;
+    "sofort",&#13;
+    "bitcoin",&#13;
+    "alipay",&#13;
+    "bancontact",&#13;
+    "giropay"&#13;
+  ],&#13;
+  "en_UK": [&#13;
+    "p24",&#13;
+    "eps"&#13;
+    ],&#13;
+  "de_AT": [&#13;
+    "sofort",&#13;
+    "ideal"&#13;
+    ]&#13;
+  }</description>
+                <type>text</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeWebhookSigningSecret">
+                <display-name xml:lang="x-default">Stripe Webhook Signing Secret</display-name>
+                <description xml:lang="x-default">Stripe will sign webhook calls and pass a validation to SFCC. SFCC will validate the contents of the message via this key.</description>
                 <type>string</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
                 <min-length>0</min-length>
             </attribute-definition>
-            <attribute-definition attribute-id="stripeAvsAddressFail">
-                <display-name xml:lang="x-default">AVS Address Fail Statuses</display-name>
-                <description xml:lang="x-default">Select all the AVS Address Check statuses that will result in a reversed a charge</description>
-                <type>enum-of-string</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-                <select-multiple-flag>true</select-multiple-flag>
-                <value-definitions>
-                    <value-definition>
-                        <display xml:lang="x-default">pass</display>
-                        <value>pass</value>
-                    </value-definition>
-                    <value-definition>
-                        <display xml:lang="x-default">fail</display>
-                        <value>fail</value>
-                    </value-definition>
-                    <value-definition>
-                        <display xml:lang="x-default">unavailable</display>
-                        <value>unavailable</value>
-                    </value-definition>
-                    <value-definition>
-                        <display xml:lang="x-default">unchecked</display>
-                        <value>unchecked</value>
-                    </value-definition>
-                </value-definitions>
-            </attribute-definition>
-            <attribute-definition attribute-id="stripeAvsZipFail">
-                <display-name xml:lang="x-default">AVS Zip Fail Statuses</display-name>
-                <description xml:lang="x-default">Select all the AVS Zip Check statuses that will result in a reversed a charge.</description>
-                <type>enum-of-string</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-                <select-multiple-flag>true</select-multiple-flag>
-                <value-definitions>
-                    <value-definition>
-                        <display xml:lang="x-default">pass</display>
-                        <value>pass</value>
-                    </value-definition>
-                    <value-definition>
-                        <display xml:lang="x-default">fail</display>
-                        <value>fail</value>
-                    </value-definition>
-                    <value-definition>
-                        <display xml:lang="x-default">unavailable</display>
-                        <value>unavailable</value>
-                    </value-definition>
-                    <value-definition>
-                        <display xml:lang="x-default">unchecked</display>
-                        <value>unchecked</value>
-                    </value-definition>
-                </value-definitions>
-            </attribute-definition>
-            <attribute-definition attribute-id="stripeChargeCapture">
-                <display-name xml:lang="x-default">Capture Funds on Stripe Charge?</display-name>
-                <description xml:lang="x-default">Capture Funds on Stripe Charge? true = Capture, false = Authorization</description>
-                <type>boolean</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-                <default-value>true</default-value>
-            </attribute-definition>
-            <attribute-definition attribute-id="stripeProductFeedDefaultBrandName">
-                <display-name xml:lang="x-default">Product Feed Default Brand Name</display-name>
+            <attribute-definition attribute-id="stripeCurrencyCode">
+                <display-name xml:lang="x-default">Stripe Currency Code </display-name>
+                <description xml:lang="x-default">USED ONLY FOR TESTING.This variable used only for testing purposes and on non-production instances when it's not empty.</description>
                 <type>string</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
                 <min-length>0</min-length>
             </attribute-definition>
-            <attribute-definition attribute-id="stripeProductFeedDirectory">
-                <display-name xml:lang="x-default">Product Feed Directory</display-name>
+            <attribute-definition attribute-id="stripeAllowedWebHookStatuses">
+                <display-name xml:lang="x-default">Stripe Allowed WebHook Statuses</display-name>
+                <description xml:lang="x-default">If webhook status match status that in this configuration, webhook data will be stored in Custom Object.</description>
+                <type>set-of-string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+	        <attribute-definition attribute-id="stripePaymentRequestButtonPaymentMethodtId">
+                <display-name xml:lang="x-default">Stripe Payment Request Button Payment Method</display-name>
+                <description xml:lang="x-default">This should be set to the stripe payment request button payment method id.  This is so that the cartridge can determine if it is enabled or not without imposing restrictions on the naming of the payment method id.</description>
                 <type>string</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
                 <min-length>0</min-length>
-                <default-value>src/stripe/feed</default-value>
-            </attribute-definition>
-            <attribute-definition attribute-id="stripeProductFeedFileName">
-                <display-name xml:lang="x-default">Product Feed File Name</display-name>
-                <type>string</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-                <min-length>0</min-length>
-                <default-value>stripeProductFeed</default-value>
-            </attribute-definition>
-            <attribute-definition attribute-id="stripePublicKey">
-                <display-name xml:lang="x-default">Stripe Publishable Key</display-name>
-                <type>string</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-                <min-length>0</min-length>
-            </attribute-definition>
-            <attribute-definition attribute-id="stripeRELAYProcessAuthorization">
-                <display-name xml:lang="x-default">Enable Stripe RELAY Payment Authorization</display-name>
-                <description xml:lang="x-default">Enable Stripe Payment Authorization on OCAPI based orders</description>
-                <type>boolean</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-                <default-value>false</default-value>
+                <default-value>stripePaymentRequestButton</default-value>
             </attribute-definition>
         </custom-attribute-definitions>
         <group-definitions>
@@ -160,15 +171,88 @@
                 <attribute attribute-id="stripePublicKey"/>
                 <attribute attribute-id="stripeAvsAddressFail"/>
                 <attribute attribute-id="stripeAvsZipFail"/>
-            </attribute-group>
-            <attribute-group group-id="Stripe Relay Configs">
-                <display-name xml:lang="x-default">Stripe Relay Configurations</display-name>
                 <attribute attribute-id="stripeRELAYProcessAuthorization"/>
                 <attribute attribute-id="stripeProductFeedDirectory"/>
                 <attribute attribute-id="stripeProductFeedFileName"/>
                 <attribute attribute-id="stripeProductFeedDefaultBrandName"/>
+                <attribute attribute-id="stripeAllowedAPMMethods"/>
+                <attribute attribute-id="stripeCardElementCSSStyle"/>
+                <attribute attribute-id="stripeApiURL"/>
+                <attribute attribute-id="stripePaymentRequestButtonStyle"/>
+                <attribute attribute-id="applePayVerificationString"/>
+                <attribute attribute-id="stripePaymentRequestButtonPaymentMethodtId"/>
+                <attribute attribute-id="stripeAccountCountryCode"/>
+                <attribute attribute-id="stripeWebhookSigningSecret"/>
+                <attribute attribute-id="stripeCurrencyCode"/>
+                <attribute attribute-id="stripeAllowedWebHookStatuses"/>
             </attribute-group>
         </group-definitions>
     </type-extension>
+
+        <type-extension type-id="PaymentTransaction">
+        <custom-attribute-definitions>
+            <attribute-definition attribute-id="stripeChargeId">
+                <display-name xml:lang="x-default">Stripe charge id</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeChargeOutcomeData">
+                <display-name xml:lang="x-default">Stripe Charge Outcome Data</display-name>
+                <type>text</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeClientSecret">
+                <display-name xml:lang="x-default">Stripe Client Secret</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeJsonData">
+                <display-name xml:lang="x-default">Stripe Json Response Data</display-name>
+                <type>text</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeSourceId">
+                <display-name xml:lang="x-default">Stripe Source id</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeOrderNumber">
+                <display-name xml:lang="x-default">Stripe Order Number</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeSourceCanCharge">
+                <display-name xml:lang="x-default">Stripe Source can be charged</display-name>
+                <description xml:lang="x-default">Working only for selected sources.</description>
+                <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+        </custom-attribute-definitions>
+        <group-definitions>
+            <attribute-group group-id="StripeChargeData">
+                <display-name xml:lang="x-default">StripeChargeData</display-name>
+                <attribute attribute-id="stripeChargeOutcomeData"/>
+                <attribute attribute-id="stripeChargeId"/>
+            </attribute-group>
+            <attribute-group group-id="StripeSourceData">
+                <display-name xml:lang="x-default">StripeSourceData</display-name>
+                <attribute attribute-id="stripeClientSecret"/>
+                <attribute attribute-id="stripeSourceCanCharge"/>
+                <attribute attribute-id="stripeJsonData"/>
+                <attribute attribute-id="stripeSourceId"/>
+            </attribute-group>
+        </group-definitions>
+    </type-extension>    
 
 </metadata>

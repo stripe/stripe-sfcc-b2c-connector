@@ -1,40 +1,29 @@
 <!--- TEMPLATENAME: stripe_creditcard_fields.isml --->
 <div class="card-details" ${pdict.CurrentCustomer.authenticated && !empty(pdict.ApplicableCreditCards) ? "style='display:none;'" : ""}>
-	<isinclude template="stripe/paymenterrors"/>
 
 	<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.owner}" type="input"/>
 
-	<input type="hidden" name="${pdict.CurrentForms.billing.paymentMethods.creditCard.type.htmlName}" value="${pdict.CurrentForms.billing.paymentMethods.creditCard.type.htmlValue}"/>
+	<isinclude template="stripe/paymenterrors"/>
 
-	<isscript>
-	var attrFields = {
-		maxlength: pdict.CurrentForms.billing.paymentMethods.creditCard.number.maxLength
-	};
-	 </isscript>
-	<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.number}" attributes="${attrFields}" type="input" dynamicname="true"/>
-
-	<div class="form-row required">
-		<label>
-			<span class="required-indicator">${Resource.msg('billing.requiredindicator','checkout',null)}</span>
-			<span>${Resource.msg('billing.creditcardlistexpdate', 'checkout', null)}</span>
-		</label>
-		<isscript>
-			var currentCountry = require('app_storefront_core/cartridge/scripts/util/Countries').getCurrent(pdict);
-		</isscript>
-
-		<isdynamicform formobject="${pdict.CurrentForms.billing.paymentMethods.creditCard.expiration}" formdata="${currentCountry.dynamicForms.expirationInfo}"/>
-
+	<div class="form-row">
+	    <label id="StripeLabel" for="card-element">
+	      Credit or debit card
+	    </label>
+	    <div id="card-element">
+	      <!-- a Stripe Element will be inserted here. -->
+	   </div>
+	
+	   <!-- Used to display Element errors -->
+	    <div id="card-errors" role="alert"></div>
 	</div>
-
-	<isscript>
-		var help = {
-			label: Resource.msg('billing.linkcvn', 'checkout', null),
-			cid: 'checkout-security-code'
-		};
-	</isscript>
-	<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.creditCard.cvn}" type="input" rowclass="cvn" dynamicname="true" help="${help}"/>
-
-	<input type="hidden" name="stripeToken"/>
-	<input type="hidden" name="stripeCardID"/>
-
+	<isif condition="${pdict.stripeDefaultCard != '' && pdict.stripeDefaultCard != null }">
+		<input type="hidden" name="stripeToken" value="${pdict.stripeDefaultCard.stripeCardID}"/>
+		<input type="hidden" name="stripeCardID" value="${pdict.stripeDefaultCard.stripeCardID}"/>
+		<input type="hidden" name="stripeCardStored" value="true"/>
+	<iselse>
+		<input type="hidden" name="stripeToken"/>
+		<input type="hidden" name="stripeCardID"/>
+		<input type="hidden" name="stripeCardStored" value="false"/>
+	</isif>
+	<input type="hidden" name="prUsed" id="prUsed" />
 </div>

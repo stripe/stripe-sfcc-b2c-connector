@@ -18,29 +18,36 @@ function Handle(args) {
     var creditCardForm = app.getForm('billing.paymentMethods.creditCard');
     var PaymentMgr = require('dw/order/PaymentMgr');
 
-    var cardNumber = creditCardForm.get('number').value();
-    var cardSecurityCode = creditCardForm.get('cvn').value();
-    var cardType = creditCardForm.get('type').value();
-    var expirationMonth = creditCardForm.get('expiration.month').value();
-    var expirationYear = creditCardForm.get('expiration.year').value();
-    var paymentCard = PaymentMgr.getPaymentCard(cardType);
+    //var cardNumber = creditCardForm.get('number').value();
+    //var cardSecurityCode = creditCardForm.get('cvn').value();
+    //var cardType = creditCardForm.get('type').value();
+    //var expirationMonth = creditCardForm.get('expiration.month').value();
+    //var expirationYear = creditCardForm.get('expiration.year').value();
+    //var paymentCard = PaymentMgr.getPaymentCard(cardType);
     var stripeToken = request.httpParameterMap.get('stripeToken').value;
     var stripeCardID = request.httpParameterMap.get('stripeCardID').value;
+    var prUsed = false;
+    if(request.httpParameterMap.get('prUsed').value == 'true'){
+    	prUsed = true;
+    }
 
     Transaction.wrap(function () {
+        cart.removeExistingPaymentInstruments('STRIPE_APM_METHODS');
         cart.removeExistingPaymentInstruments(dw.order.PaymentInstrument.METHOD_CREDIT_CARD);
         var paymentInstrument = cart.createPaymentInstrument(dw.order.PaymentInstrument.METHOD_CREDIT_CARD, cart.getNonGiftCertificateAmount());
 
         paymentInstrument.creditCardHolder = creditCardForm.get('owner').value();
-        paymentInstrument.creditCardNumber = cardNumber;
-        paymentInstrument.creditCardType = cardType;
-        paymentInstrument.creditCardExpirationMonth = expirationMonth;
-        paymentInstrument.creditCardExpirationYear = expirationYear;
+        //paymentInstrument.creditCardNumber = cardNumber;
+        //paymentInstrument.creditCardType = cardType;
+        //paymentInstrument.creditCardExpirationMonth = expirationMonth;
+        //paymentInstrument.creditCardExpirationYear = expirationYear;
         if (!empty(stripeToken)) {
         	 paymentInstrument.creditCardToken = stripeToken;
+        	 paymentInstrument.custom.stripeCardID = stripeToken;
         } else if (!empty(stripeCardID)) {
         	paymentInstrument.custom.stripeCardID = stripeCardID;
         }
+        paymentInstrument.custom.stripePRUsed = prUsed;
     });
 
     return {success: true};
