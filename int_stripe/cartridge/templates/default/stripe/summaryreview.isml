@@ -1,0 +1,8 @@
+<!--- TEMPLATENAME: summaryreview.isml --->
+<isscript>
+	var additionalPaymentinfo = require('int_stripe/cartridge/scripts/stripeHelper').GetStripePaymentDetails(pdict.Basket);
+</isscript>
+
+<div class="stripe-additional-payment-info">
+	<isprint value="${additionalPaymentinfo}" encoding="off"/>
+</div>
