@@ -1,0 +1,546 @@
+/**
+* Main Stripe Script File
+*
+*/
+var logger = require('dw/system/Logger').getLogger('Stripe', 'stripe');
+var ServiceRegistry = require('dw/svc/ServiceRegistry');
+var Transaction = require('dw/system/Transaction');
+var Status = require('dw/system/Status');
+
+var StripeHelper = require('*/cartridge/scripts/stripeHelper');
+
+/**
+* Adds new credit card to the Customer object.
+* Creates new Customer object if it doesn't exists.
+*/
+function addCard(args : Object) : Object{
+	var resultObj;
+	var currentCustomer = customer;
+	if (!empty(currentCustomer)) {
+		if (currentCustomer.authenticated && 'stripeCustomerID' in customer.profile.custom && !empty(customer.profile.custom.stripeCustomerID)) {
+	        var stripeCustomerID : String = customer.profile.custom.stripeCustomerID;
+        	try {
+        		var service : Service = ServiceRegistry.get('stripe.http.addCard');
+        		var params : Object = {
+        			source: args.StripeToken,
+        			customerID: stripeCustomerID
+        		};
+			    // send request
+			    var result : dw.svc.Result = service.call(params);
+			    if (result.isOk()) {
+			    	var response = JSON.parse(result.object);
+			    	var paymentInstrument = args.PaymentInstrument;
+			    	if (!empty(paymentInstrument)) {
+			    		Transaction.wrap(function () {
+					        paymentInstrument.custom.stripeCardID = response.id;
+					    });
+			    	}
+				    logger.info('Credit Card "{0}" was successfully added', response.id);
+				    resultObj = {
+						error: false
+                    };
+
+			    	return resultObj;
+			    } else {
+			    	var response = JSON.parse(result.errorMessage);
+			    	logger.error('Error: {0}', response.error.message);
+                    resultObj = {
+						error: true,
+                        message : response.error.message
+                    };
+                    return resultObj;
+			    }
+        	} catch (e) {
+        		logger.error('Error: {0}', e.message);
+        		resultObj = {
+						error: true,
+                        message : e.message
+                    };
+        		return resultObj;
+        	}
+	    } else {
+			try {
+				var service : Service = ServiceRegistry.get('stripe.http.createCustomer');
+			    // send request
+			    var result : dw.svc.Result = service.call({source:args.StripeToken, customerEmail:args.CustomerEmail});
+			    if (result.isOk()) {
+			    	var response = JSON.parse(result.object);
+			    	if (currentCustomer.authenticated) {
+			    		Transaction.wrap(function () {
+					        currentCustomer.profile.custom.stripeCustomerID = response.id;
+					    });
+			    	} else {
+			    		var paymentInstrument = args.PaymentInstrument;
+				    	if (!empty(paymentInstrument)) {
+				    		Transaction.wrap(function () {
+						        paymentInstrument.custom.stripeCustomerID = response.id;
+						    });
+				    	}
+			    	}
+				    resultObj = {
+						error: false
+                    };
+
+			    	return resultObj;
+			    } else {
+			    	var response = JSON.parse(result.errorMessage);
+			    	logger.error('Error: {0}', response.error.message);
+                    resultObj = {
+						error: true,
+                        message : response.error.message
+                    };
+                    return resultObj;
+			    }
+			} catch (e) {
+				logger.error('Error: {0}', e.message);
+				resultObj = {
+					error: true,
+                    message : e.message
+                };
+                return resultObj;
+			}
+	    }
+	} else {
+		resultObj = {
+			error: true
+		}
+		return resultObj;
+	}
+}
+
+/**
+* Update credit card to the Customer object.
+*/
+function updateCard(args : Object)
+{
+	var currentCustomer = customer;
+	if (!empty(currentCustomer)) {
+		if (currentCustomer.authenticated && 'stripeCustomerID' in customer.profile.custom && !empty(customer.profile.custom.stripeCustomerID)) {
+	        var stripeCustomerID : String = customer.profile.custom.stripeCustomerID;
+	    	var paymentInstrument = args.PaymentInstrument;
+	    	if (!empty(paymentInstrument) && !empty(paymentInstrument.custom.stripeCardID)) {
+	        	try {
+        		var service : Service = ServiceRegistry.get('stripe.http.updateCard');
+        		var params : Object = {
+        			cardID: paymentInstrument.custom.stripeCardID,
+        			customerID: stripeCustomerID,
+        			billingAddress: args.BillingAddress
+        		};
+			    // send request
+			    var result : dw.svc.Result = service.call(params);
+			    if (result.isOk()) {
+				    logger.info('Credit Card "{0}" was successfully updated', paymentInstrument.custom.stripeCardID);
+				    resultObj = {
+						error: false
+                    };
+
+			    	return resultObj;
+			    } else {
+			    	//TODO what should we do with error??
+			    	var response = JSON.parse(result.errorMessage);
+			    	logger.error('Error: {0}', response.error.message);
+                    resultObj = {
+						error: true,
+                        message : response.error.message
+                    };
+                    return resultObj;
+			    }
+	        	} catch (e) {
+	        		logger.error('Error: {0}', e.message);
+					resultObj = {
+						error: true,
+                    	message : e.message
+                	};
+                return resultObj;
+	        	}
+	    	}
+		}
+	}
+}
+
+/**
+* Fetches Customer's credit cards.
+*	@source : Boolean - if true, then will fetch only sources, if false, then will fetch only CC cards, 
+*		if not defined, will return sources and card with 'reusable' flag
+*/
+function fetchCards(source, myaccount) {
+	var currentCustomer = customer;
+	var paymentInstruments = new dw.util.ArrayList();
+	if (!empty(currentCustomer) && currentCustomer.authenticated) {
+		if ('stripeCustomerID' in customer.profile.custom && !empty(customer.profile.custom.stripeCustomerID)) {
+			var stripeCustomerID : String = customer.profile.custom.stripeCustomerID;
+			try {
+				var serviceCustomer : Service = ServiceRegistry.get('stripe.http.retrieveCustomer');
+				var params : Object = {
+        			customerID: stripeCustomerID
+        		};
+				var resultCustomer : dw.svc.Result = serviceCustomer.call(params);
+				if (resultCustomer.isOk()) {
+					var responseCustomer = JSON.parse(resultCustomer.object);
+					var defaultCard : String = responseCustomer.default_source;
+				}
+				var service = ServiceRegistry.get('stripe.http.fetchCustomerSources');
+				var params : Object = {
+        			customerID: stripeCustomerID
+        		};
+        		// send request
+				var result : dw.svc.Result = service.call(params);
+				if (result.isOk()) {
+					var response = JSON.parse(result.object);
+					var listOfCards = response.data;
+					//fetch sources and cards
+					if (source == null) {
+						for each (var sourceObj in listOfCards) {
+							if (sourceObj.usage != 'reusable') {
+								continue;
+							}
+							var cardObj : Object = new Object();
+							if (sourceObj.card != null) {
+								var card = sourceObj.card;
+								cardObj['isCreditCard'] = true;
+								cardObj['creditCardType'] = card.brand;
+								cardObj['creditCardHolder'] = sourceObj.owner.name;
+								cardObj['creditCardExpirationYear'] = card.exp_year;
+								cardObj['creditCardExpirationMonth'] = card.exp_month;
+								cardObj['creditCardNumberLastDigits'] = card.last4;
+								cardObj['maskedCreditCardNumber'] = '************' + card.last4;
+								cardObj['stripeCardID'] = sourceObj.id;
+								if (sourceObj.id === defaultCard) {
+									cardObj['stripeDefaultCard'] = true;
+								} else {
+									cardObj['stripeDefaultCard'] = false;
+								}
+								cardObj['UUID'] = sourceObj.id;
+								paymentInstruments.add(cardObj);
+								continue;
+							}
+							cardObj = StripeHelper.FetchStripeSource(sourceObj);
+							paymentInstruments.add(cardObj);
+						}
+					// fetch only sources
+					} else if (source != null && source == true) {
+						var sourceTypeCount = {};
+						for each (var sourceObj in listOfCards) {
+							if (sourceObj.usage != 'reusable' || sourceObj.type == 'card') {
+								continue;
+							}
+							var type = sourceObj.type;
+							if (sourceTypeCount[type] != null) {
+								sourceTypeCount[type] = ++sourceTypeCount[type];
+							} else {
+								sourceTypeCount[type] = 1;
+							}
+							var cardObj : Object = new Object();
+							cardObj = StripeHelper.FetchStripeSource(sourceObj);
+							paymentInstruments.add(cardObj);
+						}
+						return {
+							'sourceTypeCount' : sourceTypeCount,
+							'sourcesList' : paymentInstruments
+						}
+					//fetch only CC 
+					} else if (source != null && source == false) {
+						for each (var sourceObj in listOfCards) {
+							if (sourceObj.type != 'card') {
+								continue;
+							}
+							var cardObj : Object = new Object();
+							var card = sourceObj.card;
+							cardObj['creditCardType'] = card.brand;
+							cardObj['creditCardHolder'] = sourceObj.owner.name;
+							cardObj['creditCardExpirationYear'] = card.exp_year;
+							cardObj['creditCardExpirationMonth'] = card.exp_month;
+							cardObj['creditCardNumberLastDigits'] = card.last4;
+							cardObj['maskedCreditCardNumber'] = '************' + card.last4;
+							cardObj['stripeCardID'] = sourceObj.id;
+							if (sourceObj.id === defaultCard) {
+								cardObj['stripeDefaultCard'] = true;
+							} else {
+								cardObj['stripeDefaultCard'] = false;
+							}
+							cardObj['UUID'] = sourceObj.id;
+							paymentInstruments.add(cardObj);
+						}
+					}
+					return paymentInstruments;
+				} else {
+			    	var response = JSON.parse(result.errorMessage);
+			    	logger.error('Error: {0}', response.error.message);
+					return paymentInstruments;
+				}
+			} catch (e) {
+				logger.error('Error: {0}', e.message);
+				return paymentInstruments;
+			}
+		} else {
+			return paymentInstruments;
+		}
+	} else {
+		return PIPELET_ERROR;
+	}
+}
+
+function makeDefault(cardId : String)
+{
+	var currentCustomer = customer;
+	var cardId = cardId;
+	if (!empty(currentCustomer) && currentCustomer.authenticated) {
+		if ('stripeCustomerID' in customer.profile.custom && !empty(customer.profile.custom.stripeCustomerID)) {
+			var stripeCustomerID : String = customer.profile.custom.stripeCustomerID;
+	        try {
+				var service : Service = ServiceRegistry.get('stripe.http.updateCustomer');
+				var params : Object = {
+					customerID: stripeCustomerID,
+	        		cardId: cardId
+	        	};
+	        	// send request
+				var result : dw.svc.Result = service.call(params);
+				if (result.isOk()) {
+					var response = JSON.parse(result.object);
+					logger.info('Credit Card "{0}" was successfully mark as default', cardId);
+					return PIPELET_NEXT;
+				} else {
+			    	var response = JSON.parse(result.errorMessage);
+			    	logger.error('Error: {0}', response.error.message);
+					return PIPELET_ERROR;
+				}
+			} catch (e) {
+				logger.error('Error: {0}', e.message);
+				return PIPELET_ERROR;
+			}
+		} else {
+	    	return PIPELET_ERROR;
+	    }
+	}
+}
+
+/**
+* Removes Customer's credit card.
+*/
+function deleteCard(args : Object) {
+	var currentCustomer = customer;
+	if (!empty(currentCustomer) && currentCustomer.authenticated) {
+		if ('stripeCustomerID' in customer.profile.custom && !empty(customer.profile.custom.stripeCustomerID)) {
+	        var stripeCustomerID : String = customer.profile.custom.stripeCustomerID;
+	        try {
+				var service : Service = ServiceRegistry.get('stripe.http.deleteCard');
+				var params : Object = {
+        			customerID: stripeCustomerID,
+        			cardID: args.card.stripeCardID
+        		};
+        		// send request
+				var result : dw.svc.Result = service.call(params);
+				if (result.isOk()) {
+					var response = JSON.parse(result.object);
+					logger.info('Credit Card "{0}" was successfully deleted', response.id);
+					return PIPELET_NEXT;
+				} else {
+			    	var response = JSON.parse(result.errorMessage);
+			    	logger.error('Error: {0}', response.error.message);
+					return PIPELET_ERROR;
+				}
+			} catch (e) {
+				logger.error('Error: {0}', e.message);
+				return PIPELET_ERROR;
+			}
+	    } else {
+	    	return PIPELET_ERROR;
+	    }
+	}
+}
+
+/**
+* Captures or authorizes credit card charge (depends on the "stripeChargeCapture" site preference).
+*/
+function authorizePayment(args : Object) {
+    try {
+    	var currentCustomer = customer;
+    	var currentRequest = request;
+		var service : Service = ServiceRegistry.get('stripe.http.authorizePayment');
+		var paymentInstrument : dw.order.PaymentInstrument = args.PaymentInstrument;
+		var amount : Number = paymentInstrument.getPaymentTransaction().getAmount().getValue();
+		var capture : Boolean = empty(dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture')) ? false : dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
+		var customerEmail : String = args.Order.getCustomerEmail();
+		var params : dw.util.HashMap = new dw.util.HashMap();
+		if (!empty(currentCustomer) && currentCustomer.authenticated && 'stripeCustomerID' in currentCustomer.profile.custom && !empty(currentCustomer.profile.custom.stripeCustomerID)) {
+			if(paymentInstrument.custom.stripePRUsed != true){
+				params.put('customer', currentCustomer.profile.custom.stripeCustomerID);	
+			}
+			params.put('source', paymentInstrument.custom.stripeCardID);
+			params.put('external_id', currentCustomer.ID);
+		} else {
+			if (!empty(paymentInstrument.custom.stripeCustomerID)){
+				params.put('customer', paymentInstrument.custom.stripeCustomerID);
+			} else {
+				if (!empty(paymentInstrument.creditCardToken)){
+					params.put('source', paymentInstrument.creditCardToken);
+				} else {
+					return PIPELET_ERROR;
+				}
+			}
+		}
+		params.put('amount', dw.util.StringUtils.formatNumber(amount * 100, '0'));
+		params.put('currency', paymentInstrument.getPaymentTransaction().getAmount().getCurrencyCode());
+		params.put('capture', capture);
+		params.put('ip', currentRequest.httpRemoteAddress);
+		params.put('referrer', currentRequest.httpReferer);
+		params.put('user_agent', currentRequest.httpUserAgent);
+		params.put('description', 'Charge for ' + customerEmail);
+		// send request
+		var result : dw.svc.Result = service.call(params);
+		var statusCode = service.getClient().statusCode;
+		var statusMessage = service.getClient().statusMessage;
+		if (result.isOk()) {
+			var response = JSON.parse(result.object);
+			var avsFailure : Object = handleAVSCheckStatuses(response);
+			if(avsFailure.error)
+			{
+				// Refund the Charge and return an error
+		        refundCharge({chargeID : response.id});
+				logger.error('Error: {0}', dw.web.Resource.msgf('stripe.avsstatus', 'checkout',null));
+
+				return avsFailure;
+			}
+
+			return {'transactionID':response.id};
+		} else {
+	    	var response = JSON.parse(result.errorMessage);
+	    	logger.error('Error: {0}', response.error.message);
+	    	if(response.error.code == 'card_declined') {
+	    		var result : Object = {};
+	    		result.error = true;
+	    		result.errormessage = response.error.message;
+	    	}
+			return result;
+		}
+	} catch (e) {
+		logger.error('Error: {0}', e.message);
+		return PIPELET_ERROR;
+	}
+}
+
+/**
+* Handling Stripe AVS "check" Statuses when creating Charges
+* After receiving the response from the Stripe Charge submitted during Order placement,
+* compare values for StripeAvsAddressFail and StripeAvsZipFail, Stripe objects
+* charge.source.address_line1_check and charge.source.address_line1_check, respectively.
+*/
+function handleAVSCheckStatuses(response) : Object
+{
+	var AVSCheckStatusError : Object = {};
+	AVSCheckStatusError.error = false;
+	var addressLineCheck : String = response.source.address_line1_check;
+	var zipcodeCheck : String = response.source.address_zip_check;
+	var avsAddressFailures : Array = getStripeAvsAddressFailures();
+	var avsZipFailures : Array = getStripeAvsZipFailures();
+
+	for (var i = 0; i < avsAddressFailures.length; i++)
+	{
+		if(addressLineCheck == avsAddressFailures[i].value)
+		{
+			AVSCheckStatusError.error = true;
+			AVSCheckStatusError.errormessage = 'stripe.addressfailure';
+		}
+	}
+
+	for (var i = 0; i < avsZipFailures.length; i++)
+	{
+		if(zipcodeCheck  == avsZipFailures[i].value)
+		{
+			AVSCheckStatusError.error = true;
+			AVSCheckStatusError.errormessage = 'stripe.zipcodefailure';
+		}
+	}
+
+	return AVSCheckStatusError;
+}
+
+/**
+* Refunds a charge that has previously been created.
+*/
+function refundCharge(args : Object) {
+    var chargeID : String = args.chargeID;
+    if(chargeID == null){
+	    chargeID = args.PaymentInstrument.paymentTransaction.transactionID;
+    }
+    try {
+		var service : Service = ServiceRegistry.get('stripe.http.refundCharge');
+		var params : Object = {
+			charge: chargeID,
+		};
+		// send request
+		var result : dw.svc.Result = service.call(params);
+		if (result.isOk()) {
+			var response = JSON.parse(result.object);
+			logger.info('Charge "{0}" was successfully refunded', response.charge);
+			return PIPELET_NEXT;
+		} else {
+	    	var response = JSON.parse(result.errorMessage);
+	    	logger.error('Error: {0}', response.error.message);
+	    	return PIPELET_ERROR;
+		}
+	} catch (e) {
+		logger.error('Error: {0}', e.message);
+		return PIPELET_ERROR;
+	}
+}
+
+/**
+* Gets the StripeAvsAddressFail values for address line 1.
+*/
+function getStripeAvsAddressFailures() : Array
+{
+	var avsAddressFailures : Array = dw.system.Site.getCurrent().getCustomPreferenceValue("stripeAvsAddressFail") == null ? "" : dw.system.Site.getCurrent().getCustomPreferenceValue("stripeAvsAddressFail");
+	return avsAddressFailures;
+}
+
+/**
+* Gets the StripeAvsAddressFail values for the zip code.
+*/
+function getStripeAvsZipFailures() : Array
+{
+	var avsZipFailures : Array =  dw.system.Site.getCurrent().getCustomPreferenceValue("stripeAvsZipFail") == null ? "" : dw.system.Site.getCurrent().getCustomPreferenceValue("stripeAvsZipFail");
+	return avsZipFailures;
+}
+
+function createCharge(args) {
+    try {
+		var service : Service = ServiceRegistry.get('stripe.http.createCharge');
+		var paramsHash : dw.util.HashMap = new dw.util.HashMap();
+		paramsHash.put('amount', args.amount);
+		paramsHash.put('currency', args.currency);
+		paramsHash.put('source', args.stripeSourceId);
+		if (args.stripeCustomerId != null && !empty(args.stripeCustomerId)) {
+			paramsHash.put('customer', args.stripeCustomerId);
+		}
+		paramsHash.put('description', 'Charge for ' + args.email + ' order ' + args.orderId);
+		var result : dw.svc.Result = service.call(paramsHash);
+		if (result.isOk()) {
+			var response = JSON.parse(result.object);
+			logger.info('Charge "{0}" was successfully did with source_id {1}', response.id, response.source.id);
+			return result;
+		} else {
+	    	var response = JSON.parse(result.errorMessage);
+	    	logger.error('Error: {0}', response.error.message);
+			return result;
+		}
+	} catch (e) {
+		logger.error('Error: {0}', e.message);
+		return new Status(Status.ERROR, 'confirm.error.technical');
+	}
+
+	return new Status(Status.ERROR);
+}
+
+
+/*
+ * Module exports
+ */
+exports.CreateCharge = createCharge;
+exports.AddCard = addCard;
+exports.UpdateCard = updateCard;
+exports.DeleteCard = deleteCard;
+exports.FetchCards = fetchCards;
+exports.MakeDefault = makeDefault;
+exports.AuthorizePayment = authorizePayment;
+exports.RefundCharge = refundCharge;

@@ -1,0 +1,4 @@
+{
+	"hooks": "./cartridge/scripts/hooks.json",
+    "init": ["./cartridge/scripts/service/stripeInit.ds"]
+}

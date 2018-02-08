@@ -1,0 +1,28 @@
+{
+	"hooks": [
+		{
+			"name": "app.payment.processor.STRIPE_CREDIT",
+			"script": "./payment/processor/STRIPE_CREDIT"
+		},
+		{
+			"name": "app.payment.processor.STRIPE",
+			"script": "./payment/processor/STRIPE"
+		},
+		{
+			"name": "dw.order.payment.authorizeCreditCard",
+			"script":"./hooks/authorizeCreditCard.js"
+		},
+		{
+			"name": "dw.order.payment.authorize",
+			"script":"./hooks/authorize.js"
+		},
+		{
+			"name": "dw.ocapi.shop.order.afterPostPaymentInstrument",
+			"script":"./hooks/afterPostPaymentInstrument.js"
+		},
+		{
+			"name": "dw.ocapi.shop.basket.afterPutShippingAddress",
+			"script":"./hooks/afterPutShippingAddress.js"
+		}
+	]
+}

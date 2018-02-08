@@ -1,0 +1,21 @@
+<!--- TEMPLATENAME: paymentoptions.isml --->
+<isscript>
+	var isStripePaymentMethodsEnabled = require('int_stripe/cartridge/scripts/stripeHelper').IsStripePaymentMethodsEnabled();
+</isscript>
+
+<isif condition="${isStripePaymentMethodsEnabled}">
+	<isscript>
+		var currentLocale = request != null ? request.locale : pdict.CurrentRequest.locale;
+		var paymentMethods = require('int_stripe/cartridge/scripts/stripeHelper').GetStripePaymentMethods(currentLocale);
+	</isscript>
+	
+	<isloop items="${paymentMethods}" var="paymentMethod">
+		<div class="form-row label-inline">
+			<isset name="radioID" value="${paymentMethod}" scope="page"/>
+			<div class="field-wrapper">
+				<input id="is-${radioID}" type="radio" class="input-radio" name="${pdict.CurrentForms.billing.paymentMethods.selectedPaymentMethodID.htmlName}" value="${paymentMethod}" <isif condition="${paymentMethod == pdict.CurrentForms.billing.paymentMethods.selectedPaymentMethodID.htmlValue}">checked="checked"</isif> />
+			</div>
+			<label for="is-${radioID}"><isprint value="${Resource.msg('stripe.' + paymentMethod,'checkout',null)}"/></label>
+		</div>
+	</isloop>
+</isif>

@@ -1,0 +1,19 @@
+<iscontent type="text/html" charset="UTF-8" compact="true"/>
+<!doctype html>
+<!--[if lt IE 7]> <html class="ie6 oldie" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="ie7 oldie" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="ie8 oldie" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!--> <html lang="en"> <!--<![endif]-->
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="Responsive design testing for the masses">
+    <title>Responsive Design Testing</title>
+	<link rel="stylesheet" href="${URLUtils.staticURL('/testing/responsive.css')}" />    
+
+</head>
+<body id="container">
+	<isif condition="${'applePayVerificationString' in dw.system.Site.current.preferences.custom && dw.system.Site.current.preferences.custom.applePayVerificationString != ''}">
+	    <isset name="applePayVerificationString" scope="pdict" value="${dw.system.Site.current.preferences.custom.applePayVerificationString}" />
+	</isif>
+</body>
+</html>

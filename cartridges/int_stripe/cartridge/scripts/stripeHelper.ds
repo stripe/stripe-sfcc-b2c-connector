@@ -1,0 +1,360 @@
+/**
+* Demandware Script File
+* Contains helper functions.
+*
+*/
+importPackage( dw.system );
+importPackage( dw.svc );
+importPackage( dw.io );
+importPackage( dw.util );
+
+/**
+* Sets service headers.
+*/
+function setServiceHeaders(service : HTTPService) : HTTPService
+{
+	var apiKey : String = getApiKey();
+    service.addHeader('apiKey', apiKey);
+    service.addHeader('Authorization', 'Bearer ' + apiKey);
+	service.addHeader('User-Agent', 'Stripe-SFCC-LINK/18.1.0');
+    return service;
+}
+
+/**
+* Sets service parameters.
+*/
+function setServiceParams(service : HTTPService, params : dw.util.HashMap) : HTTPService
+{
+	var paramsIter : dw.util.Iterator = params.keySet().iterator();
+	while (paramsIter.hasNext()) {
+		var key = paramsIter.next();
+		service.addParam(key, params.get(key));
+	}
+
+	return service;
+}
+
+/**
+* Gets the StripeAPI key.
+*/
+function getApiKey() : String
+{
+	var apiKey : String = '';
+	if ('stripeApiKey' in Site.current.preferences.custom && !empty(Site.current.preferences.custom.stripeApiKey)) {
+		apiKey = Site.current.preferences.custom.stripeApiKey;
+	}
+	return apiKey;
+}
+/**
+* Gets the StripeAPI url.
+*/
+function getApiUrl() : String
+{
+	var apiURL : String = '';
+	if ('stripeApiURL' in Site.current.preferences.custom && !empty(Site.current.preferences.custom.stripeApiURL)) {
+		apiURL = Site.current.preferences.custom.stripeApiURL;
+	}
+	return apiURL;
+}
+
+/**
+* Checks if Stripe is enabled.
+*/
+function isStripeEnabled() : Boolean
+{
+	var ccPaymentMethod : dw.order.PaymentMethod = dw.order.PaymentMgr.getPaymentMethod('CREDIT_CARD');
+	if (!empty(ccPaymentMethod) && ccPaymentMethod.active ) {
+		var paymentProcessor : dw.order.PaymentProcessor = ccPaymentMethod.getPaymentProcessor();
+		if (!empty(paymentProcessor) && paymentProcessor.ID.equals('STRIPE_CREDIT')) {
+			return true;
+		} else {
+			return false;
+		}
+	} else {
+		return false;
+	}
+}
+/**
+* Return list of records from product feed file
+*/
+function displayProductFeed() : List
+{
+	var filePath : String = empty(Site.getCurrent().getCustomPreferenceValue('stripeProductFeedDirectory')) ? 'src/stripe/feed' : Site.getCurrent().getCustomPreferenceValue('stripeProductFeedDirectory');
+	var fileName : String = empty(Site.getCurrent().getCustomPreferenceValue('stripeProductFeedFileName')) ? 'stripeProductFeed' + '.txt' : Site.getCurrent().getCustomPreferenceValue('stripeProductFeedFileName') + '.txt';
+	var file : File = new File(File.IMPEX + File.SEPARATOR + filePath + File.SEPARATOR + fileName);
+	var reader : FileReader = new FileReader(file);
+	var lines : List = reader.getLines();
+	reader.close();
+	return lines;
+}
+
+function getCustomObjectNotificationType() : String {
+	return "StripeWebhookNotifications";
+}
+
+function getElementsStyle() : Object
+{
+	//default style from example
+	var style = {
+	    base: {
+      		color: '#32325d',
+      		lineHeight: '18px',
+      		fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+      		fontSmoothing: 'antialiased',
+      		fontSize: '16px',
+      		'::placeholder': {
+        		color: '#aab7c4'
+      		}
+    	},
+    	invalid: {
+      		color: '#fa755a',
+      		iconColor: '#fa755a'
+    	}
+	};
+	if ('stripeCardElementCSSStyle' in Site.current.preferences.custom && !empty(Site.current.preferences.custom.stripeCardElementCSSStyle)) {
+		style = Site.current.preferences.custom.stripeCardElementCSSStyle;
+	}
+	return style;
+}
+
+function getPRStyle() : Object
+{
+	//default Pay Now button styles
+	var style = {
+                    type: 'default',
+                    theme: 'light',
+                    height: '40px'
+                };
+	if ('stripePaymentRequestButtonStyle' in Site.current.preferences.custom && !empty(Site.current.preferences.custom.stripePaymentRequestButtonStyle)) {
+		style = Site.current.preferences.custom.stripePaymentRequestButtonStyle;
+	}
+	return style;
+}
+
+function getPRCountry() :String {
+	var country = '';
+	if ('stripeAccountCountryCode' in Site.current.preferences.custom && !empty(Site.current.preferences.custom.stripeAccountCountryCode)) {
+		country = Site.current.preferences.custom.stripeAccountCountryCode;
+	}
+	return country;
+}
+
+/**
+* Checks if Stripe payment methods is enabled.
+*/
+function isStripePaymentMethodsEnabled() {
+	var paymentMethod : dw.order.PaymentMethod = dw.order.PaymentMgr.getPaymentMethod('STRIPE_APM_METHODS');
+	if (!empty(paymentMethod) && paymentMethod.active ) {
+		var paymentProcessor : dw.order.PaymentProcessor = paymentMethod.getPaymentProcessor();
+		if (!empty(paymentProcessor) && paymentProcessor.ID.equals('STRIPE')) {
+			return true;
+		} else {
+			return false;  
+		}
+	} else {
+		return false;
+	}
+
+}
+
+/**
+* Checks if Stripe payment methods available for locale
+*/
+function getStripePaymentMethods(locale) {
+	var localeConfig = JSON.parse(Site.getCurrent().getCustomPreferenceValue('stripeAllowedAPMMethods'));
+    return localeConfig[locale] != null  ? localeConfig[locale] : localeConfig['default'];
+}
+
+/**
+* Return aditional information for selected payment method
+*/
+function getStripePaymentDetails(cart) {
+	var paymentInstrs = cart.getPaymentInstruments("STRIPE_APM_METHODS");
+	var iter = paymentInstrs.iterator();
+	var existingPI = null;
+	var returnString = '';
+
+	while(iter.hasNext()) {
+		existingPI = iter.next();
+		var paymentTransaction = existingPI.paymentTransaction;
+		var json  = paymentTransaction.custom.stripeJsonData != null && !empty(paymentTransaction.custom.stripeJsonData) ? JSON.parse(paymentTransaction.custom.stripeJsonData) : '';
+
+		if (!empty(json)) {
+			if (json.bitcoin) {
+				returnString += '<div class="bitcoin-info">' +
+					'<div class="bitcoin-amount">' + json.bitcoin.amount / 100000000 + '</div>' +
+					'<div class="bitcoin-address">'	 + json.bitcoin.address +  '</div>';
+				var urlregExp = new RegExp('^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$');
+				if (urlregExp.test(json.bitcoin.uri)) {
+					returnString +=	'<div class="bitcoin-url">' +  json.bitcoin.uri + '</div>';
+				}
+				returnString += '</div>';
+			} else if (json.ach_credit_transfer) {
+				returnString += '<div class="ach-credit-transfer-info">' +
+					'<div class="ach-credit-transfer-routing-number">' + json.ach_credit_transfer.routing_number + '</div>' +
+					'<div class="ach-credit-transfer-account-number">'	 + json.ach_credit_transfer.account_number +  '</div></div>';
+			}
+		}
+	}
+
+	return returnString;
+}
+
+function validatePaymentMethod(paymentInstrument) {
+	//TODO probably should be enabled on prod instance to ignore test request
+	/*
+	if (request.httpParameterMap.isParameterSubmitted('livemode') && request.httpParameterMap.livemode.value == 'true') {
+	}
+	*/
+	var req = request;
+	if (request.httpParameterMap.isParameterSubmitted('client_secret') && request.httpParameterMap.client_secret.value === paymentInstrument.paymentTransaction.custom.stripeClientSecret &&
+		request.httpParameterMap.isParameterSubmitted('source') && request.httpParameterMap.source.value === paymentInstrument.paymentTransaction.custom.stripeSourceId) {
+			return true;
+	} else {
+		var json  = paymentInstrument.paymentTransaction.custom.stripeJsonData != null && !empty(paymentInstrument.paymentTransaction.custom.stripeJsonData) ? JSON.parse(paymentInstrument.paymentTransaction.custom.stripeJsonData) : '';
+		if (!empty(json)) {
+			if (!json.redirect || !json.wechat) {
+				//some payment methods doesn't making redirect, so we should allow them
+				return true;
+			}
+		}
+	}
+
+
+	return false;
+}
+
+/**
+* Check and return order that stored in payment transaction, or get it from session
+*/
+function checkAndReturnStripeOrderId (cart) {
+    var paymentInstrs = cart.getPaymentInstruments("STRIPE_APM_METHODS");
+	var iter = paymentInstrs.iterator();
+	var existingPI = null;
+	var stripeOrderNumber = '';
+
+	while(iter.hasNext())	{
+		existingPI = iter.next();
+		var paymentTransaction = existingPI.paymentTransaction;
+		stripeOrderNumber = 'stripeOrderNumber' in paymentTransaction.custom ? paymentTransaction.custom.stripeOrderNumber : '';
+		if ((stripeOrderNumber == null || empty(stripeOrderNumber)) && ('stripeOrderNumber' in session.custom && !empty(session.custom.stripeOrderNumber))) {
+			stripeOrderNumber = session.custom.stripeOrderNumber;	
+		}
+	}
+	
+	return stripeOrderNumber;
+}
+
+/**
+* Return 'true' if order placed using  STRIPE_APM_METHODS payment method and charge will be making in webhook
+*/
+function isOrderPlacedUsingAPMMethod(order) {
+    var paymentInstrs = order.getPaymentInstruments("STRIPE_APM_METHODS");
+	var iter = paymentInstrs.iterator();
+	var existingPI = null;
+
+	while(iter.hasNext())	{
+		existingPI = iter.next();
+		if (existingPI.paymentTransaction.custom.stripeSourceId != null && !empty(existingPI.paymentTransaction.custom.stripeSourceId) && 
+			(existingPI.paymentTransaction.custom.stripeSourceCanCharge == null || !existingPI.paymentTransaction.custom.stripeSourceCanCharge)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
+* According to site pref setting will return status of possibility to store CO
+*/
+function isWebHookStatusValid(status) {
+	var webHookConfig : Array = Site.getCurrent().getCustomPreferenceValue('stripeAllowedWebHookStatuses');
+	if (webHookConfig.length > 0) {
+		for each(var webhookStatus : String in webHookConfig) {
+			if (webhookStatus === status) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+/**
+* Ignore sources that start with "card_*" along with sources that are of type "card"
+*/
+function isSourceHasValidType(json) {
+	//charge event, but we should check source id and type for this charge to ignore card events
+	if (json.data.object.object == 'charge' &&
+		json.data.object.source != null &&
+		(json.data.object.source.id.indexOf('card_') != -1 ||
+		json.data.object.source.type == 'card')) {
+			return false;
+	} else if (json.data.object.object == 'source' &&
+			(json.data.object.type == 'card' ||
+			json.data.object.id.indexOf('card_') != -1)) {
+				return false;
+	}
+	return true;
+}
+
+/**
+* Mask and return only last 4 digits, ex: **********abcd
+*/
+function getAndMaskField(field) {
+	var str = field.toString();
+	return str.replace(str.substr(0, str.length - 4), '********');
+}
+
+/**
+* Return Funds info for specific payment
+*/
+function fetchSourceFundsInfo(source) {
+	switch (source.type) {
+		case "ach_credit_transfer":
+			return {
+				account_number: getAndMaskField(source.ach_credit_transfer.account_number),
+		        bank_name: source.ach_credit_transfer.bank_name,
+		        routing_number: getAndMaskField(source.ach_credit_transfer.routing_number)
+		        //fingerprint: StripeHelper.getAndMaskField(source.ach_credit_transfer.account_number),
+		        //swift_code: StripeHelper.getAndMaskField(source.ach_credit_transfer.swift_code)			
+		   }
+	}
+	return {};
+}
+
+/**
+* Fetch Source info from json object
+*/
+function fetchStripeSource(sourceObj) {
+	var cardObj = {};
+	var sourceObj = (sourceObj.data && sourceObj.data.object && sourceObj.data.object.source) ? sourceObj.data.object.source : sourceObj;
+	cardObj['isCreditCard'] = false;
+	cardObj['sourceType'] = sourceObj.type;
+	cardObj['sourceHolder'] = sourceObj.owner.name;
+	cardObj['stripeCardID'] = sourceObj.id;
+	cardObj['UUID'] = sourceObj.id;
+	cardObj['sourceInfo'] = fetchSourceFundsInfo(sourceObj);
+	return cardObj;
+}
+
+/*
+* Module exports
+*/
+exports.IsSourceHasValidType = isSourceHasValidType;
+exports.IsWebHookStatusValid = isWebHookStatusValid;
+exports.IsOrderPlacedUsingAPMMethod = isOrderPlacedUsingAPMMethod;
+exports.CheckAndGetStripeOrderNumber = checkAndReturnStripeOrderId;
+exports.GetCustomObjectNotificationType = getCustomObjectNotificationType;
+exports.ValidatePaymentMethod = validatePaymentMethod;
+exports.GetStripePaymentDetails = getStripePaymentDetails;
+exports.DisplayProductFeed = displayProductFeed;
+exports.SetServiceHeaders = setServiceHeaders;
+exports.SetServiceParams = setServiceParams;
+exports.IsStripeEnabled = isStripeEnabled;
+exports.getApiUrl = getApiUrl;
+exports.getElementsStyle = getElementsStyle;
+exports.getPRStyle = getPRStyle;
+exports.getPRCountry = getPRCountry;
+exports.IsStripePaymentMethodsEnabled = isStripePaymentMethodsEnabled;
+exports.GetStripePaymentMethods = getStripePaymentMethods;
+exports.GetMaskedField = getAndMaskField;
+exports.FetchStripeSource = fetchStripeSource;

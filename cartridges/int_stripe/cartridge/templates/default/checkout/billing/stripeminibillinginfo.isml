@@ -1,0 +1,20 @@
+<!--- TEMPLATENAME: stripeminibillinginfo.isml --->
+	<isscript>
+		var json  = paymentInstr.paymentTransaction.custom.stripeJsonData != null && !empty(paymentInstr.paymentTransaction.custom.stripeJsonData) ? JSON.parse(paymentInstr.paymentTransaction.custom.stripeJsonData) : '';
+	</isscript>
+	<isif condition="${!empty(json)}">
+		<iscomment>Prepare Stripe source json to display in existing format</iscomment>
+		<isscript>
+			var cardObj = require('int_stripe/cartridge/scripts/stripeHelper').FetchStripeSource(json);
+		</isscript>
+		<isminicreditcard card="${cardObj}" show_expiration="${true}"/>
+		<div>
+        	${Resource.msg('minibillinginfo.amount', 'checkout', null)}: <span class="minibillinginfo-amount"><isprint value="${paymentInstr.paymentTransaction.amount}"/></span>
+		</div><!-- END: payment-amount -->
+	<iselse>
+		<div class="payment-type"><isprint value="${dw.order.PaymentMgr.getPaymentMethod(paymentInstr.paymentMethod).name}" /></div>
+		<div class="payment-amount">
+			<span class="label">${Resource.msg('global.amount','locale',null)}:</span>
+			<span class="value"><isprint value="${paymentInstr.paymentTransaction.amount}"/></span>
+		</div><!-- END: payment-amount -->
+	</isif>
