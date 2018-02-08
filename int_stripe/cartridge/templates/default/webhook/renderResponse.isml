@@ -1,2 +1,0 @@
-<!--- TEMPLATENAME: renderResponse.isml --->
-<isstatus value="${pdict.respCode}"/>
