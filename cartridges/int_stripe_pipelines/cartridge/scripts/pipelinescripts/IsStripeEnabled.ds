@@ -1,0 +1,16 @@
+/**
+* Demandware Script File
+* Checks if Stripe is enabled.
+*
+* @output IsStripeEnabled : Boolean
+*/
+importPackage( dw.system );
+
+var StripeHelper = require('int_stripe/cartridge/scripts/stripeHelper');
+
+function execute( pdict : PipelineDictionary ) : Number
+{
+	pdict.IsStripeEnabled = StripeHelper.IsStripeEnabled();
+
+    return PIPELET_NEXT;
+}

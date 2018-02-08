@@ -1,0 +1,181 @@
+/**
+*	Stripe Product Feed Script
+*	It is used to generate a text file containing a list of products and its attributes
+*
+*   @output OutFile : dw.io.File
+*/
+importPackage( dw.system );
+importPackage( dw.catalog );
+importPackage( dw.util );
+importPackage( dw.web );
+importPackage( dw.io );
+
+function execute( pdict : PipelineDictionary ) : Number {
+
+	//var timestamp : String = StringUtils.formatCalendar(new Calendar(), 'yyyyMMddHHmmss');timestamp
+	var filePath : String = empty(Site.getCurrent().getCustomPreferenceValue('stripeProductFeedDirectory')) ? 'src/stripe/feed' : Site.getCurrent().getCustomPreferenceValue('stripeProductFeedDirectory');
+	var fileName : String = empty(Site.getCurrent().getCustomPreferenceValue('stripeProductFeedFileName')) ? 'stripeProductFeed' + '.txt' : Site.getCurrent().getCustomPreferenceValue('stripeProductFeedFileName') + '.txt';
+	var defaultBrandName : String = empty(Site.getCurrent().getCustomPreferenceValue('stripeProductFeedDefaultBrandName')) ? 'brand' : Site.getCurrent().getCustomPreferenceValue('stripeProductFeedDefaultBrandName');
+	var logger : Logger = Logger.getLogger('StripeProductFeed', 'stripe');
+
+	try {
+		// creating feed directories
+		(new File(File.IMPEX + File.SEPARATOR + filePath)).mkdirs();
+	    // the feed file is created under the IMPEX WebDab directory
+		var file : File = new File(File.IMPEX + File.SEPARATOR + filePath + File.SEPARATOR + fileName);
+		var exportFileWriter : FileWriter = new FileWriter(file);
+		var products : SeekableIterator = ProductMgr.queryAllSiteProducts();
+		// building up file header, it defines the attributes of the feed
+		var header : ArrayList = new ArrayList();
+		header.add('id');
+		header.add('item_group_id');
+		header.add('title');
+		header.add('description');
+		header.add('product_type');
+		header.add('link');
+		header.add('image_link');
+		header.add('upc');
+		header.add('condition');
+		header.add('price');
+		header.add('brand');
+		header.add('color');
+		header.add('size');
+		header.add('availability');
+
+		exportFileWriter.writeLine(header.join('\t'));
+
+		// the product attributes are being retrieved here
+		while (products.hasNext()) {
+			var product : Product = products.next();
+
+			if (!product.master && product.isOnline() && product.isSearchable()) {
+				var productID : String = empty(product.ID) ? '' : product.ID;
+				var masterProductId : String = "";
+				if(product.isVariant()){
+					masterProductId = product.variationModel.master.ID;
+				}
+				var title : String = empty(product.name) ? '' : product.name;
+				var description : String = getDescription(product);
+				var	productType : String = getCategoryPath(product);
+				var link : String = empty(URLUtils.http('Product-Show', 'pid', productID)) ? '' : URLUtils.http('Product-Show', 'pid', productID);
+				var imageLink : String = empty(product.getImage('medium', 0)) ? '' : product.getImage('medium', 0).httpURL;
+				var upc : String = empty(product.UPC) ? '' : product.UPC;
+				var condition : String = 'new';
+				var price : Number = (product.getPriceModel().getPrice() == dw.value.Money.NOT_AVAILABLE) ? '' : product.getPriceModel().getPrice().getValue();
+				var brand : String = empty(product.brand) ? defaultBrandName : product.brand;
+				var color : String = getProductAttributeDisplayValue(product, 'color');
+				var size : String = getProductAttributeDisplayValue(product, 'size');
+				var availability : String = getProductAvailability(product);
+
+				var productLine : ArrayList = new ArrayList();
+				productLine.add(productID);
+				productLine.add(masterProductId);
+				productLine.add(title);
+				productLine.add(description);
+				productLine.add(productType);
+				productLine.add(link);
+				productLine.add(imageLink);
+				productLine.add(upc);
+				productLine.add(condition);
+				productLine.add(price);
+				productLine.add(brand);
+				productLine.add(color);
+				productLine.add(size);
+				productLine.add(availability);
+
+				exportFileWriter.writeLine(productLine.join('\t'));
+			}
+		}
+		products.close();
+		exportFileWriter.flush();
+		exportFileWriter.close();
+		pdict.OutFile = file;
+
+	} catch(e) {
+		logger.error('Error product feed generating: {0}', e.message);
+		return PIPELET_ERROR;
+	}
+
+   return PIPELET_NEXT;
+}
+
+/**
+* Gets product description.
+*/
+function getDescription(product : Product) : String {
+	var description : String = '';
+
+	if (!empty(product.getShortDescription())) {
+		description = product.getShortDescription().toString().replace(/[\r\n]/g, '');
+	}
+
+	return description;
+}
+
+/**
+* Gets product attribute display value.
+*/
+function getProductAttributeDisplayValue(product: Product, variationAttributeName : String) {
+	var attributeDisplayValue : String = '';
+	var variantAttribute : ProductVariationAttribute = product.variationModel.getProductVariationAttribute(variationAttributeName);
+
+	if (!empty(variantAttribute)) {
+		var attributeValue : ProductVariationAttributeValue = product.variationModel.getVariationValue(product, variantAttribute);
+		attributeDisplayValue = attributeValue.getDisplayValue();
+	}
+
+	return attributeDisplayValue.replace(/[\r\n]+/g, ' ');
+}
+
+/**
+* Gets product attribute display value.
+*/
+function getProductAvailability(product: Product) : String {
+	var availability : String = 'out of stock';
+	var inventoryRecord: ProductInventoryRecord = ProductInventoryMgr.getInventoryList().getRecord(product);
+
+	if (!empty(inventoryRecord)) {
+		var quantity : Number = inventoryRecord.getATS().getValue();
+		if (quantity > 0) {
+			availability = 'in stock';
+		} else {
+			availability = 'out of stock';
+		}
+	}
+
+	return availability;
+}
+
+/**
+* Gets product category path.
+*/
+function getCategoryPath(product : Product) : String {
+	var categoryPath : String = '';
+	var topProduct : Product = product;
+
+	if (topProduct.isVariant()) {
+		topProduct = product.masterProduct;
+	}
+
+	var theCategory : Category = topProduct.getPrimaryCategory();
+	if (empty(theCategory)) {
+		var categories : Collection = topProduct.categories;
+		if (!empty(categories)) {
+			theCategory = categories[0];
+		}
+	}
+
+	var category : Category = theCategory;
+	var path : ArrayList = new ArrayList();
+
+	while (!empty(category.parent)) {
+		if (category.online) {
+			path.addAt(0, category.getDisplayName());
+		}
+		category = category.parent;
+	}
+
+	categoryPath = path.join('>');
+
+	return categoryPath;
+}

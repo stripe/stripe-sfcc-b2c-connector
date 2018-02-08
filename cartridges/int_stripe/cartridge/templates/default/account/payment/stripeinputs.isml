@@ -1,0 +1,15 @@
+<isscript>
+	var stripeEnabled = require('int_stripe/cartridge/scripts/stripeHelper').IsStripeEnabled();
+</isscript>
+
+<isif condition="${stripeEnabled}">
+	<isscript>
+		var help = {
+			label: Resource.msg('billing.linkcvn', 'checkout', null),
+			cid: 'checkout-security-code'
+		};
+	</isscript>
+
+	<isinputfield formfield="${pdict.CurrentForms.paymentinstruments.creditcards.newcreditcard.cvn}" type="input" rowclass="cvn" dynamicname="true" help="${help}"/>
+	<input type="hidden" name="stripeToken"/>
+</isif>

@@ -1,0 +1,5 @@
+<isif condition="${!empty(pdict.StripePaymentError) && !empty(pdict.StripePaymentError)}">
+	<span class="payment-errors">${pdict.StripePaymentError}</span>
+<iselse/>
+	<span class="payment-errors"></span>
+</isif>
