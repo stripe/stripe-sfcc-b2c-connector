@@ -70,7 +70,7 @@
                     <externally-managed-flag>false</externally-managed-flag>
                 </attribute-definition>
             </custom-attribute-definitions>
-
+        </type-extension>
     <type-extension type-id="Profile">
         <custom-attribute-definitions>
             <attribute-definition attribute-id="stripeCustomerID">
