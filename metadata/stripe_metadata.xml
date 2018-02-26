@@ -91,6 +91,39 @@
 
  <type-extension type-id="SitePreferences">
         <custom-attribute-definitions>
+            <attribute-definition attribute-id="stripeApiKey">
+                <display-name xml:lang="x-default">Stripe API Key</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="applePayVerificationString">
+                <display-name xml:lang="x-default">ApplePay Verification String</display-name>
+                <description xml:lang="x-default">The Stripe console will proxy the Apple Pay for Web verification&#13;
+String upon setup. &#13;
+This will need to be configured into the sandbox.</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeChargeCapture">
+                <display-name xml:lang="x-default">Capture Funds on Stripe Charge?</display-name>
+                <description xml:lang="x-default">Capture Funds on Stripe Charge? true = Capture, false = Authorization</description>
+                <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <default-value>true</default-value>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripePublicKey">
+                <display-name xml:lang="x-default">Stripe Publishable Key</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+
             <attribute-definition attribute-id="stripeAccountCountryCode">
                 <display-name xml:lang="x-default">Country Code (Stripe Payment Request Button)</display-name>
                 <type>string</type>
@@ -146,6 +179,117 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <externally-managed-flag>false</externally-managed-flag>
                 <min-length>0</min-length>
             </attribute-definition>
+            <attribute-definition attribute-id="stripeApiURL">
+                <display-name xml:lang="x-default">stripeApiURL</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripePaymentRequestButtonStyle">
+                <display-name xml:lang="x-default">Stripe Payment Request Button Style</display-name>
+                <description xml:lang="x-default">Configurable Style Options for the Button&#13;
+type: 'default' &#13;
+theme: 'light, &#13;
+height: '40px',</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeAvsZipFail">
+                <display-name xml:lang="x-default">AVS Zip Fail Statuses</display-name>
+                <description xml:lang="x-default">Select all the AVS Zip Check statuses that will result in a reversed a charge.</description>
+                <type>enum-of-string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <select-multiple-flag>true</select-multiple-flag>
+                <value-definitions>
+                    <value-definition>
+                        <display xml:lang="x-default">pass</display>
+                        <value>pass</value>
+                    </value-definition>
+                    <value-definition>
+                        <display xml:lang="x-default">fail</display>
+                        <value>fail</value>
+                    </value-definition>
+                    <value-definition>
+                        <display xml:lang="x-default">unavailable</display>
+                        <value>unavailable</value>
+                    </value-definition>
+                    <value-definition>
+                        <display xml:lang="x-default">unchecked</display>
+                        <value>unchecked</value>
+                    </value-definition>
+                </value-definitions>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeAvsAddressFail">
+                <display-name xml:lang="x-default">AVS Address Fail Statuses</display-name>
+                <description xml:lang="x-default">Select all the AVS Address Check statuses that will result in a reversed a charge</description>
+                <type>enum-of-string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <select-multiple-flag>true</select-multiple-flag>
+                <value-definitions>
+                    <value-definition>
+                        <display xml:lang="x-default">pass</display>
+                        <value>pass</value>
+                    </value-definition>
+                    <value-definition>
+                        <display xml:lang="x-default">fail</display>
+                        <value>fail</value>
+                    </value-definition>
+                    <value-definition>
+                        <display xml:lang="x-default">unavailable</display>
+                        <value>unavailable</value>
+                    </value-definition>
+                    <value-definition>
+                        <display xml:lang="x-default">unchecked</display>
+                        <value>unchecked</value>
+                    </value-definition>
+                </value-definitions>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeRELAYProcessAuthorization">
+                <display-name xml:lang="x-default">Enable Stripe RELAY Payment Authorization</display-name>
+                <description xml:lang="x-default">Enable Stripe Payment Authorization on OCAPI based orders</description>
+                <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <default-value>false</default-value>
+            </attribute-definition>
+
+            <attribute-definition attribute-id="stripeCardElementCSSStyle">
+                <display-name xml:lang="x-default">stripeCardElementCSSStyle</display-name>
+                <description xml:lang="x-default">Style Configuration for Stripe Elements</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeProductFeedDirectory">
+                <display-name xml:lang="x-default">Product Feed Directory</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+                <default-value>src/stripe/feed</default-value>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeProductFeedFileName">
+                <display-name xml:lang="x-default">Product Feed File Name</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+                <default-value>stripeProductFeed</default-value>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeProductFeedDefaultBrandName">
+                <display-name xml:lang="x-default">Product Feed Default Brand Name</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+
             <attribute-definition attribute-id="stripeAllowedWebHookStatuses">
                 <display-name xml:lang="x-default">Stripe Allowed WebHook Statuses</display-name>
                 <description xml:lang="x-default">If webhook status match status that in this configuration, webhook data will be stored in Custom Object.</description>
