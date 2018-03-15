@@ -4,5 +4,5 @@
 </isscript>
 
 <div class="stripe-additional-payment-info">
-	<isprint value="${additionalPaymentinfo}" encoding="off"/>
+	<isprint value="${additionalPaymentinfo}" encoding="htmldoublequote"/>
 </div>

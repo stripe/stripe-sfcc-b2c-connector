@@ -14,4 +14,4 @@
 	}
 	var json = JSON.stringify(cc);	
 </isscript>
-<isprint value="${json}" encoding="off"/>
+<isprint value="${json}" encoding="htmlsinglequote"/>    
