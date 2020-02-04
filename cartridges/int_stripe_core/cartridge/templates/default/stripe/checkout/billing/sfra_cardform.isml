@@ -1,0 +1,62 @@
+<isscript>
+var stripeHelper = require('int_stripe_core').getStripeHelper();
+var wallet = stripeHelper.getStripeWallet(customer);
+var savedCards = wallet.getPaymentInstruments();
+var hasSavedCards = !empty(savedCards);
+var canSaveCard = customer.authenticated;
+</isscript>
+
+<input type="hidden" name="stripe_card_number" id="stripe_card_number">
+<input type="hidden" name="stripe_card_holder" id="stripe_card_holder">
+<input type="hidden" name="stripe_card_type" id="stripe_card_type">
+<input type="hidden" name="stripe_card_brand" id="stripe_card_brand">
+<input type="hidden" name="stripe_card_expiration_month" id="stripe_card_expiration_month">
+<input type="hidden" name="stripe_card_expiration_year" id="stripe_card_expiration_year">
+<input type="hidden" name="stripe_pr_used" id="stripe_pr_used">
+
+<div id="new-card-form-container">
+	<div class="form-indent">
+		<div id="card-element" style="border: 1px solid #aaa;padding: 6px;"></div>
+		<div id="card-errors" role="alert"></div>
+	</div>
+	<isif condition="${canSaveCard}">
+		<div class="form-row label-inline form-indent">
+			<div class="field-wrapper">
+				<input class="input-checkbox" type="checkbox" name="stripe_save_card" id="stripe_save_card">
+			</div>
+			<label for="stripe_save_card"><span>${Resource.msg('label.save.card','forms',null)}</span></label>
+		</div>
+	<iselse/>
+		<div>&nbsp;</div>
+	</isif>
+	<isif condition="${hasSavedCards}">
+		<div class="form-indent" style="padding-bottom: 16px;">
+			<a id="switch-to-saved-cards" href="javascript:void(0)">${Resource.msg('creditcard.use.savedcard','stripe',null)}</a>
+		</div>
+	</isif>
+</div>
+<isif condition="${hasSavedCards}">
+	<div class="form-indent" id="saved-cards-container">
+		<div>${Resource.msg('creditcard.savedcard','stripe',null)}</div>
+		<isloop items="${savedCards}" var="savedCard" status="cardsloopstate">
+			<div>
+				<input style="float: none; display: inline"
+					type="radio"
+					name="saved_card_id"
+					id="stripe-card-${cardsloopstate.index}"
+					value="${savedCard.custom.stripeId}"
+					data-cardnumber="${savedCard.maskedCreditCardNumber}"
+					data-cardholder="${savedCard.creditCardHolder}"
+					data-cardtype="${savedCard.creditCardType}"
+					data-cardexpmonth="${savedCard.creditCardExpirationMonth}"
+					data-cardexpyear="${savedCard.creditCardExpirationYear}"
+					<isif condition="${cardsloopstate.first}">checked</isif>
+				>
+				<label for="stripe-card-${cardsloopstate.index}" style="float: none; display: inline">${savedCard.maskedCreditCardNumber} - ${savedCard.creditCardExpirationMonth}/${savedCard.creditCardExpirationYear} - ${savedCard.creditCardHolder}</label>
+			</div>
+		</isloop>
+		<div style="padding: 16px 0;">
+			<a id="switch-to-add-card" href="javascript:void(0)">${Resource.msg('creditcard.add.card','stripe',null)}</a>
+		</div>
+	</div>
+</isif>

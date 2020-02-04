@@ -1,0 +1,73 @@
+<isscript>
+    var assets = require('*/cartridge/scripts/assets.js');
+    assets.addJs('/js/stripe.checkout.js');
+</isscript>
+			<isscript>
+				var stripeCheckoutHelper = require('int_stripe_core').getCheckoutHelper();
+				var stripeHelper = require('int_stripe_core').getStripeHelper();
+				var stripeAccountCountry = stripeCheckoutHelper.getPRCountry();
+				var stripeCardFormStyle = stripeHelper.getStripeCardFormStyle();
+				var stripeIdealElementStyle = stripeHelper.getStripeIdealElementStyle();
+				var stripeSepaDebitStyle = stripeHelper.getStripeSepaDebitStyle();
+				var stripePaymentButtonStyle = stripeHelper.getPaymentRequestButtonStyle();
+			</isscript>
+			<script>
+				var stripeCardFormStyle = <isprint value="${JSON.stringify(stripeCardFormStyle)}" encoding="off" />;
+				var stripeIdealElementStyle = <isprint value="${JSON.stringify(stripeIdealElementStyle)}" encoding="off" />;
+				var stripeSepaDebitStyle = <isprint value="${JSON.stringify(stripeSepaDebitStyle)}" encoding="off" />;
+				var stripePaymentButtonStyle = <isprint value="${JSON.stringify(stripePaymentButtonStyle)}" encoding="off" />;
+				var stripeAccountCountry = "${stripeAccountCountry}";
+				var beforePaymentAuthURL = '${URLUtils.https("StripePayments-BeforePaymentAuthorization")}';
+				var billingPageUrl = '${URLUtils.url('Checkout-Begin', 'stage', 'payment')}';
+			</script>
+
+<iscomment> <input type="hidden" name="stripe_source_id" id="stripe_source_id"> </iscomment>
+<input type="hidden" name="stripe_source_client_secret" id="stripe_source_client_secret">
+<input type="hidden" name="stripe_redirect_url" id="stripe_redirect_url">
+
+<isset name="stripeOrder" value="${require('int_stripe_core').getCheckoutHelper().getStripeOrderDetails(dw.order.BasketMgr.getCurrentBasket())}" scope="page" />
+
+<input type="hidden" id="stripe_order_amount" value="${stripeOrder.amount}">
+<input type="hidden" id="stripe_order_currency" value="${stripeOrder.currency}">
+<input type="hidden" id="stripe_site_id" value="${require('int_stripe_core').getCheckoutHelper().getSiteID()}">
+<input type="hidden" id="stripe_order_number" value="${require('int_stripe_core').getCheckoutHelper().getNewStripeOrderNumber()}">
+<input type="hidden" id="stripe_return_url" value="${URLUtils.https("StripePayments-HandleAPM")}">
+
+<isloop items="${pdict.order.billing.payment.applicablePaymentMethods}" var="paymentOption">
+
+    <isif condition="${paymentOption.ID === 'CREDIT_CARD'}">
+       <div class="tab-pane active ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">
+            <fieldset class="payment-form-fields">
+
+                <!--- payment method is credit card --->
+                <input type="hidden" class="form-control"
+                    name="${pdict.forms.billingForm.paymentMethod.htmlName}"
+                    value="${paymentOption.ID}"
+                >
+                <input type="hidden" name="cardNumber" value="" class="cardNumber" id="cardNumber">
+                <input type="hidden" name="stripe_source_id" id="stripe_source_id">
+                <isinclude template="stripe/checkout/billing/sfra_cardform" />
+            </fieldset>
+        </div>
+
+    <iselseif condition="${paymentOption.ID === 'STRIPE_IDEAL'}"/>
+        <isinclude template="checkout/billing/paymentOptions/idealContent" />
+    <iselseif condition="${paymentOption.ID === 'STRIPE_SOFORT'}"/>
+        <isinclude template="checkout/billing/paymentOptions/sofortContent" />
+    <iselseif condition="${paymentOption.ID === 'STRIPE_SEPA_DEBIT'}"/>
+        <isinclude template="checkout/billing/paymentOptions/sepaDebitContent" />
+    <iselse/>
+
+        <div class="tab-pane ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">
+            <fieldset class="payment-form-fields">
+
+                <!--- payment method is credit card --->
+                <input type="hidden" class="form-control"
+                    name="${pdict.forms.billingForm.paymentMethod.htmlName}"
+                    value="${paymentOption.ID}"
+                >
+                <input type="hidden" name="stripe_source_id" id="stripe_source_id">
+            </fieldset>
+        </div>
+    </isif>
+</isloop>

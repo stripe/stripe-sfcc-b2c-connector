@@ -1,0 +1,27 @@
+<isscript>
+	var stripeHelper = require('int_stripe_core').getStripeHelper();
+	var stripeEnabled = stripeHelper.isStripeEnabled();
+	var stripeScriptURL = stripeHelper.getStripeScriptUrl();
+	var stripePublicKey = stripeHelper.getPublicApiKey();
+	var stripeCheckoutHelper = require('int_stripe_core').getCheckoutHelper();
+	var stripeAccountCountry = stripeCheckoutHelper.getPRCountry();
+	var stripeCardFormStyle = stripeHelper.getStripeCardFormStyle();
+	var stripeIdealElementStyle = stripeHelper.getStripeIdealElementStyle();
+	var stripeSepaDebitStyle = stripeHelper.getStripeSepaDebitStyle();
+	var stripePaymentButtonStyle = stripeHelper.getPaymentRequestButtonStyle();
+</isscript>
+<isif condition="${stripeEnabled}">
+	<script type="text/javascript" src="${stripeScriptURL}"></script>
+	<isif condition="${stripePublicKey}">
+		<script type="text/javascript">
+			var stripe = Stripe('${stripePublicKey}');
+			var elements = stripe.elements();
+			var stripeCardFormStyle = <isprint value="${JSON.stringify(stripeCardFormStyle)}" encoding="off" />;
+			var stripeIdealElementStyle = <isprint value="${JSON.stringify(stripeIdealElementStyle)}" encoding="off" />;
+			var stripeSepaDebitStyle = <isprint value="${JSON.stringify(stripeSepaDebitStyle)}" encoding="off" />;
+			var stripeAccountCountry = "${stripeAccountCountry}";
+			var beforePaymentAuthURL = '${URLUtils.https("StripePayments-BeforePaymentAuthorization")}';
+			var billingPageUrl = '${URLUtils.url('Checkout-Begin', 'stage', 'payment')}';
+		</script>
+	</isif>
+</isif>

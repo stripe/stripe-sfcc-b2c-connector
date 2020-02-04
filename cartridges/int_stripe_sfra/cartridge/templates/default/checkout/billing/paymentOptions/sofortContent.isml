@@ -1,0 +1,27 @@
+<div class="tab-pane ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">
+    <fieldset class="payment-form-fields">
+
+        <!--- payment method is credit card --->
+        <input type="hidden" class="form-control" name="${pdict.forms.billingForm.paymentMethod.htmlName}"
+            value="${paymentOption.ID}">
+        <input type="hidden" name="stripe_source_id" id="stripe_source_id">
+        <div class="row">
+            <div class="col-12">
+                <div class="form-group required">
+                    <label for="sofort_country_code" class="form-control-label">
+                        ${Resource.msg('sofort.country.code.label', 'stripe', null)}
+                    </label>
+                    <select name="sofort_country_code" id="sofort_country_code" class="form-control custom-select">
+                        <option>${Resource.msg('sofort.country.select', 'stripe', null)}</option>
+                        <option value="AT">${Resource.msg('sofort.country.AT', 'stripe', null)}</option>
+                        <option value="BE">${Resource.msg('sofort.country.BE', 'stripe', null)}</option>
+                        <option value="DE">${Resource.msg('sofort.country.DE', 'stripe', null)}</option>
+                        <option value="IT">${Resource.msg('sofort.country.IT', 'stripe', null)}</option>
+                        <option value="NL">${Resource.msg('sofort.country.NL', 'stripe', null)}</option>
+                        <option value="ES">${Resource.msg('sofort.country.ES', 'stripe', null)}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </fieldset>
+</div>

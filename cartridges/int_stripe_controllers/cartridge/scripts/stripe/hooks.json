@@ -1,0 +1,12 @@
+{
+    "hooks": [
+        {
+            "name": "app.payment.processor.STRIPE_CREDIT",
+            "script": "./payment/processor/STRIPE_CREDIT"
+        },
+        {
+            "name": "app.payment.processor.STRIPE_APM",
+            "script": "./payment/processor/STRIPE_APM"
+        }
+    ]
+}

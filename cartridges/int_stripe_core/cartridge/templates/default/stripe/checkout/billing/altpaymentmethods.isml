@@ -1,0 +1,142 @@
+<input type="hidden" name="stripe_source_id" id="stripe_source_id">
+<input type="hidden" name="stripe_source_client_secret" id="stripe_source_client_secret">
+<input type="hidden" name="stripe_redirect_url" id="stripe_redirect_url">
+
+<isset name="stripeOrder" value="${require('int_stripe_core').getCheckoutHelper().getStripeOrderDetails(pdict.Basket)}" scope="page" />
+
+<input type="hidden" id="stripe_order_amount" value="${stripeOrder.amount}">
+<input type="hidden" id="stripe_order_currency" value="${stripeOrder.currency}">
+<input type="hidden" id="stripe_site_id" value="${require('int_stripe_core').getCheckoutHelper().getSiteID()}">
+<input type="hidden" id="stripe_order_number" value="${require('int_stripe_core').getCheckoutHelper().getNewStripeOrderNumber()}">
+<input type="hidden" id="stripe_return_url" value="${URLUtils.https("StripePayments-HandleAPM")}">
+
+<iscomment>
+<div id="payment-request-button">
+  <!-- A Stripe Element will be inserted here. -->
+</div>
+</iscomment>
+
+<iscomment>
+    Alipay
+    -------------------
+</iscomment>
+<div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_ALIPAY'}">payment-method-expanded</isif>" data-method="STRIPE_ALIPAY">
+	<iscomment> <p class="form-caption">Alipay</p> </iscomment>
+</div>
+
+<iscomment>
+    ACH Credit Transfer
+    -------------------
+</iscomment>
+<div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_ACH'}">payment-method-expanded</isif>" data-method="STRIPE_ACH">
+	<iscomment> <p class="form-caption">ACH Credit Transfer</p> </iscomment>
+</div>
+
+<iscomment>
+    Bancontact
+    -------------------
+</iscomment>
+<div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_BANCONTACT'}">payment-method-expanded</isif>" data-method="STRIPE_BANCONTACT">
+	<iscomment> <p class="form-caption">Bancontact</p> </iscomment>
+</div>
+
+<iscomment>
+    EPS
+    -------------------
+</iscomment>
+<div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_EPS'}">payment-method-expanded</isif>" data-method="STRIPE_EPS">
+	<iscomment> <p class="form-caption">EPS</p> </iscomment>
+</div>
+
+<iscomment>
+    Giropay
+    -------------------
+</iscomment>
+<div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_GIROPAY'}">payment-method-expanded</isif>" data-method="STRIPE_GIROPAY">
+	<iscomment> <p class="form-caption">Giropay</p> </iscomment>
+</div>
+
+<iscomment>
+    iDEAL
+    -------------------
+</iscomment>
+<div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_IDEAL'}">payment-method-expanded</isif>" data-method="STRIPE_IDEAL">
+	<div class="form-row required">
+		<label class="label" for="ideal-name">${Resource.msg('method.name.label','stripe',null)}</label>
+		<div class="field-wrapper">
+			<input id="ideal-name" type="text" class="input-text required">
+		</div>
+	</div>
+	<div class="form-row">
+		<label class="label" for="ideal-bank-element">
+			${Resource.msg('ideal.bank.element.label','stripe',null)}
+		</label>
+		<div class="form-indent" style="border: 1px solid #aaa;" id="ideal-bank-element">
+			<!-- A Stripe Element will be inserted here. -->
+		</div>
+	</div>
+</div>
+
+<iscomment>
+    Przelewy24
+    -------------------
+</iscomment>
+<div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_P24'}">payment-method-expanded</isif>" data-method="STRIPE_P24">
+	<iscomment> <p class="form-caption">Przelewy24</p> </iscomment>
+</div>
+
+
+<iscomment>
+    Sofort
+    -------------------
+</iscomment>
+<div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_SOFORT'}">payment-method-expanded</isif>" data-method="STRIPE_SOFORT">
+	<iscomment> <p class="form-caption">Sofort</p> </iscomment>
+	<div class="form-row">
+		<label class="label" for="sofort_country_code">
+			${Resource.msg('sofort.country.code.label','stripe',null)}
+		</label>
+		<div class="form-indent">
+		<select name="sofort_country_code" id="sofort_country_code">
+			<option>${Resource.msg('sofort.country.select','stripe',null)}</option>
+			<option value="AT">${Resource.msg('sofort.country.AT','stripe',null)}</option>
+			<option value="BE">${Resource.msg('sofort.country.BE','stripe',null)}</option>
+			<option value="DE">${Resource.msg('sofort.country.DE','stripe',null)}</option>
+			<option value="IT">${Resource.msg('sofort.country.IT','stripe',null)}</option>
+			<option value="NL">${Resource.msg('sofort.country.NL','stripe',null)}</option>
+			<option value="ES">${Resource.msg('sofort.country.ES','stripe',null)}</option>
+		</select>
+		</div>
+	</div>
+</div>
+
+<iscomment>
+    SEPA Direct Debit
+    -------------------
+</iscomment>
+<div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_SEPA_DEBIT'}">payment-method-expanded</isif>" data-method="STRIPE_SEPA_DEBIT">
+	<iscomment> <p class="form-caption">SEPA Direct Debit</p> </iscomment>
+	<div class="form-row required">
+		<label class="label" for="sepa-name">${Resource.msg('method.name.label','stripe',null)}</label>
+		<div class="field-wrapper">
+			<input id="sepa-name" type="text" class="input-text required">
+		</div>
+	</div>
+	<div class="form-row">
+		<label class="label">
+			${Resource.msg('sepa.iban.label','stripe',null)}
+		</label>
+		<div class="form-indent" style="border: 1px solid #aaa; padding:9px 10px" id="sepa-iban-element">
+			<!-- A Stripe Element will be inserted here. -->
+		</div>
+		<div id="sepa-bank-name" class="form-indent"></div>
+		<!-- Used to display form errors. -->
+	  	<div id="sepa-error-message" role="alert" class="form-indent"></div>
+	</div>
+
+	<!-- Display mandate acceptance text. -->
+	<div id="mandate-acceptance" class="form-indent">
+		${Resource.msg('sepa.mandate.acceptance','stripe',null)}
+	</div>
+
+</div>

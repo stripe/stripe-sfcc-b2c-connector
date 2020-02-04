@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jobs xmlns="http://www.demandware.com/xml/impex/jobs/2015-07-01">
+    <job job-id="Stripe - Delete Custom Objects" priority="0">
+        <description/>
+        <parameters/>
+        <flow>
+            <context site-id="SiteGenesis"/>
+            <step step-id="Delete Custom Objects" type="custom.StripeDeleteCustomObjects" enforce-restart="false">
+                <description/>
+                <parameters>
+                    <parameter name="UNKNOWN">false</parameter>
+                    <parameter name="PROCESSED">false</parameter>
+                    <parameter name="PROCESS">true</parameter>
+                </parameters>
+            </step>
+        </flow>
+        <rules/>
+        <triggers>
+            <run-once enabled="false">
+                <date>2019-06-21Z</date>
+                <time>12:01:23.000Z</time>
+            </run-once>
+        </triggers>
+    </job>
+
+    <job job-id="Stripe - Process Webhook Notifications" priority="0">
+        <description/>
+        <parameters/>
+        <flow>
+            <context site-id="SiteGenesis"/>
+            <step step-id="Process Webhook Notifications" type="custom.StripeProcessWebhookNotifications" enforce-restart="false">
+                <description/>
+                <parameters/>
+            </step>
+        </flow>
+        <rules/>
+        <triggers>
+            <run-recurring enabled="false">
+                <recurrence>
+                    <date-from>2020-02-04Z</date-from>
+                    <start-time>18:50:00.000Z</start-time>
+                    <interval>5m</interval>
+                    <day-of-week/>
+                </recurrence>
+            </run-recurring>
+        </triggers>
+    </job>
+</jobs>

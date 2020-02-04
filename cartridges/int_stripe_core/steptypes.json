@@ -1,0 +1,97 @@
+{
+    "step-types": {
+        "script-module-step": [
+            {
+                "@type-id": "custom.StripeDeleteCustomObjects",
+                "@supports-parallel-execution": "false",
+                "@supports-site-context": "true",
+                "@supports-organization-context": "false",
+                "description": "Removes custom objects of selected statuses",
+                "module": "int_stripe_core/cartridge/scripts/stripe/jobs/deleteCustomObjectsStep.js",
+                "transactional": "false",
+                "timeout-in-seconds": "18000",
+                "parameters": {
+                    "parameter": [
+                        {
+                            "@name": "UNKNOWN",
+                            "@type": "boolean",
+                            "@required": "false",
+                            "@trim": "true",
+                            "description": "Remove custom objects having status UNKNOWN"
+                        },
+                        {
+                            "@name": "PROCESSED",
+                            "@type": "boolean",
+                            "@required": "false",
+                            "@trim": "true",
+                            "description": "Remove custom objects having status PROCESSED"
+                        },
+                        {
+                            "@name": "PROCESS",
+                            "@type": "boolean",
+                            "@required": "false",
+                            "@trim": "true",
+                            "description": "Remove custom objects having status PROCESS"
+                        },
+                        {
+                            "@name": "FAIL_OR_CANCEL",
+                            "@type": "boolean",
+                            "@required": "false",
+                            "@trim": "true",
+                            "description": "Remove custom objects having status FAIL_OR_CANCEL"
+                        },
+                        {
+                            "@name": "PENDING_CHARGE",
+                            "@type": "boolean",
+                            "@required": "false",
+                            "@trim": "true",
+                            "description": "Remove custom objects having status PENDING_CHARGE"
+                        }
+                   ]
+                },
+                "status-codes": {
+                    "status": [
+                        {
+                            "@code": "ERROR",
+                            "description": "Used when the step failed with an error."
+                        },
+                        {
+                            "@code": "OK",
+                            "description": "Used when the step finished successfully."
+                        },
+                        {
+                            "@code": "FINISHED_WITH_WARNINGS",
+                            "description": "Used when the step finished with warnings."
+                        }
+                    ]
+                }
+            },
+            {
+                "@type-id": "custom.StripeProcessWebhookNotifications",
+                "@supports-parallel-execution": "false",
+                "@supports-site-context": "true",
+                "@supports-organization-context": "false",
+                "description": "Processes webhooks notifications received from Stripe and saved in custom objects",
+                "module": "int_stripe_core/cartridge/scripts/stripe/jobs/processSavedNotifications.js",
+                "transactional": "false",
+                "timeout-in-seconds": "18000",
+                "status-codes": {
+                    "status": [
+                        {
+                            "@code": "ERROR",
+                            "description": "Used when the step failed with an error."
+                        },
+                        {
+                            "@code": "OK",
+                            "description": "Used when the step finished successfully."
+                        },
+                        {
+                            "@code": "FINISHED_WITH_WARNINGS",
+                            "description": "Used when the step finished with warnings."
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}

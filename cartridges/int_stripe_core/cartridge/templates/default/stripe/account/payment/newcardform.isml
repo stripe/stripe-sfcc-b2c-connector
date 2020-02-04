@@ -1,0 +1,30 @@
+<form class="form-horizontal" >
+	<fieldset>
+		<div class="form-row required">
+			<label for="stripe-cardholder-name"><span class="required-indicator">&#8226; </span><span>${Resource.msg('creditcard.ownerlabel','forms',null)}></span></label>
+			<div class="field-wrapper">
+				<input class="input-text required" type="text" id="stripe-cardholder-name" value="" maxlength="40" size="40">
+			</div>
+		</div>
+		<!-- placeholder for Elements -->
+		<div id="card-element" class="form-indent" style="border: 1px solid #aaa;padding: 6px;margin-bottom: 26px;"></div>
+		<div class="form-row form-row-button">
+			<button id="stripeApplyBtn" type="button" value="${Resource.msg('global.apply','locale',null)}">
+				${Resource.msg('global.apply', 'locale', null)}
+			</button>
+			<button id="stripeCancelBtn" class="cancel cancel-button simple" type="button" value="${Resource.msg('global.cancel','locale',null)}">
+				${Resource.msg('global.cancel', 'locale', null)}
+			</button>
+		</div>
+	</fieldset>
+</form>
+<isscript>
+var stripeHelper = require('int_stripe_core').getStripeHelper();
+var stripeCardFormStyle = stripeHelper.getStripeCardFormStyle();
+</isscript>
+<script>
+	var style = <isprint value="${JSON.stringify(stripeCardFormStyle)}" encoding="off"/>;
+    var URL = '${URLUtils.https('StripeWallet-AddNewCard')}';
+</script>
+<script src="${URLUtils.staticURL('/js/stripe.newcardform.js')}" ></script>
+

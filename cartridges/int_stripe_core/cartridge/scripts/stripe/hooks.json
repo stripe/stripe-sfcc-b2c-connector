@@ -1,0 +1,12 @@
+{
+	"hooks": [
+		{
+			"name": "dw.order.payment.authorizeCreditCard",
+			"script":"./hooks/authorizeCSC.js"
+		},
+		{
+			"name": "dw.order.payment.authorize",
+			"script":"./hooks/authorizeCSC.js"
+		}
+	]
+}

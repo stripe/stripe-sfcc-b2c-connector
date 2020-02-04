@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services xmlns="http://www.demandware.com/xml/impex/services/2014-09-26">
+    <service-credential service-credential-id="StripeCredentials">
+        <url>https://api.stripe.com/v1</url>
+    </service-credential>
+
+    <service-profile service-profile-id="StripeProfile">
+        <timeout-millis>3000</timeout-millis>
+        <rate-limit-enabled>true</rate-limit-enabled>
+        <rate-limit-calls>5</rate-limit-calls>
+        <rate-limit-millis>100</rate-limit-millis>
+        <cb-enabled>true</cb-enabled>
+        <cb-calls>5</cb-calls>
+        <cb-millis>500</cb-millis>
+    </service-profile>
+
+    <service service-id="stripe.http.service">
+        <service-type>HTTP</service-type>
+        <enabled>true</enabled>
+        <log-prefix>Stripe</log-prefix>
+        <comm-log-enabled>true</comm-log-enabled>
+        <force-prd-enabled>false</force-prd-enabled>
+        <mock-mode-enabled>false</mock-mode-enabled>
+        <profile-id>StripeProfile</profile-id>
+        <credential-id>StripeCredentials</credential-id>
+    </service>
+</services>

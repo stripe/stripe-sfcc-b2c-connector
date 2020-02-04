@@ -1,0 +1,47 @@
+<isscript>
+	var stripeHelper = require('int_stripe_core').getStripeHelper();
+	var stripeEnabled = stripeHelper.isStripeEnabled();
+	var stripeScriptURL = stripeHelper.getStripeScriptUrl();
+	var stripePublicKey = stripeHelper.getPublicApiKey();
+</isscript>
+<isif condition="${stripeEnabled}">
+	<script type="text/javascript" src="${stripeScriptURL}"></script>
+	<isif condition="${stripePublicKey}">
+		<script type="text/javascript">
+			var stripe = Stripe('${stripePublicKey}');
+			var elements = stripe.elements();
+		</script>
+		<isif condition="${pageContext.ns === 'checkout'}">
+			<isscript>
+				var stripeCheckoutHelper = require('int_stripe_core').getCheckoutHelper();
+				var stripeHelper = require('int_stripe_core').getStripeHelper();
+				var stripeAccountCountry = stripeCheckoutHelper.getPRCountry();
+				var stripeCardFormStyle = stripeHelper.getStripeCardFormStyle();
+				var stripeIdealElementStyle = stripeHelper.getStripeIdealElementStyle();
+				var stripeSepaDebitStyle = stripeHelper.getStripeSepaDebitStyle();
+				var stripePaymentButtonStyle = stripeHelper.getPaymentRequestButtonStyle();
+			</isscript>
+			<script>
+				var stripeCardFormStyle = <isprint value="${JSON.stringify(stripeCardFormStyle)}" encoding="off" />;
+				var stripeIdealElementStyle = <isprint value="${JSON.stringify(stripeIdealElementStyle)}" encoding="off" />;
+				var stripeSepaDebitStyle = <isprint value="${JSON.stringify(stripeSepaDebitStyle)}" encoding="off" />;
+					var stripePaymentButtonStyle = <isprint value="${JSON.stringify(stripePaymentButtonStyle)}" encoding="off" />;
+				var stripeAccountCountry = "${stripeAccountCountry}";
+				var beforePaymentAuthURL = '${URLUtils.https("StripePayments-BeforePaymentAuthorization")}';
+				var billingPageUrl = '${URLUtils.https("COBilling-Start")}';
+			</script>
+			<script src="${URLUtils.staticURL('/js/stripe.checkout.js')}" ></script>
+		</isif>
+		<isif condition="${pageContext.ns === 'cart'}">
+			<isscript>
+				var stripeCheckoutHelper = require('int_stripe_core').getCheckoutHelper();
+				var stripeHelper = require('int_stripe_core').getStripeHelper();
+				var stripeAccountCountry = stripeCheckoutHelper.getPRCountry();
+			</isscript>
+			<script>
+				var stripeAccountCountry = "${stripeAccountCountry}";
+			</script>
+			<script src="${URLUtils.staticURL('/js/stripe.cart.js')}" ></script>
+		</isif>
+	</isif>
+</isif>
