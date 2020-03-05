@@ -40,7 +40,7 @@ function fetchSavedPaymentInstruments(stripeCustomerId) {
 
     if (stripeCustomerId) {
         try {
-            const stripeService = require('int_stripe_core').getStripeService();
+            const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
             const stripeCustomer = stripeService.customers.retrieve(stripeCustomerId);
             const defaultPaymentMethodId = stripeCustomer.invoice_settings && stripeCustomer.invoice_settings.default_payment_method;
@@ -94,7 +94,7 @@ function StripeWallet(apiCustomer) {
             throw new Error('Missing Stripe payment method ID');
         }
 
-        const stripeService = require('int_stripe_core').getStripeService();
+        const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
         try {
             let newStripeCustomer;
@@ -129,7 +129,7 @@ function StripeWallet(apiCustomer) {
         const stripeId = paymentInstrument && paymentInstrument.custom && paymentInstrument.custom.stripeId;
 
         if (stripeCustomerId && stripeId) {
-            const stripeService = require('int_stripe_core').getStripeService();
+            const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
             try {
                 stripeService.paymentMethods.detach(stripeId);
@@ -141,7 +141,7 @@ function StripeWallet(apiCustomer) {
 
     this.makeDefault = function (stripeId) {
         if (stripeCustomerId && stripeId) {
-            const stripeService = require('int_stripe_core').getStripeService();
+            const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
             stripeService.customers.update(stripeCustomerId, {
                 invoice_settings: {

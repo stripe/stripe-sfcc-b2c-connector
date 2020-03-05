@@ -12,7 +12,7 @@ var PaymentStatusCodes = require('dw/order/PaymentStatusCodes');
 var Resource = require('dw/web/Resource');
 var Transaction = require('dw/system/Transaction');
 
-var StripeCreditHelper = require('int_stripe_core/cartridge/scripts/stripe/helpers/paymentprocessors/stripeCreditHelper');
+var StripeCreditHelper = require('*/cartridge/scripts/stripe/helpers/paymentprocessors/stripeCreditHelper');
 
 /**
  * Creates a token. This should be replaced by utilizing a tokenization provider
@@ -101,11 +101,11 @@ function processForm(req, paymentForm, viewFormData) {
         htmlName: paymentForm.paymentMethod.value
     };
 
-    // viewData.paymentInformation = {
-    //     cardType: {
-    //         value: paymentForm.creditCardFields.cardType.value,
-    //         htmlName: paymentForm.creditCardFields.cardType.htmlName
-    //     },
+    viewData.paymentInformation = {
+        cardType: {
+            value: paymentForm.creditCardFields.cardType.value,
+            htmlName: paymentForm.creditCardFields.cardType.htmlName
+        }
     //     cardNumber: {
     //         value: paymentForm.creditCardFields.cardNumber.value,
     //         htmlName: paymentForm.creditCardFields.cardNumber.htmlName
@@ -125,31 +125,31 @@ function processForm(req, paymentForm, viewFormData) {
     //         value: parseInt(paymentForm.creditCardFields.expirationYear.value, 10),
     //         htmlName: paymentForm.creditCardFields.expirationYear.htmlName
     //     }
-    // };
+    };
 
-    // if (req.form.storedPaymentUUID) {
-    //     viewData.storedPaymentUUID = req.form.storedPaymentUUID;
-    // }
+    if (req.form.storedPaymentUUID) {
+        viewData.storedPaymentUUID = req.form.storedPaymentUUID;
+    }
 
     // viewData.saveCard = paymentForm.creditCardFields.saveCard.checked;
 
     // // process payment information
-    // if (viewData.storedPaymentUUID
-    //     && req.currentCustomer.raw.authenticated
-    //     && req.currentCustomer.raw.registered
-    // ) {
+    if (viewData.storedPaymentUUID
+        && req.currentCustomer.raw.authenticated
+        && req.currentCustomer.raw.registered
+    ) {
     //     var paymentInstruments = req.currentCustomer.wallet.paymentInstruments;
     //     var paymentInstrument = array.find(paymentInstruments, function (item) {
     //         return viewData.storedPaymentUUID === item.UUID;
     //     });
 
     //     viewData.paymentInformation.cardNumber.value = paymentInstrument.creditCardNumber;
-    //     viewData.paymentInformation.cardType.value = paymentInstrument.creditCardType;
+        viewData.paymentInformation.cardType.value = paymentInstrument.creditCardType;
     //     viewData.paymentInformation.securityCode.value = req.form.securityCode;
     //     viewData.paymentInformation.expirationMonth.value = paymentInstrument.creditCardExpirationMonth;
     //     viewData.paymentInformation.expirationYear.value = paymentInstrument.creditCardExpirationYear;
     //     viewData.paymentInformation.creditCardToken = paymentInstrument.raw.creditCardToken;
-    // }
+    }
 
     return {
         error: false,

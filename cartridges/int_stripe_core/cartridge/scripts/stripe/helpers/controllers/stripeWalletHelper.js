@@ -2,7 +2,7 @@
 
 function AddNewCard() {
     const stripePaymentMethodId = request.httpParameterMap.payment_method_id.stringValue;
-    const stripeHelper = require('int_stripe_core').getStripeHelper();
+    const stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
     const wallet = stripeHelper.getStripeWallet(customer);
 
     var responsePayload = {
@@ -26,7 +26,7 @@ module.exports.AddNewCard.public = true;
 
 function MakeDefault() {
     const stripeId = request.httpParameterMap.stripe_id.stringValue;
-    const stripeHelper = require('int_stripe_core').getStripeHelper();
+    const stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
     const wallet = stripeHelper.getStripeWallet(customer);
 
     try {

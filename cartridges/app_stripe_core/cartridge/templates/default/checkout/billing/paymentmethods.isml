@@ -64,7 +64,7 @@
 			<iscomment>
 				Stripe changes BEGIN
 			</iscomment>
-			<isif condition="${require('int_stripe_core').getCheckoutHelper().isStripeCardsPaymentMethodEnabled()}">
+			<isif condition="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').isStripeCardsPaymentMethodEnabled()}">
 				<isinclude template="stripe/checkout/billing/cardform" />
 			<iselse/>
 			<iscomment>
@@ -145,7 +145,7 @@
 		<iscomment>
 			Stripe changes BEGIN
 		</iscomment>
-		<isif condition="${require('int_stripe_core').getStripeHelper().isStripeEnabled()}">
+		<isif condition="${require('*/cartridge/scripts/stripe/helpers/stripeHelper').isStripeEnabled()}">
 			<isinclude template="stripe/checkout/billing/altpaymentmethods" />
 		</isif>
 		<iscomment>

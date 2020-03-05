@@ -30,7 +30,7 @@ var guard = require('*/cartridge/scripts/guard');
  */
 function list() {
     //Stripe changes BEGIN
-    var stripeHelper = require('int_stripe_core').getStripeHelper();
+    var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
     var paymentInstruments;
 
     if (stripeHelper.isStripeEnabled()) {
@@ -181,14 +181,12 @@ function create() {
  *
  * In either case, redirects to the {@link module:controllers/PaymentInstruments~list|List} function.
  * @transaction
- * @TODO Should be moved into handlePaymentForm
- * @FIXME Inner method should be lowercase.error action should do something
  */
 function Delete() {
     var paymentForm = app.getForm('paymentinstruments');
     paymentForm.handleAction({
         remove: function (formGroup, action) {
-            const stripeHelper = require('int_stripe_core').getStripeHelper();
+            const stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
             if (stripeHelper.isStripeEnabled()) {
                 const paymentInstrumentToDelete = action.object;
                 if (paymentInstrumentToDelete && paymentInstrumentToDelete.custom && paymentInstrumentToDelete.custom.stripeId) {
@@ -204,7 +202,6 @@ function Delete() {
             });
         },
         error: function () {
-            // @TODO When could this happen
         }
     });
 

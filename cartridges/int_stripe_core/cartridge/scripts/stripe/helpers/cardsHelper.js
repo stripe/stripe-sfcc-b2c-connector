@@ -6,7 +6,7 @@
  * @return {string} - SFCC card type
  */
 function getCardType(stripeCardBrand) {
-    var brandsToCardTypeMap = { // TODO: make this a site preference?
+    var brandsToCardTypeMap = {
         visa: 'Visa',
         mastercard: 'Master',
         amex: 'Amex',

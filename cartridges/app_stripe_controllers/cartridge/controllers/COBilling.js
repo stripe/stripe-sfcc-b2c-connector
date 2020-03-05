@@ -147,7 +147,7 @@ function initCreditCardList(cart) {
     applicablePaymentCards = PaymentMgr.getPaymentMethod(PaymentInstrument.METHOD_CREDIT_CARD).getApplicablePaymentCards(customer, countryCode, paymentAmount.value);
 
     //Stripe change BEGIN
-    var stripeHelper = require('int_stripe_core').getStripeHelper();
+    var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
     if (stripeHelper.isStripeEnabled()) {
         applicablePaymentMethods = stripeHelper.getStripePaymentMethods(applicablePaymentMethods, request.locale);
     }
@@ -523,7 +523,6 @@ function billing() {
             return;
         },
         paymentSelect: function () {
-            // ToDo - pass parameter ?
             publicStart();
             return;
         },

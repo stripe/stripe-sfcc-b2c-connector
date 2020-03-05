@@ -4,7 +4,7 @@
  * Entry point for processing webhooks push notifications.
  */
 function webHook() {
-    const webhooksHelper = require('int_stripe_core').getWebhooksHelper();
+    const webhooksHelper = require('*/cartridge/scripts/stripe/helpers/webhooksHelper');
     webhooksHelper.processIncomingNotification();
 }
 

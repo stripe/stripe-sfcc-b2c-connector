@@ -5,7 +5,7 @@ var page = module.superModule;
 server.extend(page);
 
 server.append('Show', function (req, res, next) {
-    var stripeHelper = require('int_stripe_core').getStripeHelper();
+    var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
     var wallet = stripeHelper.getStripeWallet(customer);
     var paymentInstruments = wallet.getPaymentInstruments();
     var viewData = res.getViewData();

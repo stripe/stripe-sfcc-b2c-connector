@@ -1,5 +1,5 @@
 <isscript>
-var stripeHelper = require('int_stripe_core').getStripeHelper();
+var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
 var wallet = stripeHelper.getStripeWallet(customer);
 var savedCards = wallet.getPaymentInstruments();
 var hasSavedCards = !empty(savedCards);
@@ -22,7 +22,7 @@ var canSaveCard = customer.authenticated;
 		</div>
 	</div>
 	<div class="form-indent">
-		<div id="card-element" style="border: 1px solid #aaa;padding: 6px;"></div>
+		<div id="card-element"></div>
 	</div>
 	<isif condition="${canSaveCard}">
 		<div class="form-row label-inline form-indent">
@@ -35,7 +35,7 @@ var canSaveCard = customer.authenticated;
 		<div>&nbsp;</div>
 	</isif>
 	<isif condition="${hasSavedCards}">
-		<div class="form-indent" style="padding-bottom: 16px;">
+		<div class="form-indent">
 			<a id="switch-to-saved-cards" href="javascript:void(0)">${Resource.msg('creditcard.use.savedcard','stripe',null)}</a>
 		</div>
 	</isif>

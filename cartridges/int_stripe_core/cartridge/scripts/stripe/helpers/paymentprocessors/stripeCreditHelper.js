@@ -6,13 +6,13 @@ const PaymentMgr = require('dw/order/PaymentMgr');
 const Order = require('dw/order/Order');
 
 function Handle(args) {
-    const checkoutHelper = require('int_stripe_core').getCheckoutHelper();
+    const checkoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
     const paramsMap = request.httpParameterMap;
     const cardBrand = paramsMap.stripe_card_brand.stringValue;
     var cardType = paramsMap.stripe_card_type.stringValue;
 
     if (!cardType && cardBrand) {
-        cardType = require('int_stripe_core').getCardsHelper().getCardType(cardBrand);
+        cardType = require('*/cartridge/scripts/stripe/helpers/cardsHelper').getCardType(cardBrand);
     }
 
     var prUsed = false;
@@ -62,7 +62,7 @@ function Authorize(args) {
             error: true
         };
     } else {
-        const stripeService = require('int_stripe_core').getStripeService();
+        const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
         try {
             const paymentIntent = stripeService.paymentIntents.update(paymentIntentId, {

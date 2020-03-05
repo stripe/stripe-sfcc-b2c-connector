@@ -12,7 +12,7 @@ var PaymentStatusCodes = require('dw/order/PaymentStatusCodes');
 var Resource = require('dw/web/Resource');
 var Transaction = require('dw/system/Transaction');
 
-var StripeAPMHelper = require('int_stripe_core/cartridge/scripts/stripe/helpers/paymentprocessors/stripeApmHelper');
+var StripeAPMHelper = require('*/cartridge/scripts/stripe/helpers/paymentprocessors/stripeApmHelper');
 
 /**
  * Creates a token. This should be replaced by utilizing a tokenization provider

@@ -142,7 +142,7 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
 
         if (params.saveCard) {
             if (!stripeCustomerId) {
-                const stripeService = require('int_stripe_core').getStripeService();
+                const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
                 const newStripeCustomer = stripeService.customers.create({
                     email: customer.profile.email,
@@ -192,7 +192,7 @@ exports.createPaymentIntent = function (paymentInstrument) {
         createPaymentIntentPayload.save_payment_method = true;
     }
 
-    const stripeService = require('int_stripe_core').getStripeService();
+    const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
     const paymentIntent = stripeService.paymentIntents.create(createPaymentIntentPayload);
 
@@ -200,7 +200,7 @@ exports.createPaymentIntent = function (paymentInstrument) {
 };
 
 exports.confirmPaymentIntent = function (paymentIntentId) {
-    const stripeService = require('int_stripe_core').getStripeService();
+    const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
     const paymentIntent = stripeService.paymentIntents.confirm(paymentIntentId);
 
@@ -339,7 +339,7 @@ exports.refundCharge = function (order) {
     const chargeId = cardPaymentInstrument && cardPaymentInstrument.custom.stripeChargeID;
 
     if (chargeId) {
-        const stripeService = require('int_stripe_core').getStripeService();
+        const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
         try {
             stripeService.refunds.create({

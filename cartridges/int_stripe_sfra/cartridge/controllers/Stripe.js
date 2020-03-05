@@ -3,12 +3,12 @@
 var server = require('server');
 
 server.get('GetShippingOptions', function (req, res, next) {
-    res.json({ shippingOptions: require('int_stripe_core').getCheckoutHelper().getShippingOptions() });
+    res.json({ shippingOptions: require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getShippingOptions() });
     next();
 });
 
 server.post('WebHook', function (req, res, next) {
-    const webhooksHelper = require('int_stripe_core').getWebhooksHelper();
+    const webhooksHelper = require('*/cartridge/scripts/stripe/helpers/webhooksHelper');
     var success = webhooksHelper.processIncomingNotification();
 
     res.setStatusCode(success ? 200 : 500);

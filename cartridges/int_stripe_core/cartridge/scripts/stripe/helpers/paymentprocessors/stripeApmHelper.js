@@ -5,7 +5,7 @@ var Transaction = require('dw/system/Transaction');
 // var app = require('*/cartridge/scripts/app');
 
 function Handle(args) {
-    const checkoutHelper = require('int_stripe_core').getCheckoutHelper();
+    const checkoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
     const paramsMap = request.httpParameterMap;
     const selectedPaymentMethodID = paramsMap.dwfrm_billing_paymentMethods_selectedPaymentMethodID.stringValue || paramsMap.dwfrm_billing_paymentMethod.stringValue;// app.getForm('billing').object.paymentMethods.selectedPaymentMethodID.value;
     const params = {

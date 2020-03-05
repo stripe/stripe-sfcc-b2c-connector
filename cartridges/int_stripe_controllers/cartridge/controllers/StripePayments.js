@@ -4,7 +4,7 @@
 'use strict';
 
 var ISML = require('dw/template/ISML');
-var stripePaymentsHelper = require('int_stripe_core/cartridge/scripts/stripe/helpers/controllers/stripePaymentsHelper');
+var stripePaymentsHelper = require('*/cartridge/scripts/stripe/helpers/controllers/stripePaymentsHelper');
 
 /**
  * Entry point for handling payment intent creation and confirmation AJAX calls.

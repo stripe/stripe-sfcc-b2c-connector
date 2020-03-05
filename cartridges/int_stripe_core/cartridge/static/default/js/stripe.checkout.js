@@ -1,11 +1,13 @@
 /* eslint-disable no-console */
 /* eslint-disable no-alert */
-/* globals stripe, elements, stripeCardFormStyle, stripeIdealElementStyle, stripeSepaDebitStyle,
-    stripeAccountCountry, stripePaymentButtonStyle, billingPageUrl, beforePaymentAuthURL */
+/* globals Stripe */
 // v1
 var cardElement;
 var idealBankElement;
 var sepaIbanElement;
+
+var stripe = Stripe(document.getElementById('stripePublicKey').value);
+var elements = stripe.elements();
 
 var newCardFormContainer = document.getElementById('new-card-form-container');
 var savedCardsFormContainer = document.getElementById('saved-cards-container');
@@ -83,7 +85,7 @@ function copyNewCardDetails(paymentMethod) {
 
 function initNewCardForm() {
     var postalCodeEl = document.querySelector('input[name$="_postal"]');
-    cardElement = elements.create('card', { value: { postalCode: postalCodeEl.value }, style: stripeCardFormStyle });
+    cardElement = elements.create('card', { value: { postalCode: postalCodeEl.value }, style: JSON.parse(document.getElementById('stripeCardFormStyle').value) });
     cardElement.mount('#card-element');
 
     postalCodeEl.addEventListener('change', function (event) {
@@ -110,14 +112,14 @@ function initSavedCards() {
 }
 
 function initIdeal() {
-    idealBankElement = elements.create('idealBank', { style: stripeIdealElementStyle });
+    idealBankElement = elements.create('idealBank', { style: JSON.parse(document.getElementById('stripeIdealElementStyle').value) });
 
     idealBankElement.mount('#ideal-bank-element');
 }
 
 function initSepaDebit() {
     sepaIbanElement = elements.create('iban', {
-        style: stripeSepaDebitStyle,
+        style: JSON.parse(document.getElementById('stripeSepaDebitStyle').value),
         supportedCountries: ['SEPA']
     });
 
@@ -192,7 +194,7 @@ function initPRB() {
     var currencyCode = stripeOrderCurrencyInput.value && stripeOrderCurrencyInput.value.toLowerCase();
 
     var paymentRequest = stripe.paymentRequest({
-        country: stripeAccountCountry,
+        country: document.getElementById('stripeAccountCountry').value,
         currency: currencyCode,
         total: {
             label: 'Order Total',
@@ -206,7 +208,7 @@ function initPRB() {
     var prButton = elements.create('paymentRequestButton', {
         paymentRequest: paymentRequest,
         style: {
-            paymentRequestButton: stripePaymentButtonStyle
+            paymentRequestButton: JSON.parse(document.getElementById('stripePaymentButtonStyle').value)
         }
     });
 
@@ -459,18 +461,18 @@ function init() {
 function handleServerResponse(response) {
     if (response.error) {
         alert(response.error.message);
-        window.location.replace(billingPageUrl);
+        window.location.replace(document.getElementById('billingPageUrl').value);
     } else if (response.requires_action) {
         // Use Stripe.js to handle required card action
         stripe.handleCardAction(response.payment_intent_client_secret).then(function (result) {
             if (result.error) {
                 alert(result.error.message);
-                window.location.replace(billingPageUrl);
+                window.location.replace(document.getElementById('billingPageUrl').value);
             } else {
                 // The card action has been handled
                 // The PaymentIntent can be confirmed again on the server
                 $.ajax({
-                    url: beforePaymentAuthURL,
+                    url: document.getElementById('beforePaymentAuthURL').value,
                     method: 'POST',
                     dataType: 'json'
                 }).done(function (json) {
@@ -495,7 +497,7 @@ function initSummary() {
         event.preventDefault();
 
         $.ajax({
-            url: beforePaymentAuthURL,
+            url: document.getElementById('beforePaymentAuthURL').value,
             method: 'POST',
             dataType: 'json'
         }).done(function (json) {

@@ -17,7 +17,7 @@ var PaymentMgr = require('dw/order/PaymentMgr');
  */
 function validatePaymentInstruments(paymentContainer, countryCode, amount) {
 	// Stripe changes BEGIN
-	var stripeCheckoutHelper = require('int_stripe_core').getCheckoutHelper();
+	var stripeCheckoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
 	var cardPaymentsHandledByStripe = stripeCheckoutHelper.isStripeCardsPaymentMethodEnabled();
 	// Stripe changes END
 

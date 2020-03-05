@@ -1,4 +1,6 @@
-<form class="form-horizontal" >
+<form class="form-horizontal payment-form"
+    data-wallet-url="${URLUtils.https('PaymentInstruments-List')}"
+    data-element-style="${JSON.stringify(require('*/cartridge/scripts/stripe/helpers/stripeHelper').getStripeCardFormStyle())}">
 	<fieldset>
 		<div class="form-row required">
 			<label for="stripe-cardholder-name"><span class="required-indicator">&#8226; </span><span>${Resource.msg('creditcard.ownerlabel','forms',null)}></span></label>
@@ -7,7 +9,7 @@
 			</div>
 		</div>
 		<!-- placeholder for Elements -->
-		<div id="card-element" class="form-indent" style="border: 1px solid #aaa;padding: 6px;margin-bottom: 26px;"></div>
+		<div id="card-element" class="form-indent"></div>
 		<div class="form-row form-row-button">
 			<button id="stripeApplyBtn" type="button" value="${Resource.msg('global.apply','locale',null)}">
 				${Resource.msg('global.apply', 'locale', null)}
@@ -18,13 +20,5 @@
 		</div>
 	</fieldset>
 </form>
-<isscript>
-var stripeHelper = require('int_stripe_core').getStripeHelper();
-var stripeCardFormStyle = stripeHelper.getStripeCardFormStyle();
-</isscript>
-<script>
-	var style = <isprint value="${JSON.stringify(stripeCardFormStyle)}" encoding="off"/>;
-    var URL = '${URLUtils.https('StripeWallet-AddNewCard')}';
-</script>
 <script src="${URLUtils.staticURL('/js/stripe.newcardform.js')}" ></script>
 

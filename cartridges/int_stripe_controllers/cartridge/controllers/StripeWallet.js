@@ -5,7 +5,7 @@
 
 var ISML = require('dw/template/ISML');
 var URLUtils = require('dw/web/URLUtils');
-var stripeWalletHelper = require('int_stripe_core/cartridge/scripts/stripe/helpers/controllers/stripeWalletHelper');
+var stripeWalletHelper = require('*/cartridge/scripts/stripe/helpers/controllers/stripeWalletHelper');
 
 /**
  * AddNewCard controller to handle AJAX calls

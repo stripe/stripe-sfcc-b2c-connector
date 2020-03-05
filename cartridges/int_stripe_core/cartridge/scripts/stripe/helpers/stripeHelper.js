@@ -196,7 +196,7 @@ exports.getStripeSepaDebitStyle = function () {
  * @return {StripeWallet} - StripeWallet instance
  */
 exports.getStripeWallet = function (apiCustomer) {
-    return require('../models/stripeWallet')(apiCustomer);
+    return require('*/cartridge/scripts/stripe/models/stripeWallet')(apiCustomer);
 };
 
 /**

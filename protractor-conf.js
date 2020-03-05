@@ -11,7 +11,7 @@ export const config = {
     // remove ugly protractor dot reporter
     // print: () => { },
     },
-    baseUrl: 'https://stripe01-tech-prtnr-na05-dw.demandware.net/on/demandware.store/Sites-RefArch-Site/en_US/',
+    baseUrl: 'https://hostname.demandware.net/on/demandware.store/Sites-RefArch-Site/en_US/',
     onPrepare: () => {
     /**
      * If you are testing against a non-angular site - set ignoreSynchronization setting to true

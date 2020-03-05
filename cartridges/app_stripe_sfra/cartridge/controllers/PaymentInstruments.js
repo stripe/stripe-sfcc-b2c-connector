@@ -5,7 +5,7 @@ var page = module.superModule;
 server.extend(page);
 
 server.append('List', function (req, res, next) {
-    var stripeHelper = require('int_stripe_core').getStripeHelper();
+    var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
     var wallet = stripeHelper.getStripeWallet(customer);
     var paymentInstruments = wallet.getPaymentInstruments();
     res.setViewData({ paymentInstruments: paymentInstruments });
@@ -13,7 +13,7 @@ server.append('List', function (req, res, next) {
 });
 
 server.replace('DeletePayment', function (req, res, next) {
-    var stripeHelper = require('int_stripe_core').getStripeHelper();
+    var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
     var wallet = stripeHelper.getStripeWallet(customer);
     var UUID = req.querystring.UUID;
     wallet.removePaymentInstrument({ custom: { stripeId: UUID } });

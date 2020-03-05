@@ -1,7 +1,8 @@
 /* eslint-disable no-alert */
-/* globals elements, stripe, cardElementStyle, walletURL */
+/* globals elements, stripe, walletURL */
 // v1
-var cardElement = elements.create('card', { style: cardElementStyle });
+var $form = $('.payment-form');
+var cardElement = elements.create('card', { style: $form.data('element-style') });
 cardElement.mount('#card-element');
 
 $('button[type="submit"]').on('click', function (e) {
@@ -16,14 +17,14 @@ $('button[type="submit"]').on('click', function (e) {
         } else {
             var paymentMethodId = result.paymentMethod.id;
             $.ajax({
-                url: URL,
+                url: $form.attr('action'),
                 method: 'POST',
                 data: {
                     payment_method_id: paymentMethodId
                 }
             }).done(function (msg) {
                 if (msg.success) {
-                    window.location.href = walletURL;
+                    window.location.href = $form.data('wallet-url');
                 } else {
                     alert(msg.error);
                 }

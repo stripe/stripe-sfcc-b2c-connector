@@ -44,7 +44,7 @@ exports.execute = function (jobParams) {
 
     const CustomObjectMgr = require('dw/object/CustomObjectMgr');
     const Transaction = require('dw/system/Transaction');
-    const webhooksHelper = require('int_stripe_core').getWebhooksHelper();
+    const webhooksHelper = require('*/cartridge/scripts/stripe/helpers/webhooksHelper');
 
     var stripeObjectsIter;
     try {

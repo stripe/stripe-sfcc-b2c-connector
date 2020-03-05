@@ -3,7 +3,7 @@
 
 'use strict';
 
-const stripeCreditHelper = require('int_stripe_core/cartridge/scripts/stripe/helpers/paymentprocessors/stripeCreditHelper');
+const stripeCreditHelper = require('*/cartridge/scripts/stripe/helpers/paymentprocessors/stripeCreditHelper');
 
 /**
  * Verifies a credit card against a valid card number and expiration date and possibly invalidates invalid form fields.

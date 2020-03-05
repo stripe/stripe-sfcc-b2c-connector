@@ -6,7 +6,7 @@
 
 var PaymentMgr = require('dw/order/PaymentMgr');
 var Transaction = require('dw/system/Transaction');
-const stripeApmHelper = require('int_stripe_core/cartridge/scripts/stripe/helpers/paymentprocessors/stripeApmHelper');
+const stripeApmHelper = require('*/cartridge/scripts/stripe/helpers/paymentprocessors/stripeApmHelper');
 
 
 /**

@@ -144,7 +144,7 @@ function start() {
     // Creates a new order. This will internally ReserveInventoryForOrder and will create a new Order with status
     // 'Created'.
     // Stripe changes BEGIN
-    const stripeCheckoutHelper = require('int_stripe_core').getCheckoutHelper();
+    const stripeCheckoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
     var order = stripeCheckoutHelper.createOrder(cart.object);
     // Stripe changes END
 
@@ -158,7 +158,7 @@ function start() {
 
     if (handlePaymentsResult.error) {
         return Transaction.wrap(function () {
-            OrderMgr.failOrder(order);
+            OrderMgr.failOrder(order, true);
             return {
                 error: true,
                 PlaceOrderError: new Status(Status.ERROR, 'confirm.error.technical')
@@ -167,7 +167,7 @@ function start() {
 
     } else if (handlePaymentsResult.missingPaymentInfo) {
         return Transaction.wrap(function () {
-            OrderMgr.failOrder(order);
+            OrderMgr.failOrder(order, true);
             return {
                 error: true,
                 PlaceOrderError: new Status(Status.ERROR, 'confirm.error.technical')

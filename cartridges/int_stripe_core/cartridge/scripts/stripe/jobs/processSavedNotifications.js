@@ -15,7 +15,7 @@ const logger = Logger.getLogger('Stripe', 'stripe');
 const NOTIFICATIONS_CUSTOM_OBJECT_TYPE = 'StripeWebhookNotifications';
 
 function isSFRA() {
-    return require('dw/system/Site').current.getCustomPreferenceValue('stripeIsSFRA');
+    return Site.current.getCustomPreferenceValue('stripeIsSFRA');
 }
 
 /**
@@ -111,7 +111,7 @@ function createCharge(stripeNotificationObject, order, stripePaymentInstrument) 
         createChargePayload.customer = stripeCustomerId;
     }
 
-    const stripeService = require('int_stripe_core').getStripeService();
+    const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
     try {
         const charge = stripeService.charges.create(createChargePayload);
@@ -142,7 +142,7 @@ function failOrder(stripeNotificationObject, order) {
 
     Transaction.wrap(function () {
         order.addNote('Stripe Processing Job Note(failed details)', JSON.stringify(failedDetailsForOrder));
-        var failStatus = OrderMgr.failOrder(order);
+        var failStatus = OrderMgr.failOrder(order, true);
         if (failStatus.status === Status.ERROR) {
             stripeLogger.info('\n' + failStatus.message);
             logger.error('Error: {0}', failStatus.message);
@@ -176,7 +176,7 @@ function placeOrder(stripeNotificationObject, order, stripePaymentInstrument) {
 
         var placeOrderStatus = OrderMgr.placeOrder(order);
         if (placeOrderStatus === Status.ERROR) {
-            OrderMgr.failOrder(order);
+            OrderMgr.failOrder(order, true);
             stripeLogger.info('An error occured durring place order: {0}, error message: {1}', order.orderNo, placeOrderStatus.message);
         }
 
@@ -203,7 +203,7 @@ function placeOrderAfterReview(stripeNotificationObject, order) {
     Transaction.wrap(function () {
         var placeOrderStatus = OrderMgr.placeOrder(order);
         if (placeOrderStatus === Status.ERROR) {
-            OrderMgr.failOrder(order);
+            OrderMgr.failOrder(order, true);
             stripeLogger.info('An error occured durring place order: {0}, error message: {1}', order.orderNo, placeOrderStatus.message);
         }
 
@@ -228,7 +228,7 @@ function placeOrderAfterReview(stripeNotificationObject, order) {
 function failOrderAfterReview(stripeNotificationObject, order) {
     Transaction.wrap(function () {
         order.addNote('Stripe Processing Job Note(failed details)', stripeNotificationObject.custom.stripeWebhookData);
-        var failStatus = OrderMgr.failOrder(order);
+        var failStatus = OrderMgr.failOrder(order, true);
         if (failStatus.status === Status.ERROR) {
             stripeLogger.info('\n' + failStatus.message);
             logger.error('Error: {0}', failStatus.message);
@@ -248,7 +248,7 @@ function failOrderAfterReview(stripeNotificationObject, order) {
 function processReviewNotification(stripeNotificationObject) {
     var event = JSON.parse(stripeNotificationObject.custom.stripeWebhookData);
     if (event.type === 'review.closed') {
-        const stripeService = require('int_stripe_core').getStripeService();
+        const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
         var paymentIntent = stripeService.paymentIntents.retrieve(event.data.object.payment_intent);
 
         if (!(Site.getCurrent().getID() === paymentIntent.metadata.site_id)) {

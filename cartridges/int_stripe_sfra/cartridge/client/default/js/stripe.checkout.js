@@ -1,11 +1,13 @@
 /* eslint-disable no-console */
 /* eslint-disable no-alert */
 /* eslint-disable no-param-reassign */
-/* globals elements, stripe, beforePaymentAuthURL, billingPageUrl, stripeSepaDebitStyle,
-    stripeIdealElementStyle, stripeAccountCountry, stripePaymentButtonStyle */
+/* globals Stripe */
 // v1
 var idealBankElement;
 var sepaIbanElement;
+
+var stripe = Stripe(document.getElementById('stripePublicKey').value);
+var elements = stripe.elements();
 
 var cardElement = elements.create('card');
 cardElement.mount('#card-element');
@@ -18,13 +20,13 @@ cardElement.addEventListener('change', function (event) {
     }
 });
 
-
 var newCardFormContainer = document.getElementById('new-card-form-container');
 var savedCardsFormContainer = document.getElementById('saved-cards-container');
 var cardIdInput = document.getElementsByName('stripe_source_id');
 var cardNumberInput = document.getElementById('stripe_card_number');
 var cardHolderInput = document.getElementById('stripe_card_holder');
 var cardTypeInput = document.getElementById('stripe_card_type');
+var cardTypeInputSFCC = document.getElementById('cardType');
 var cardBrandInput = document.getElementById('stripe_card_brand');
 var cardExpMonthInput = document.getElementById('stripe_card_expiration_month');
 var cardExpYearInput = document.getElementById('stripe_card_expiration_year');
@@ -61,6 +63,12 @@ function isSavedCard() {
     return newCardFormContainer && newCardFormContainer.style.display === 'none';
 }
 
+function capitalize(text) {
+    return text.replace(/\b\w/g, function (letter) {
+        return letter.toUpperCase();
+    });
+}
+
 function copySelectedSaveCardDetails() {
     var savedCard = document.querySelector('input[name=saved_card_id]:checked');
     cardIdInput.forEach(function (input) {
@@ -69,6 +77,7 @@ function copySelectedSaveCardDetails() {
     cardNumberInput.value = savedCard.dataset.cardnumber;
     cardHolderInput.value = savedCard.dataset.cardholder;
     cardTypeInput.value = savedCard.dataset.cardtype;
+    cardTypeInputSFCC.value = capitalize(savedCard.dataset.cardtype);
     cardExpMonthInput.value = savedCard.dataset.cardexpmonth;
     cardExpYearInput.value = savedCard.dataset.cardexpyear;
     prUsedInput.value = '';
@@ -82,6 +91,7 @@ function copyNewCardDetails(paymentMethod) {
     if (paymentMethod.card) {
         cardNumberInput.value = '************' + paymentMethod.card.last4;
         cardTypeInput.value = '';
+        cardTypeInputSFCC.value = capitalize(paymentMethod.card.brand);
         cardBrandInput.value = paymentMethod.card.brand;
         cardExpMonthInput.value = paymentMethod.card.exp_month;
         cardExpYearInput.value = paymentMethod.card.exp_year;
@@ -214,18 +224,18 @@ function processCreateSourceACH(result) {
 function handleServerResponse(response) {
     if (response.error) {
         alert(response.error.message);
-        window.location.replace(billingPageUrl);
+        window.location.replace(document.getElementById('billingPageUrl').value);
     } else if (response.requires_action) {
         // Use Stripe.js to handle required card action
         stripe.handleCardAction(response.payment_intent_client_secret).then(function (result) {
             if (result.error) {
                 alert(result.error.message);
-                window.location.replace(billingPageUrl);
+                window.location.replace(document.getElementById('billingPageUrl').value);
             } else {
                 // The card action has been handled
                 // The PaymentIntent can be confirmed again on the server
                 $.ajax({
-                    url: beforePaymentAuthURL,
+                    url: document.getElementById('beforePaymentAuthURL').value,
                     method: 'POST',
                     dataType: 'json'
                 }).done(function (json) {
@@ -287,7 +297,7 @@ document.querySelector('button.place-order').addEventListener('click', function 
     if (forceSubmit) return true;
 
     $.ajax({
-        url: beforePaymentAuthURL,
+        url: document.getElementById('beforePaymentAuthURL').value,
         method: 'POST',
         dataType: 'json'
     }).done(function (json) {
@@ -393,13 +403,13 @@ document.querySelector('button.submit-payment').addEventListener('click', functi
 });
 
 function initIdeal() {
-    idealBankElement = elements.create('idealBank', { style: stripeIdealElementStyle });
+    idealBankElement = elements.create('idealBank', { style: JSON.parse(document.getElementById('stripeIdealElementStyle').value) });
     idealBankElement.mount('#ideal-bank-element');
 }
 
 function initSepaDebit() {
     sepaIbanElement = elements.create('iban', {
-        style: stripeSepaDebitStyle,
+        style: JSON.parse(document.getElementById('stripeSepaDebitStyle').value),
         supportedCountries: ['SEPA']
     });
 
@@ -435,7 +445,7 @@ function initPRB() {
     var currencyCode = stripeOrderCurrencyInput.value && stripeOrderCurrencyInput.value.toLowerCase();
 
     var paymentRequest = stripe.paymentRequest({
-        country: stripeAccountCountry,
+        country: document.getElementById('stripeAccountCountry').value,
         currency: currencyCode,
         total: {
             label: 'Order Total',
@@ -449,7 +459,7 @@ function initPRB() {
     var prButton = elements.create('paymentRequestButton', {
         paymentRequest: paymentRequest,
         style: {
-            paymentRequestButton: stripePaymentButtonStyle
+            paymentRequestButton: JSON.parse(document.getElementById('stripePaymentButtonStyle').value)
         }
     });
 

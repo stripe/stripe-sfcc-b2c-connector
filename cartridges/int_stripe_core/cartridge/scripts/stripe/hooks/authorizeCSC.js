@@ -8,8 +8,6 @@ const Order = require('dw/order/Order');
 /**
  * A hook to authorize credit/debit card payments.
  *
- * TODO: Payments for cards enrolled for 3DS will fail. Check if that can
- * be suppressed, and if PaymentIntents API can be used instead.
  *
  * @param {dw.order.Order} order - Order for which payment authorization needs
  *   to be processed.
@@ -22,8 +20,6 @@ const Order = require('dw/order/Order');
  *   returned only if it succeeded.
  */
 exports.authorizeCreditCard = function (order, paymentInstrument, cvc) {
-    Logger.debug('authorizeCreditCard hook invoked, order: ' + order + ', paymentinstrument: ' + paymentInstrument);
-
     try {
         const amount = paymentInstrument.paymentTransaction.amount;
         if (!amount.available) {
@@ -34,7 +30,7 @@ exports.authorizeCreditCard = function (order, paymentInstrument, cvc) {
         var multiplier = Math.pow(10, currentCurency.getDefaultFractionDigits());
         var orderAmount = Math.round(amount.value * multiplier);
 
-        const stripe = require('int_stripe_core').getStripeService();
+        const stripe = require('*/cartridge/scripts/stripe/services/stripeService');
 
         var address = order.getBillingAddress();
         var billingDetails = {
@@ -106,7 +102,6 @@ exports.authorizeCreditCard = function (order, paymentInstrument, cvc) {
 /**
  * A hook to authorize all payment methods other than credit/debit card.
  *
- * TODO: Check if the alternative payment methods can be supported.
  * Hosted payment page is not to be supported by the cartridge. The following
  * page gives details as to how to customize it if it is ever to
  * be added:

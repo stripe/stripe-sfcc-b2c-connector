@@ -22,7 +22,7 @@ importScript("checkout/Utils.ds");
 function execute( pdict : PipelineDictionary ) : Number
 {
 	// Stripe changes BEGIN
-	var stripeCheckoutHelper = require('int_stripe_core').getCheckoutHelper();
+	var stripeCheckoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
 	var cardPaymentsHandledByStripe = stripeCheckoutHelper.isStripeCardsPaymentMethodEnabled();
 	// Stripe changes END
 	

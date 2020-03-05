@@ -1,21 +1,15 @@
 <isscript>
     var assets = require('*/cartridge/scripts/assets.js');
     assets.addJs('/js/stripe.newcardform.js');
-    var stripeHelper = require('int_stripe_core').getStripeHelper();
-    var stripeCardFormStyle = stripeHelper.getStripeCardFormStyle();
 </isscript>
 
-<script>
-	var cardElementStyle = <isprint value="${JSON.stringify(stripeCardFormStyle)}" encoding="off"/>;
-    var URL = '${URLUtils.https('StripeWallet-AddNewCard')}';
-    var walletURL = '${URLUtils.https('PaymentInstruments-List')}';
-</script>
-
 <form
-    action="${URLUtils.url('PaymentInstruments-SavePayment', 'UUID', pdict.UUID)}"
+    action="${URLUtils.url('StripeWallet-AddNewCard', 'UUID', pdict.UUID)}"
     class="payment-form"
     method="POST"
-    name="payment-form" ${pdict.paymentForm.attributes}>
+    name="payment-form" ${pdict.paymentForm.attributes}
+    data-wallet-url="${URLUtils.https('PaymentInstruments-List')}"
+    data-element-style="${JSON.stringify(require('*/cartridge/scripts/stripe/helpers/stripeHelper').getStripeCardFormStyle())}">
 
     <!-- Name on Card -->
     <div class="form-group

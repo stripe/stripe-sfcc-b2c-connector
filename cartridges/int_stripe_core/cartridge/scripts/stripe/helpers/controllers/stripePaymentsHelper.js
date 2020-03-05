@@ -47,7 +47,7 @@ function beforePaymentAuthorization() {
     try {
         var basket = BasketMgr.getCurrentBasket();
         if (basket) {
-            var checkoutHelper = require('int_stripe_core').getCheckoutHelper();
+            var checkoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
 
             var stripePaymentInstrument = checkoutHelper.getStripePaymentInstrument(basket);
 
@@ -115,7 +115,7 @@ function handleAPM(sfra) {
 
     var redirectUrl = '';
     try {
-        const stripeService = require('int_stripe_core').getStripeService();
+        const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
         const source = stripeService.sources.retrieve(sourceId);
 
         if (source.client_secret !== sourceClientSecret) {

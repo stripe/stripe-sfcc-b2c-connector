@@ -1,5 +1,5 @@
 <isscript>
-	var stripeHelper = require('int_stripe_core').getStripeHelper();
+	var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
 	var isStripeEnabled = stripeHelper.isStripeEnabled();
 </isscript>
 <isif condition="${isStripeEnabled}">

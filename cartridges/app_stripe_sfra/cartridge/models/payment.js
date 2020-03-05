@@ -37,7 +37,7 @@ function Payment(currentBasket, currentCustomer, countryCode) {
         paymentAmount.value
     );
 
-    var stripeHelper = require('int_stripe_core').getStripeHelper();
+    var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
     if (stripeHelper.isStripeEnabled()) {
         paymentMethods = stripeHelper.getStripePaymentMethods(paymentMethods, request.locale);
     }
