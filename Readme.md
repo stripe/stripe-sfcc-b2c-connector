@@ -1,15 +1,16 @@
-# Instalation
-## SG Controllers
-1. Install `int_stripe_core` and `int_stripe_controllers` cartriges.
-2. Import the metadata.
-3. Configure the custom site preferences for Stripe.
-4. Use `app_stripe_core` and `app_stripe_controllers` cartriges as reference to change the code in your cartridge - all added code is surrounded by the comments `//STRIPE change begin` and `//STRIPE change end`.
-5. In Stripe Dashboard enable webhooks, point it to `Stripe-WebHook` controller and subscribe to these events:
-- review.opened
-- review.closed
-- charge.succeeded
-- charge.failed
-- source.canceled
-- source.failed
-- source.chargeable
-6. Shedulle the imported jobs to run at reasonable interval, for example 15 minutes.
+# Stripe Salesforce Commerce Cloud Cartridge
+
+This repository contains the Stripe integrations with the Salesforce Commerce Cloud platform. There are two versions currently available for SiteGenesis Javascript Controller (SGJS) and Salesforce Reference Architecture (SFRA) which have the following features:
+
+1. Card payments
+2. Alternative payment methods
+3. Customer wallet
+
+## SiteGenesis Javascript Controller (SGJC)
+
+For the manual, please see the `Controllers Stripe Documentation.pdf` file in the `documentation` directory.
+
+
+## Salesforce Reference Architecture (SFRA)
+
+For the manual, please see the `SFRA Stripe Documentation.pdf` file in the `documentation` directory.

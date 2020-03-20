@@ -23,10 +23,13 @@ function getTotalsValue(total) {
 function totals(lineItemContainer) {
     base.call(this, lineItemContainer);
 
-    if (lineItemContainer) {
-        this.grandTotalValue = getTotalsValue(lineItemContainer.totalGrossPrice);
-    } else {
-        this.grandTotalValue = 0;
+    var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
+    if (stripeHelper.isStripeEnabled()) {
+        if (lineItemContainer) {
+            this.grandTotalValue = getTotalsValue(lineItemContainer.totalGrossPrice);
+        } else {
+            this.grandTotalValue = 0;
+        }
     }
 }
 

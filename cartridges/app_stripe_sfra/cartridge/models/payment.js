@@ -30,20 +30,34 @@ function applicablePaymentMethods(paymentMethods) {
 function Payment(currentBasket, currentCustomer, countryCode) {
     base.call(this, currentBasket, currentCustomer, countryCode);
 
-    var paymentAmount = currentBasket.totalGrossPrice;
-    var paymentMethods = PaymentMgr.getApplicablePaymentMethods(
-        currentCustomer,
-        countryCode,
-        paymentAmount.value
-    );
-
     var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
     if (stripeHelper.isStripeEnabled()) {
-        paymentMethods = stripeHelper.getStripePaymentMethods(paymentMethods, request.locale);
-    }
+        var paymentAmount = currentBasket.totalGrossPrice;
+        var paymentMethods = PaymentMgr.getApplicablePaymentMethods(
+            currentCustomer,
+            countryCode,
+            paymentAmount.value
+        );
 
-    this.applicablePaymentMethods =
-        paymentMethods ? applicablePaymentMethods(paymentMethods) : null;
+        paymentMethods = stripeHelper.getStripePaymentMethods(paymentMethods, request.locale);
+
+        this.applicablePaymentMethods =
+            paymentMethods ? applicablePaymentMethods(paymentMethods) : null;
+    } else {
+        var applicablePaymentMethodsWithoutStripe = [];
+        for (var i = 0; i < this.applicablePaymentMethods.length; i++) {
+            var paymentMethod = this.applicablePaymentMethods[i];
+            var currentPaymentMethod = dw.order.PaymentMgr.getPaymentMethod(paymentMethod.ID);
+            if (currentPaymentMethod.paymentProcessor.ID !== 'STRIPE_APM' && currentPaymentMethod.paymentProcessor.ID !== 'STRIPE_CREDIT') {
+                applicablePaymentMethodsWithoutStripe.push({
+                    ID: paymentMethod.ID,
+                    name: paymentMethod.name
+                });
+            }
+        }
+
+        this.applicablePaymentMethods = applicablePaymentMethodsWithoutStripe;
+    }
 }
 
 module.exports = Payment;

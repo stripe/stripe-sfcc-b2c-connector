@@ -168,14 +168,6 @@ exports.processIncomingNotification = function () {
                     }
                     stripeNotification.custom.livemode = json.livemode;
                     stripeNotification.custom.stripeType = json.type;
-                    // stripeNotification.custom.siteId = json.data.object.metadata.site_id
-                    //     || (json.data.object.source && json.data.object.source.metadata && json.data.object.source.metadata.site_id
-                    //         ? json.data.object.source.metadata.site_id
-                    //         : '');
-                    // stripeNotification.custom.orderId = json.data.object.metadata.order_id
-                    //     || (json.data.object.source && json.data.object.source.metadata && json.data.object.source.metadata.order_id
-                    //         ? json.data.object.source.metadata.order_id
-                    //         : '');
 
                     switch (json.type) {
                         case 'source.chargeable':

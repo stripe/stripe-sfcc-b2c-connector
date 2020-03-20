@@ -16,7 +16,8 @@
 			<iscomment>
 				Stripe changes BEGIN
 			</iscomment>
-			<isif condition="${pdict.Order.status == dw.order.Order.ORDER_STATUS_CREATED}">
+			<isset name="stripeEnabled" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper').isStripeEnabled()}" scope="page" />
+			<isif condition="${stripeEnabled && pdict.Order.status == dw.order.Order.ORDER_STATUS_CREATED}">
 				<h1>${Resource.msg('stripe.confirmation.thankyou','stripe',null)}</h1>
 			<iselse/>
 				<h1>${Resource.msg('confirmation.thankyou','checkout',null)}</h1>

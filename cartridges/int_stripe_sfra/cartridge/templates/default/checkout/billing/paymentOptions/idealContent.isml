@@ -17,7 +17,7 @@
                     <label for="ideal-bank-element" class="form-control-label">
                         ${Resource.msg('ideal.bank.element.label', 'stripe', null)}
                     </label>
-                    <div id="ideal-bank-element" class="form-control">
+                    <div id="ideal-bank-element" class="form-control payment-elements-select">
                         <!-- A Stripe Element will be inserted here. -->
                     </div>
                 </div>

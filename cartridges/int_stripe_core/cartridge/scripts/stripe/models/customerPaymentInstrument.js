@@ -57,7 +57,7 @@ function CustomerPaymentInstrument(stripePaymentInstrumentData, isDefault) {
             enumerable: true
         },
         creditCardType: {
-            value: require('../helpers/cardsHelper').getCardType(stripeCardData.brand),
+            value: require('../helpers/cardsHelper').getCardTypeByBrand(stripeCardData.brand),
             enumerable: true
         },
         creditCardHolder: {

@@ -128,6 +128,14 @@
                 <externally-managed-flag>false</externally-managed-flag>
                 <default-value>true</default-value>
             </attribute-definition>
+            <attribute-definition attribute-id="stripeEnabled">
+                <display-name xml:lang="x-default">Stripe Enabled</display-name>
+                <description xml:lang="x-default">Enables or disables the cartridge</description>
+                <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <default-value>true</default-value>
+            </attribute-definition>
             <attribute-definition attribute-id="stripeIdealElementCSSStyle">
                 <display-name xml:lang="x-default">stripeIdealElementCSSStyle</display-name>
                 <description xml:lang="x-default">Style Configuration for Stripe Elements</description>
@@ -226,6 +234,7 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <attribute attribute-id="stripeIdealElementCSSStyle"/>
                 <attribute attribute-id="stripeSepaDebitCSSStyle"/>
                 <attribute attribute-id="stripeAllowedAPMMethods"/>
+                <attribute attribute-id="stripeEnabled"/>
             </attribute-group>
         </group-definitions>
     </type-extension>

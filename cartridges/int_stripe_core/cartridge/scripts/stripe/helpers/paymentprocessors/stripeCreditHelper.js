@@ -8,12 +8,7 @@ const Order = require('dw/order/Order');
 function Handle(args) {
     const checkoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
     const paramsMap = request.httpParameterMap;
-    const cardBrand = paramsMap.stripe_card_brand.stringValue;
-    var cardType = paramsMap.stripe_card_type.stringValue;
-
-    if (!cardType && cardBrand) {
-        cardType = require('*/cartridge/scripts/stripe/helpers/cardsHelper').getCardType(cardBrand);
-    }
+    const cardType = require('*/cartridge/scripts/stripe/helpers/cardsHelper').getCardType();
 
     var prUsed = false;
     if (request.httpParameterMap.get('stripe_pr_used').value === 'true') {

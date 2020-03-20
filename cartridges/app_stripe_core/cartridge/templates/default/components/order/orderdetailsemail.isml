@@ -17,7 +17,8 @@
 <iscomment>
 	Stripe changes BEGIN
 </iscomment>
-<isif condition="${Order.status == dw.order.Order.ORDER_STATUS_CREATED}">
+<isset name="stripeEnabled" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper').isStripeEnabled()}" scope="page" />
+<isif condition="${stripeEnabled && Order.status == dw.order.Order.ORDER_STATUS_CREATED}">
 	<p style="font-weight: bold;color: #990000">${Resource.msg('stripe.confirmation.shippingnote', 'stripe', null)}</p>
 </isif>
 <iscomment>

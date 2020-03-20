@@ -2,7 +2,6 @@
 
 /* API Includes */
 const LocalServiceRegistry = require('dw/svc/LocalServiceRegistry');
-// const Logger = require('dw/system/Logger');
 
 /**
  * Traverses a payload object to collect parameters and values to be passed

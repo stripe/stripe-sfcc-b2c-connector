@@ -15,6 +15,13 @@
 </iscomment>
 
 <isset name="Order" value="${pdict.order}" scope="page"/>
+<iscomment>
+	Stripe changes BEGIN
+</iscomment>
+<isset name="stripeEnabled" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper').isStripeEnabled()}" scope="page" />
+<iscomment>
+	Stripe changes END
+</iscomment>
 
 <div class="orderdetails">
 	<div class="order-information">
@@ -104,7 +111,7 @@
 								<iscomment>
 									Stripe changes BEGIN
 								</iscomment>
-								<isif condition="${Order.status == dw.order.Order.ORDER_STATUS_CREATED}">
+								<isif condition="${stripeEnabled && Order.status == dw.order.Order.ORDER_STATUS_CREATED}">
 									<div class="error">${Resource.msg('stripe.confirmation.shippingnote', 'stripe', null)}</div>
 								</isif>
 								<iscomment>

@@ -149,7 +149,7 @@ function failOrder(stripeNotificationObject, order) {
         } else {
             stripeLogger.info('\nSuccessfully set order status to failed');
         }
-        // TODO Trigger "problem with your payment" email.
+
         stripeNotificationObject.custom.processingStatus = 'FAIL_OR_CANCEL';  // eslint-disable-line
     });
 
@@ -235,7 +235,7 @@ function failOrderAfterReview(stripeNotificationObject, order) {
         } else {
             stripeLogger.info('\nSuccessfully set order status to failed');
         }
-        // TODO Trigger "problem with your payment" email.
+
         order.setPaymentStatus(Order.PAYMENT_STATUS_NOTPAID);
         stripeNotificationObject.custom.processingStatus = 'FAIL_OR_CANCEL';  // eslint-disable-line
     });

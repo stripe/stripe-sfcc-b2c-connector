@@ -188,39 +188,6 @@ function processCreateSourceResult(result) {
     }
 }
 
-function processCreateSourceACH(result) {
-    if (result.error) {
-        alert(result.error.message);
-    } else {
-        var sourceIdInputs = document.getElementsByName('stripe_source_id');
-        var sourceClientSecretInput = document.getElementById('stripe_source_client_secret');
-        var redirectURLInput = document.getElementById('stripe_redirect_url');
-
-        sourceIdInputs.forEach(function (input) {
-            input.value = result.source.id;
-        });
-
-        sourceClientSecretInput.value = result.source.client_secret;
-        if (result.source.redirect) {
-            redirectURLInput.value = result.source.redirect.url;
-        }
-
-        // v1
-        // eslint-disable-next-line no-unused-vars
-        $('body').on('checkout:updateCheckoutView', function (e, data) {
-            var $paymentSummary = $('.payment-details');
-            var htmlToAppend = '';
-            htmlToAppend += '<span> Account Number ' + result.source.ach_credit_transfer.account_number
-            + '</span><div><span>'
-            + 'Routing Number ' + result.source.ach_credit_transfer.routing_number
-            + '</span></div>';
-
-            $paymentSummary.empty().append(htmlToAppend);
-        });
-        $('.submit-payment').click();
-    }
-}
-
 function handleServerResponse(response) {
     if (response.error) {
         alert(response.error.message);
@@ -342,9 +309,6 @@ document.querySelector('button.submit-payment').addEventListener('click', functi
             }
             break;
         case 'STRIPE_ACH':
-            createSourcePayload = getCreateSourcePayload(selectedPaymentMethod);
-            stripe.createSource(createSourcePayload).then(processCreateSourceACH);
-            break;
         case 'STRIPE_ALIPAY':
         case 'STRIPE_WECHATPAY':
         case 'STRIPE_BANCONTACT':

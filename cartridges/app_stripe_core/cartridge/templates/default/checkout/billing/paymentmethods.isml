@@ -1,6 +1,7 @@
 <iscontent type="text/html" charset="UTF-8" compact="true"/>
 <iscomment> TEMPLATENAME: paymentmethods.isml </iscomment>
 <isinclude template="util/modules"/>
+<isset name="stripeEnabled" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper').isStripeEnabled()}" scope="page" />
 <isif condition="${pdict.OrderTotal > 0}">
 	<fieldset>
 
@@ -32,6 +33,8 @@
 					Stripe changes BEGIN
 				</iscomment>
 				<isif condition="${paymentMethodType.value.equals('STRIPE_PAYMENT_REQUEST_BTN')}"><iscontinue/></isif>
+				<isset name="paymentMethod" value="${dw.order.PaymentMgr.getPaymentMethod(paymentMethodType.value)}" scope="page"/>
+				<isif condition="${!stripeEnabled && (paymentMethod.paymentProcessor.ID === 'STRIPE_APM' || paymentMethod.paymentProcessor.ID === 'STRIPE_CREDIT')}"><iscontinue/></isif>
 				<iscomment>
 					Stripe changes END
 				</iscomment>
@@ -64,9 +67,12 @@
 			<iscomment>
 				Stripe changes BEGIN
 			</iscomment>
-			<isif condition="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').isStripeCardsPaymentMethodEnabled()}">
+			<isif condition="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').isStripeCardsPaymentMethodEnabled() && stripeEnabled}">
 				<isinclude template="stripe/checkout/billing/cardform" />
-			<iselse/>
+			<iscomment>
+				Only show the credit card form if stripe is disabled and the credit card method has a different processor than STRIPE_CREDIT
+			</iscomment>
+			<iselseif condition="${!require('*/cartridge/scripts/stripe/helpers/checkoutHelper').isStripeCardsPaymentMethodEnabled()}"/>
 			<iscomment>
 				Stripe changes END
 			</iscomment>
@@ -145,7 +151,7 @@
 		<iscomment>
 			Stripe changes BEGIN
 		</iscomment>
-		<isif condition="${require('*/cartridge/scripts/stripe/helpers/stripeHelper').isStripeEnabled()}">
+		<isif condition="${stripeEnabled}">
 			<isinclude template="stripe/checkout/billing/altpaymentmethods" />
 		</isif>
 		<iscomment>
@@ -161,7 +167,7 @@
 
 			<p class="form-caption">${Resource.msg('billing.bmlhelp','checkout',null)}</p>
 
-			<div class="form-label-text"><span class="required-indicator">&#8226;</span>Date of Birth:</div>
+			<div class="form-label-text"><span class="required-indicator">&#8226;</span>>${Resource.msg('date.of.birth','stripe',null)}</div>
 			<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.bml.year}" type="select" rowclass="year"/>
 			<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.bml.month}" type="select" rowclass="month"/>
 			<isinputfield formfield="${pdict.CurrentForms.billing.paymentMethods.bml.day}" type="select" rowclass="day"/>

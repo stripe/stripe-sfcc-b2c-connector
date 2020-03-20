@@ -1,10 +1,9 @@
-<isscript>
-	var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
-	var stripeCheckoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
-	var stripeEnabled = stripeHelper.isStripeEnabled();
-	var stripeScriptURL = stripeHelper.getStripeScriptUrl();
-	var stripePublicKey = stripeHelper.getPublicApiKey();
-</isscript>
+<isset name="stripeHelper" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper')}" scope="page" />
+<isset name="stripeCheckoutHelper" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper')}" scope="page" />
+<isset name="stripeEnabled" value="${stripeHelper.isStripeEnabled()}" scope="page" />
+<isset name="stripeScriptURL" value="${stripeHelper.getStripeScriptUrl()}" scope="page" />
+<isset name="stripePublicKey" value="${stripeHelper.getPublicApiKey()}" scope="page" />
+
 <isif condition="${stripeEnabled}">
 	<script src="${stripeScriptURL}"></script>
 	<isif condition="${stripePublicKey}">

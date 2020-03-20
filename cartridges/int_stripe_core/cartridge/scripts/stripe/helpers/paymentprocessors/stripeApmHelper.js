@@ -2,7 +2,6 @@
 
 var PaymentMgr = require('dw/order/PaymentMgr');
 var Transaction = require('dw/system/Transaction');
-// var app = require('*/cartridge/scripts/app');
 
 function Handle(args) {
     const checkoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');

@@ -2,6 +2,8 @@
 /* globals elements, stripe, walletURL */
 // v1
 var $form = $('.payment-form');
+var stripe = Stripe(document.getElementById('stripePublicKey').value);
+var elements = stripe.elements();
 var cardElement = elements.create('card', { style: $form.data('element-style') });
 cardElement.mount('#card-element');
 

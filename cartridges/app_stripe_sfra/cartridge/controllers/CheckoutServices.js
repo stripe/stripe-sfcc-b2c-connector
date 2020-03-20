@@ -5,7 +5,12 @@ var server = require('server');
 var page = module.superModule;
 server.extend(page);
 
-server.replace('PlaceOrder', server.middleware.https, function (req, res, next) {
+server.prepend('PlaceOrder', server.middleware.https, function (req, res, next) {
+    var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
+    if (stripeHelper.isStripeEnabled()) {
+        return next();
+    }
+
     var BasketMgr = require('dw/order/BasketMgr');
     var OrderMgr = require('dw/order/OrderMgr');
     var Resource = require('dw/web/Resource');
@@ -15,7 +20,9 @@ server.replace('PlaceOrder', server.middleware.https, function (req, res, next) 
     var hooksHelper = require('*/cartridge/scripts/helpers/hooks');
     var COHelpers = require('*/cartridge/scripts/checkout/checkoutHelpers');
     var validationHelpers = require('*/cartridge/scripts/helpers/basketValidationHelpers');
-
+    var collections = require('*/cartridge/scripts/util/collections');
+    var PaymentMgr = require('dw/order/PaymentMgr');
+    var isStripe = false;
     var currentBasket = BasketMgr.getCurrentBasket();
 
     if (!currentBasket) {
@@ -29,6 +36,18 @@ server.replace('PlaceOrder', server.middleware.https, function (req, res, next) 
         return next();
     }
 
+    collections.forEach(currentBasket.getPaymentInstruments(), function (paymentInstrument) {
+        var paymentProcessor = PaymentMgr.getPaymentMethod(paymentInstrument.getPaymentMethod()).getPaymentProcessor();
+
+        if (paymentProcessor.ID === 'STRIPE_APM' || paymentProcessor.ID === 'STRIPE_CREDIT') {
+            isStripe = true;
+        }
+    });
+
+    if (!isStripe) {
+        return next();
+    }
+
     var validatedProducts = validationHelpers.validateProducts(currentBasket);
     if (validatedProducts.error) {
         res.json({
@@ -38,7 +57,8 @@ server.replace('PlaceOrder', server.middleware.https, function (req, res, next) 
             serverErrors: [],
             redirectUrl: URLUtils.url('Cart-Show').toString()
         });
-        return next();
+        this.emit('route:Complete', req, res);
+        return;
     }
 
     if (req.session.privacyCache.get('fraudDetectionStatus')) {
@@ -49,7 +69,8 @@ server.replace('PlaceOrder', server.middleware.https, function (req, res, next) 
             errorMessage: Resource.msg('error.technical', 'checkout', null)
         });
 
-        return next();
+        this.emit('route:Complete', req, res);
+        return;
     }
 
     var validationOrderStatus = hooksHelper('app.validate.order', 'validateOrder', currentBasket, require('*/cartridge/scripts/hooks/validateOrder').validateOrder);
@@ -58,7 +79,8 @@ server.replace('PlaceOrder', server.middleware.https, function (req, res, next) 
             error: true,
             errorMessage: validationOrderStatus.message
         });
-        return next();
+        this.emit('route:Complete', req, res);
+        return;
     }
 
     // Check to make sure there is a shipping address
@@ -71,7 +93,8 @@ server.replace('PlaceOrder', server.middleware.https, function (req, res, next) 
             },
             errorMessage: Resource.msg('error.no.shipping.address', 'checkout', null)
         });
-        return next();
+        this.emit('route:Complete', req, res);
+        return;
     }
 
     // Check to make sure billing address exists
@@ -84,7 +107,8 @@ server.replace('PlaceOrder', server.middleware.https, function (req, res, next) 
             },
             errorMessage: Resource.msg('error.no.billing.address', 'checkout', null)
         });
-        return next();
+        this.emit('route:Complete', req, res);
+        return;
     }
 
     // Calculate the basket
@@ -103,7 +127,8 @@ server.replace('PlaceOrder', server.middleware.https, function (req, res, next) 
             },
             errorMessage: Resource.msg('error.payment.not.valid', 'checkout', null)
         });
-        return next();
+        this.emit('route:Complete', req, res);
+        return;
     }
 
     // Re-calculate the payments.
@@ -113,7 +138,8 @@ server.replace('PlaceOrder', server.middleware.https, function (req, res, next) 
             error: true,
             errorMessage: Resource.msg('error.technical', 'checkout', null)
         });
-        return next();
+        this.emit('route:Complete', req, res);
+        return;
     }
 
     // Stripe changes BEGIN
@@ -126,7 +152,8 @@ server.replace('PlaceOrder', server.middleware.https, function (req, res, next) 
             error: true,
             errorMessage: Resource.msg('error.technical', 'checkout', null)
         });
-        return next();
+        this.emit('route:Complete', req, res);
+        return;
     }
 
     // Handles payment authorization
@@ -136,7 +163,8 @@ server.replace('PlaceOrder', server.middleware.https, function (req, res, next) 
             error: true,
             errorMessage: Resource.msg('error.technical', 'checkout', null)
         });
-        return next();
+        this.emit('route:Complete', req, res);
+        return;
     }
 
     var fraudDetectionStatus = hooksHelper('app.fraud.detection', 'fraudDetection', currentBasket, require('*/cartridge/scripts/hooks/fraudDetection').fraudDetection);
@@ -153,7 +181,8 @@ server.replace('PlaceOrder', server.middleware.https, function (req, res, next) 
             errorMessage: Resource.msg('error.technical', 'checkout', null)
         });
 
-        return next();
+        this.emit('route:Complete', req, res);
+        return;
     }
 
     // Stripe changes BEGIN
@@ -169,7 +198,8 @@ server.replace('PlaceOrder', server.middleware.https, function (req, res, next) 
                 continueUrl: URLUtils.url('Order-Confirm').toString()
             });
 
-            return next();
+            this.emit('route:Complete', req, res);
+            return;
         }
         // Places the order
         var placeOrderResult = COHelpers.placeOrder(order, fraudDetectionStatus);
@@ -179,7 +209,8 @@ server.replace('PlaceOrder', server.middleware.https, function (req, res, next) 
                 error: true,
                 errorMessage: Resource.msg('error.technical', 'checkout', null)
             });
-            return next();
+            this.emit('route:Complete', req, res);
+            return;
         }
 
         COHelpers.sendConfirmationEmail(order, req.locale.id);
@@ -194,7 +225,8 @@ server.replace('PlaceOrder', server.middleware.https, function (req, res, next) 
             continueUrl: URLUtils.url('Order-Confirm').toString()
         });
 
-        return next();
+        this.emit('route:Complete', req, res);
+        return;
     }
     res.json({
         error: false,
@@ -203,7 +235,7 @@ server.replace('PlaceOrder', server.middleware.https, function (req, res, next) 
         continueUrl: URLUtils.url('Order-Confirm').toString()
     });
 
-    return next();
+    this.emit('route:Complete', req, res);
 
     // Stripe changes END
 });

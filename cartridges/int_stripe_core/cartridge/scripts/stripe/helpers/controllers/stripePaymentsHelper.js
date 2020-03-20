@@ -126,7 +126,6 @@ function handleAPM(sfra) {
             throw new Error('Source not authorized.');
         }
 
-        // redirectUrl = URLUtils.url('COSummary-Start');
         if (sfra) {
             redirectUrl = URLUtils.url('Checkout-Begin', 'stage', 'placeOrder');
         } else {

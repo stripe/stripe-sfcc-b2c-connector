@@ -11,6 +11,13 @@
 
 <iscomment>Create page varibale representing the line item container</iscomment>
 <isset name="LineItemCtnr" value="${pdict.p_lineitemctnr}" scope="page"/>
+<iscomment>
+	Stripe changes BEGIN
+</iscomment>
+<isset name="stripeEnabled" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper').isStripeEnabled()}" scope="page" />
+<iscomment>
+	Stripe changes END
+</iscomment>
 
 <isif condition="${!empty(LineItemCtnr)}">
 	<table class="order-totals-table">
@@ -117,7 +124,9 @@
 							<iscomment>
 								Stripe changes BEGIN
 							</iscomment>
-							<input type="hidden" name="ordertaxvalue" id="ordertaxvalue" value="${(LineItemCtnr.totalTax.value * 100).toFixed(0)}"/>
+							<isif condition="${stripeEnabled}">
+								<input type="hidden" name="ordertaxvalue" id="ordertaxvalue" value="${(LineItemCtnr.totalTax.value * 100).toFixed(0)}"/>
+							</isif>
 							<iscomment>
 								Stripe changes END
 							</iscomment>
@@ -126,7 +135,9 @@
 							<iscomment>
 								Stripe changes BEGIN
 							</iscomment>
-							<input type="hidden" name="ordertaxvalue" id="ordertaxvalue" value="0"/>
+							<isif condition="${stripeEnabled}">
+								<input type="hidden" name="ordertaxvalue" id="ordertaxvalue" value="0"/>
+							</isif>
 							<iscomment>
 								Stripe changes END
 							</iscomment>

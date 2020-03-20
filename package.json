@@ -8,6 +8,7 @@
     "upload": "sgmf-scripts --upload -- ",
     "uploadCartridge": "sgmf-scripts --uploadCartridge int_stripe_core && sgmf-scripts --uploadCartridge int_stripe_sfra",
     "compile:js": "sgmf-scripts --compile js",
+    "compile:scss": "sgmf-scripts --compile css",
     "watch": "sgmf-scripts --watch",
     "watch:static": "sgmf-scripts --watch static",
     "test": "mocha tests/unit/**/*.js",
@@ -49,8 +50,10 @@
     "eslint-plugin-import": "^2.8.0",
     "eslint-plugin-protractor": "^1.34.1",
     "husky": "^0.14.3",
-    "lint-staged": "^5.0.0"
+    "lint-staged": "^5.0.0",
+    "bootstrap": "4.1.2"
   },
+  "packageName": "app_stripe_sfra",
   "paths": {
     "base": "../storefront-reference-architecture/cartridges/app_storefront_base/"
   }

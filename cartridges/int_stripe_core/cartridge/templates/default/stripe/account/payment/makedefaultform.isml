@@ -1,7 +1,6 @@
-<isscript>
-	var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
-	var isStripeEnabled = stripeHelper.isStripeEnabled();
-</isscript>
+<isset name="stripeHelper" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper')}" scope="page" />
+<isset name="isStripeEnabled" value="${stripeHelper.isStripeEnabled()}" scope="page" />
+
 <isif condition="${isStripeEnabled}">
 	<isif condition="${creditcard.object.custom.isDefault}">
 		<div class="default-payment-method">${Resource.msg('account.paymentinstrumentlist.markedasdefault.label','stripe',null)}</div>

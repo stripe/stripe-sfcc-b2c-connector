@@ -6,14 +6,16 @@ server.extend(page);
 
 server.append('Show', function (req, res, next) {
     var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
-    var wallet = stripeHelper.getStripeWallet(customer);
-    var paymentInstruments = wallet.getPaymentInstruments();
-    var viewData = res.getViewData();
-    if (paymentInstruments && paymentInstruments.length > 0) {
-        viewData.account.payment = paymentInstruments[0];
-    }
+    if (stripeHelper.isStripeEnabled()) {
+        var wallet = stripeHelper.getStripeWallet(customer);
+        var paymentInstruments = wallet.getPaymentInstruments();
+        var viewData = res.getViewData();
+        if (paymentInstruments && paymentInstruments.length > 0) {
+            viewData.account.payment = paymentInstruments[0];
+        }
 
-    res.setViewData(viewData);
+        res.setViewData(viewData);
+    }
     next();
 });
 

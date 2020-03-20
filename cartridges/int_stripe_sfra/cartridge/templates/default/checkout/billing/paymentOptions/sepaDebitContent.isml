@@ -17,7 +17,7 @@
                     <label class="form-control-label">
                         ${Resource.msg('sepa.iban.label', 'stripe', null)}
                     </label>
-                    <div id="sepa-iban-element" class="form-control">
+                    <div id="sepa-iban-element" class="form-control payment-elements-input">
                         <!-- A Stripe Element will be inserted here. -->
                     </div>
                     <div id="sepa-bank-name"></div>

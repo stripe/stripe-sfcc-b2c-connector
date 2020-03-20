@@ -18,22 +18,13 @@ function isStripeAPMPayment(paymentMethod) {
 }
 
 /**
- * Checks if Stripe integration for card payments is enabled.
+ * Checks if Stripe integration is enabled.
  *
- * @return {boolean} - True if Stripe is used as processor for card payments.
+ * @return {boolean} - True if sitepreference is set to true.
  */
 exports.isStripeEnabled = function () {
-    const PaymentMgr = require('dw/order/PaymentMgr');
-    const PaymentInstrument = require('dw/order/PaymentInstrument');
-
-    const cardPaymentMethod = PaymentMgr.getPaymentMethod(PaymentInstrument.METHOD_CREDIT_CARD);
-    if (cardPaymentMethod && cardPaymentMethod.active) {
-        const paymentProcessor = cardPaymentMethod.getPaymentProcessor();
-
-        return (paymentProcessor && 'STRIPE_CREDIT'.equals(paymentProcessor.ID));
-    }
-
-    return false;
+    var Site = require('dw/system/Site');
+    return Site.getCurrent().getCustomPreferenceValue('stripeEnabled');
 };
 
 
