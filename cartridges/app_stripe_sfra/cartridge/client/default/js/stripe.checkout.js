@@ -119,7 +119,6 @@ function getOwnerDetails() {
 
 function getSourceType(selectedPaymentMethod) {
     return {
-        STRIPE_ACH: 'ach_credit_transfer',
         STRIPE_ALIPAY: 'alipay',
         STRIPE_BANCONTACT: 'bancontact',
         STRIPE_EPS: 'eps',
@@ -308,7 +307,6 @@ document.querySelector('button.submit-payment').addEventListener('click', functi
                 });
             }
             break;
-        case 'STRIPE_ACH':
         case 'STRIPE_ALIPAY':
         case 'STRIPE_WECHATPAY':
         case 'STRIPE_BANCONTACT':

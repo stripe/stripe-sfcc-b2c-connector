@@ -19,14 +19,6 @@
 </div>
 
 <iscomment>
-    ACH Credit Transfer
-    -------------------
-</iscomment>
-<div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_ACH'}">payment-method-expanded</isif>" data-method="STRIPE_ACH">
-
-</div>
-
-<iscomment>
     Bancontact
     -------------------
 </iscomment>
