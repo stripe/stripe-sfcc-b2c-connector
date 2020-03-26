@@ -3,7 +3,6 @@
 
 'use strict';
 
-var ISML = require('dw/template/ISML');
 var stripePaymentsHelper = require('*/cartridge/scripts/stripe/helpers/controllers/stripePaymentsHelper');
 
 /**
@@ -12,9 +11,9 @@ var stripePaymentsHelper = require('*/cartridge/scripts/stripe/helpers/controlle
 function beforePaymentAuthorization() {
     var responsePayload = stripePaymentsHelper.BeforePaymentAuthorization();
 
-    ISML.renderTemplate('stripe/json', {
-        JSONPayload: JSON.stringify(responsePayload)
-    });
+    var jsonResponse = JSON.stringify(responsePayload);
+    response.setContentType('application/json');
+    response.writer.print(jsonResponse);
 }
 
 exports.BeforePaymentAuthorization = beforePaymentAuthorization;

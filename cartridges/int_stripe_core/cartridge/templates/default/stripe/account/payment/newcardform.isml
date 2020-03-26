@@ -1,4 +1,5 @@
 <form class="form-horizontal payment-form"
+    action="${URLUtils.https('StripeWallet-AddNewCard')}"
     data-wallet-url="${URLUtils.https('PaymentInstruments-List')}"
     data-element-style="${JSON.stringify(require('*/cartridge/scripts/stripe/helpers/stripeHelper').getStripeCardFormStyle())}">
 	<fieldset>

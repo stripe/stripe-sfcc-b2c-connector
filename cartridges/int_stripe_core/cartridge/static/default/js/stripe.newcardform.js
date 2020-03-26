@@ -1,7 +1,11 @@
 /* eslint-disable no-alert */
-/* globals elements, style, cardElement, stripe */
+/* globals cardElement, Stripe */
 // v1
-window.cardElement = window.cardElement || elements.create('card', { style: style });
+var $form = $('.payment-form');
+var stripe = Stripe(document.getElementById('stripePublicKey').value);
+var elements = stripe.elements();
+
+window.cardElement = window.cardElement || elements.create('card', { style: $form.data('element-style') });
 cardElement.mount('#card-element');
 
 var $cardHolderNameInput = $('#stripe-cardholder-name');
@@ -32,7 +36,7 @@ $addCardBtn.on('click', function () {
         } else {
             var paymentMethodId = result.paymentMethod.id;
             $.ajax({
-                url: URL,
+                url: $form.attr('action'),
                 method: 'POST',
                 data: {
                     payment_method_id: paymentMethodId

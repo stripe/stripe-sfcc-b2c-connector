@@ -1,6 +1,7 @@
 <isset name="stripeHelper" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper')}" scope="page" />
 <isset name="stripeCheckoutHelper" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper')}" scope="page" />
 <isset name="stripeEnabled" value="${stripeHelper.isStripeEnabled()}" scope="page" />
+<isset name="isSFRA" value="${stripeHelper.isSFRA()}" scope="page" />
 <isset name="stripeScriptURL" value="${stripeHelper.getStripeScriptUrl()}" scope="page" />
 <isset name="stripePublicKey" value="${stripeHelper.getPublicApiKey()}" scope="page" />
 
@@ -15,7 +16,7 @@
 			<input type="hidden" id="stripePaymentButtonStyle" value="${JSON.stringify(stripeHelper.getPaymentRequestButtonStyle())}" />
 			<input type="hidden" id="stripeAccountCountry" value="${stripeCheckoutHelper.getPRCountry()}" />
 			<input type="hidden" id="beforePaymentAuthURL" value="${URLUtils.https('StripePayments-BeforePaymentAuthorization')}" />
-			<input type="hidden" id="billingPageUrl" value="${URLUtils.url('Checkout-Begin', 'stage', 'payment')}" />
+			<input type="hidden" id="billingPageUrl" value="${isSFRA ? URLUtils.url('Checkout-Begin', 'stage', 'payment') : URLUtils.url('COShipping-Start')}" />
 			<script src="${URLUtils.staticURL('/js/stripe.checkout.js')}" ></script>
 		</isif>
 		<isif condition="${pageContext.ns === 'cart'}">

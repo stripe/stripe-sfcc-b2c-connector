@@ -220,3 +220,12 @@ exports.getStripePaymentMethods = function (applicablePaymentMethods, locale) {
 };
 
 exports.isStripeAPMPayment = isStripeAPMPayment;
+
+/**
+ * Returns if the current site is SFRA
+ * @returns {boolean} True if SFRA
+ */
+exports.isSFRA = function () {
+    var Site = require('dw/system/Site');
+    return Site.current.getCustomPreferenceValue('stripeIsSFRA');
+}

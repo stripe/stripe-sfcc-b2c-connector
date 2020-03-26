@@ -3,7 +3,6 @@
 
 'use strict';
 
-var ISML = require('dw/template/ISML');
 var URLUtils = require('dw/web/URLUtils');
 var stripeWalletHelper = require('*/cartridge/scripts/stripe/helpers/controllers/stripeWalletHelper');
 
@@ -13,9 +12,9 @@ var stripeWalletHelper = require('*/cartridge/scripts/stripe/helpers/controllers
 function AddNewCard() {
     var result = stripeWalletHelper.AddNewCard();
 
-    ISML.renderTemplate('stripe/json', {
-        JSONPayload: JSON.stringify(result)
-    });
+    var jsonResponse = JSON.stringify(result);
+    response.setContentType('application/json');
+    response.writer.print(jsonResponse);
 }
 
 module.exports.AddNewCard = AddNewCard;
