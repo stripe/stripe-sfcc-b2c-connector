@@ -203,11 +203,18 @@ function handleServerResponse(response) {
                 $.ajax({
                     url: document.getElementById('beforePaymentAuthURL').value,
                     method: 'POST',
-                    dataType: 'json'
+                    dataType: 'json',
+                    data: {
+                        csrf_token: $('[name="csrf_token"]')
+                    }
                 }).done(function (json) {
                     handleServerResponse(json);
                 }).fail(function (msg) {
-                    alert(msg);
+                    if (msg.responseJSON.redirectUrl) {
+                        window.location.href = msg.responseJSON.redirectUrl;
+                    } else {
+                        alert(msg);
+                    }
                 });
             }
         });
@@ -265,11 +272,18 @@ document.querySelector('button.place-order').addEventListener('click', function 
     $.ajax({
         url: document.getElementById('beforePaymentAuthURL').value,
         method: 'POST',
-        dataType: 'json'
+        dataType: 'json',
+        data: {
+            csrf_token: $('[name="csrf_token"]').val()
+        }
     }).done(function (json) {
         handleServerResponse(json);
     }).fail(function (msg) {
-        alert(msg.error);
+        if (msg.responseJSON.redirectUrl) {
+            window.location.href = msg.responseJSON.redirectUrl;
+        } else {
+            alert(msg.error);
+        }
     });
 });
 

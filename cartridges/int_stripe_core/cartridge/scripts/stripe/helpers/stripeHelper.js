@@ -228,4 +228,4 @@ exports.isStripeAPMPayment = isStripeAPMPayment;
 exports.isSFRA = function () {
     var Site = require('dw/system/Site');
     return Site.current.getCustomPreferenceValue('stripeIsSFRA');
-}
+};

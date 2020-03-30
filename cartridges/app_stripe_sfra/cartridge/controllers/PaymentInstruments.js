@@ -29,7 +29,7 @@ server.prepend('DeletePayment', userLoggedIn.validateLoggedInAjax, function (req
     if (data && !data.loggedin) {
         res.json();
         this.emit('route:Complete', req, res);
-        return;
+        return null;
     }
 
     var UUID = req.querystring.UUID;
@@ -47,6 +47,7 @@ server.prepend('DeletePayment', userLoggedIn.validateLoggedInAjax, function (req
 
     res.json({ UUID: UUID });
     this.emit('route:Complete', req, res);
+    return null;
 });
 
 module.exports = server.exports();

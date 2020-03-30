@@ -472,11 +472,18 @@ function handleServerResponse(response) {
                 $.ajax({
                     url: document.getElementById('beforePaymentAuthURL').value,
                     method: 'POST',
-                    dataType: 'json'
+                    dataType: 'json',
+                    data: {
+                        csrf_token: $('[name="csrf_token"]').val()
+                    }
                 }).done(function (json) {
                     handleServerResponse(json);
                 }).error(function (msg) {
-                    alert(msg);
+                    if (msg.responseJSON.redirectUrl) {
+                        window.location.href = msg.responseJSON.redirectUrl;
+                    } else {
+                        alert(msg.error);
+                    }
                 });
             }
         });
@@ -497,11 +504,18 @@ function initSummary() {
         $.ajax({
             url: document.getElementById('beforePaymentAuthURL').value,
             method: 'POST',
-            dataType: 'json'
+            dataType: 'json',
+            data: {
+                csrf_token: $('[name="csrf_token"]').val()
+            }
         }).done(function (json) {
             handleServerResponse(json);
         }).error(function (msg) {
-            alert(msg);
+            if (msg.responseJSON.redirectUrl) {
+                window.location.href = msg.responseJSON.redirectUrl;
+            } else {
+                alert(msg.error);
+            }
         });
     });
 }

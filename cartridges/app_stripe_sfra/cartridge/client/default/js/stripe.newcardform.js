@@ -22,7 +22,8 @@ $('button[type="submit"]').on('click', function (e) {
                 url: $form.attr('action'),
                 method: 'POST',
                 data: {
-                    payment_method_id: paymentMethodId
+                    payment_method_id: paymentMethodId,
+                    csrf_token: $('[name="csrf_token"]').val()
                 }
             }).done(function (msg) {
                 if (msg.success) {
@@ -31,7 +32,11 @@ $('button[type="submit"]').on('click', function (e) {
                     alert(msg.error);
                 }
             }).fail(function (msg) {
-                alert(msg);
+                if (msg.responseJSON.redirectUrl) {
+                    window.location.href = msg.responseJSON.redirectUrl;
+                } else {
+                    alert(msg);
+                }
             });
         }
     });

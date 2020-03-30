@@ -39,7 +39,8 @@ $addCardBtn.on('click', function () {
                 url: $form.attr('action'),
                 method: 'POST',
                 data: {
-                    payment_method_id: paymentMethodId
+                    payment_method_id: paymentMethodId,
+                    csrf_token: $('name[name="csrf_token"]').val()
                 }
             }).done(function (msg) {
                 if (msg.success) {
@@ -49,7 +50,11 @@ $addCardBtn.on('click', function () {
                     alert(msg.error);
                 }
             }).error(function (msg) {
-                alert(msg);
+                if (msg.responseJSON.redirectUrl) {
+                    window.location.href = msg.responseJSON.redirectUrl;
+                } else {
+                    alert(msg);
+                }
             });
         }
     });

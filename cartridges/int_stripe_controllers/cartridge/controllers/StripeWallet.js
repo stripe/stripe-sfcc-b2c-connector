@@ -4,13 +4,25 @@
 'use strict';
 
 var URLUtils = require('dw/web/URLUtils');
+var CSRFProtection = require('dw/web/CSRFProtection');
 var stripeWalletHelper = require('*/cartridge/scripts/stripe/helpers/controllers/stripeWalletHelper');
+var app = require('*/cartridge/scripts/app');
 
 /**
  * AddNewCard controller to handle AJAX calls
  */
 function AddNewCard() {
-    var result = stripeWalletHelper.AddNewCard();
+    var result;
+
+    if (!CSRFProtection.validateRequest()) {
+        app.getModel('Customer').logout();
+        result = {
+            redirectUrl: URLUtils.url('Home-Show').toString()
+        };
+        response.setStatus(500);
+    } else {
+        result = stripeWalletHelper.AddNewCard();
+    }
 
     var jsonResponse = JSON.stringify(result);
     response.setContentType('application/json');
@@ -24,6 +36,11 @@ module.exports.AddNewCard.public = true;
  * Makes a card default.
  */
 function MakeDefault() {
+    if (!CSRFProtection.validateRequest()) {
+        app.getModel('Customer').logout();
+        response.redirect(URLUtils.https('Home-Show'));
+        return;
+    }
     stripeWalletHelper.MakeDefault();
     response.redirect(URLUtils.https('PaymentInstruments-List'));
 }

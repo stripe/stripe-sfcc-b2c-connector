@@ -7,6 +7,7 @@
 			<label for="stripe-cardholder-name"><span class="required-indicator">&#8226; </span><span>${Resource.msg('creditcard.ownerlabel','forms',null)}></span></label>
 			<div class="field-wrapper">
 				<input class="input-text required" type="text" id="stripe-cardholder-name" value="" maxlength="40" size="40">
+				<input type="hidden" name="${dw.web.CSRFProtection.getTokenName()}" value="${dw.web.CSRFProtection.generateToken()}"/>
 			</div>
 		</div>
 		<!-- placeholder for Elements -->

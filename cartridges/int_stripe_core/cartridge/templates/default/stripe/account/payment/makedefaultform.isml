@@ -12,6 +12,7 @@
 				</button>
 				<input type="hidden" name="stripe_id" value="${creditcard.object.custom.stripeId}"/>
 				<input type="hidden" name="${pdict.CurrentForms.paymentinstruments.secureKeyHtmlName}" value="${pdict.CurrentForms.paymentinstruments.secureKeyValue}"/>
+				<input type="hidden" name="${dw.web.CSRFProtection.getTokenName()}" value="${dw.web.CSRFProtection.generateToken()}"/>
 			</fieldset>
 		</form>
 	</isif>

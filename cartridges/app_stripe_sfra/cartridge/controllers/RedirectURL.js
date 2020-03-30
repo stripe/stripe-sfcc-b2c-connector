@@ -11,7 +11,7 @@ server.prepend('Start', function (req, res, next) {
     // Stripe changes BEGIN
     if (stripeHelper.isStripeEnabled() && URLRedirectMgr.getRedirectOrigin() === '/.well-known/apple-developer-merchantid-domain-association') { // Intercept the incoming path request
         res.render('stripe/util/apple');
-        return;
+        return null;
     }
 
     return next();

@@ -5,11 +5,12 @@
 var server = require('server');
 
 var stripePaymentsHelper = require('*/cartridge/scripts/stripe/helpers/controllers/stripePaymentsHelper');
+var csrfProtection = require('*/cartridge/scripts/middleware/csrf');
 
 /**
  * Entry point for handling payment intent creation and confirmation AJAX calls.
  */
-server.post('BeforePaymentAuthorization', function (req, res, next) {
+server.post('BeforePaymentAuthorization', csrfProtection.validateAjaxRequest, function (req, res, next) {
     var responsePayload = stripePaymentsHelper.BeforePaymentAuthorization();
     res.json(responsePayload);
     next();

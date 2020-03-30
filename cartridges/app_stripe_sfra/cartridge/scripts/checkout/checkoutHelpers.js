@@ -19,7 +19,7 @@ if (stripeHelper.isStripeEnabled()) {
     COHelpers.createOrder = function createOrder(currentBasket) {
         const stripeCheckoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
         return stripeCheckoutHelper.createOrder(currentBasket);
-    }
+    };
 }
 
 module.exports = COHelpers;

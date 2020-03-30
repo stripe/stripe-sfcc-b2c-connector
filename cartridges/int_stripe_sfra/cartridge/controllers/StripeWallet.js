@@ -6,11 +6,12 @@ var server = require('server');
 
 var URLUtils = require('dw/web/URLUtils');
 var stripeWalletHelper = require('*/cartridge/scripts/stripe/helpers/controllers/stripeWalletHelper');
+var csrfProtection = require('*/cartridge/scripts/middleware/csrf');
 
 /**
  * AddNewCard controller to handle AJAX calls
  */
-server.post('AddNewCard', function (req, res, next) {
+server.post('AddNewCard', csrfProtection.validateAjaxRequest, function (req, res, next) {
     var result = stripeWalletHelper.AddNewCard();
     res.json(result);
     next();
@@ -20,7 +21,7 @@ server.post('AddNewCard', function (req, res, next) {
 /**
  * Makes a card default.
  */
-server.post('MakeDefault', function (req, res, next) {
+server.post('MakeDefault', csrfProtection.validateAjaxRequest, function (req, res, next) {
     stripeWalletHelper.MakeDefault();
     response.redirect(URLUtils.https('PaymentInstruments-List'));
     next();

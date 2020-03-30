@@ -26,7 +26,7 @@ function getCardTypeByBrand(stripeCardBrand) {
  * Returns the SFCC card type based on the Stripe-SFCC mappings and the request
  * For new cards we receive only card brand and will get the type based on that
  * For saved cards we already have the cart type to use
- * 
+ *
  * @return {string} - SFCC card type
  */
 function getCardType() {
