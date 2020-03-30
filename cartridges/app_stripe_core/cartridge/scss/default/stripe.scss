@@ -1,0 +1,12 @@
+$dark-gray: #444;
+
+.payment-elements {
+	&-input {
+		border: 0.0625rem solid $dark-gray;
+		padding: 0.375rem;
+	}
+
+	&-select {
+		border: 0.0625rem solid $dark-gray;
+	}
+}

@@ -1,0 +1,24 @@
+{
+    "hooks": [
+        {
+            "name": "app.template.htmlHead",
+            "script": "./cartridge/scripts/loadStripe"
+        },
+        {
+            "name": "app.payment.processor.stripe_credit",
+            "script": "./cartridge/scripts/hooks/payment/processor/stripe_credit"
+        },
+        {
+            "name": "app.payment.form.processor.stripe_credit",
+            "script": "./cartridge/scripts/hooks/payment/processor/stripe_credit"
+        },
+        {
+            "name": "app.payment.processor.stripe_apm",
+            "script": "./cartridge/scripts/hooks/payment/processor/stripe_apm"
+        },
+        {
+            "name": "app.payment.form.processor.stripe_apm",
+            "script": "./cartridge/scripts/hooks/payment/processor/stripe_apm"
+        }
+    ]
+}

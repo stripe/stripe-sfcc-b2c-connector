@@ -1,0 +1,9 @@
+cartridges/app_stripe_sfra/cartridge/static/
+node_modules/
+dw.json
+.idea/*
+demandware.iml
+.tern*
+.DS_STORE
+nbproject/
+.vscode/

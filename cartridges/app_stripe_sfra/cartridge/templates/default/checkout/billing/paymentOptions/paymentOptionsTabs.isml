@@ -1,0 +1,17 @@
+<isloop items="${pdict.order.billing.payment.applicablePaymentMethods}" var="paymentOption">
+
+<isif condition="${paymentOption.ID.equals('STRIPE_PAYMENT_REQUEST_BTN')}"><iscontinue/></isif>
+
+<isset name="selectedPaymentInstruments" value="${pdict.order.billing.payment.selectedPaymentInstruments}" scope="page" />
+<isset name="selectedPaymentInstrument" value="${selectedPaymentInstruments && selectedPaymentInstruments.length ? selectedPaymentInstruments[0] : null}" scope="page" />
+<isset name="isActive" value="${selectedPaymentInstrument && selectedPaymentInstrument.paymentMethod === paymentOption.ID}" scope="page" />
+<isset name="isFirstPaymentOption" value="${pdict.order.billing.payment.applicablePaymentMethods[0].ID === paymentOption.ID}" scope="page" />
+<isset name="checkOption" value="${isActive || empty(selectedPaymentInstrument) && isFirstPaymentOption}" scope="page" />
+
+<li class="nav-item" data-method-id="${paymentOption.ID}">
+    <a class="nav-link credit-card-tab <isif condition="${checkOption}">active</isif>" data-toggle="tab" href="${'#'}${paymentOption.ID}-content" role="tab">
+        ${paymentOption.name}
+    </a>
+</li>
+
+</isloop>

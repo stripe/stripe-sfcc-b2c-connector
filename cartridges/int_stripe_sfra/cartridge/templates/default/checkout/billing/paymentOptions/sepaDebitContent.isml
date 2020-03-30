@@ -1,0 +1,35 @@
+<div class="tab-pane ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">
+    <fieldset class="payment-form-fields">
+
+        <!--- payment method is credit card --->
+        <input type="hidden" class="form-control" name="${pdict.forms.billingForm.paymentMethod.htmlName}"
+            value="${paymentOption.ID}">
+        <input type="hidden" name="stripe_source_id" id="stripe_source_id">
+        <div class="row">
+            <div class="col-12">
+                <div class="form-group required">
+                    <label class="form-control-label" for="sepa-name">${Resource.msg('method.name.label', 'stripe',
+                                                                      null)}</label>
+                    <input id="sepa-name" type="text" class="form-control">
+                </div>
+
+                <div class="form-group required">
+                    <label class="form-control-label">
+                        ${Resource.msg('sepa.iban.label', 'stripe', null)}
+                    </label>
+                    <div id="sepa-iban-element" class="form-control payment-elements-input">
+                        <!-- A Stripe Element will be inserted here. -->
+                    </div>
+                    <div id="sepa-bank-name"></div>
+                    <!-- Used to display form errors. -->
+                    <div id="sepa-error-message" role="alert"></div>
+                </div>
+
+                <!-- Display mandate acceptance text. -->
+                <div id="mandate-acceptance">
+                    ${Resource.msg('sepa.mandate.acceptance', 'stripe', null)}
+                </div>
+            </div>
+        </div>
+    </fieldset>
+</div>

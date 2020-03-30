@@ -1,0 +1,19 @@
+<isset name="stripeHelper" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper')}" scope="page" />
+<isset name="isStripeEnabled" value="${stripeHelper.isStripeEnabled()}" scope="page" />
+
+<isif condition="${isStripeEnabled}">
+	<isif condition="${creditcard.object.custom.isDefault}">
+		<div class="default-payment-method">${Resource.msg('account.paymentinstrumentlist.markedasdefault.label','stripe',null)}</div>
+	<iselse/> 
+		<form action="${URLUtils.url('StripeWallet-MakeDefault')}" name="payment-make-default" method="post" id="makedefaultcard_${loopstate.count}">
+			<fieldset>
+				<button type="submit" class="button-text make-default" value="${Resource.msg('account.paymentinstrumentlist.makedefaultcard','stripe',null)}">
+					${Resource.msg('account.paymentinstrumentlist.makedefaultcard','stripe',null)}
+				</button>
+				<input type="hidden" name="stripe_id" value="${creditcard.object.custom.stripeId}"/>
+				<input type="hidden" name="${pdict.CurrentForms.paymentinstruments.secureKeyHtmlName}" value="${pdict.CurrentForms.paymentinstruments.secureKeyValue}"/>
+				<input type="hidden" name="${dw.web.CSRFProtection.getTokenName()}" value="${dw.web.CSRFProtection.generateToken()}"/>
+			</fieldset>
+		</form>
+	</isif>
+</isif>

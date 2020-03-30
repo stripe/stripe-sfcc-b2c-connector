@@ -1,0 +1,4 @@
+<div class="credit-card-type">
+    <span>${Resource.msg('payment.pay.with', 'stripe', null)}
+    ${dw.order.PaymentMgr.getPaymentMethod(payment.paymentMethod).name}</span>
+</div>
