@@ -138,8 +138,9 @@ function createCharge(stripeNotificationObject, order, stripePaymentInstrument) 
  *
  * @param {dw.object.CustomObject} stripeNotificationObject - Notification CO
  * @param {dw.order.Order} order - Order to fail
+ * @param {dw.order.OrderPaymentInstrument} stripePaymentInstrument - Stripe payment instrument
  */
-function failOrder(stripeNotificationObject, order) {
+function failOrder(stripeNotificationObject, order, stripePaymentInstrument) {
     var chargeJSON = JSON.parse(stripeNotificationObject.custom.stripeWebhookData);
     var failedDetailsForOrder = {
         failure_code: chargeJSON.data.object.failure_code ? chargeJSON.data.object.failure_code : '',
@@ -156,6 +157,10 @@ function failOrder(stripeNotificationObject, order) {
             logger.error('Error: {0}', failStatus.message);
         } else {
             stripeLogger.info('\nSuccessfully set order status to failed');
+        }
+        
+        if (stripePaymentInstrument.paymentMethod === 'STRIPE_WECHATPAY') {
+        	order.custom.stripeIsPaymentIntentInReview = false;
         }
 
         stripeNotificationObject.custom.processingStatus = 'FAIL_OR_CANCEL';  // eslint-disable-line
@@ -358,7 +363,7 @@ function processNotificationObject(stripeNotificationObject) {
         case 'source.canceled':
         case 'source.failed':
         case 'charge.failed':
-            failOrder(stripeNotificationObject, order);
+            failOrder(stripeNotificationObject, order, stripePaymentInstrument);
             break;
         case 'charge.succeeded':
             placeOrder(stripeNotificationObject, order, stripePaymentInstrument);
