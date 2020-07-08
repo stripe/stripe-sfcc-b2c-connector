@@ -8,7 +8,10 @@ function Handle(args) {
     const paramsMap = request.httpParameterMap;
     const selectedPaymentMethodID = paramsMap.dwfrm_billing_paymentMethods_selectedPaymentMethodID.stringValue || paramsMap.dwfrm_billing_paymentMethod.stringValue;// app.getForm('billing').object.paymentMethods.selectedPaymentMethodID.value;
     const params = {
-        sourceId: paramsMap.stripe_source_id.stringValue
+        sourceId: paramsMap.stripe_source_id.stringValue,
+        bankAccountTokenId: paramsMap.stripe_bank_account_token_id.stringValue,
+        bankAccountToken: paramsMap.stripe_bank_account_token.stringValue,
+        stripeWeChatQRCodeURL: paramsMap.stripe_wechat_qrcode_url.stringValue
     };
 
     try {

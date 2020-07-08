@@ -16,12 +16,24 @@
 			<iscomment>
 				Stripe changes BEGIN
 			</iscomment>
-			<isset name="stripeEnabled" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper').isStripeEnabled()}" scope="page" />
-			<isif condition="${stripeEnabled && pdict.Order.status == dw.order.Order.ORDER_STATUS_CREATED}">
-				<h1>${Resource.msg('stripe.confirmation.thankyou','stripe',null)}</h1>
-			<iselse/>
-				<h1>${Resource.msg('confirmation.thankyou','checkout',null)}</h1>
-			</isif>
+			<isset name="isWeChatPay" value="${false}" scope="page" />
+			<isloop items="${pdict.Order.getPaymentInstruments()}" var="paymentInstr">
+				<isif condition="${paymentInstr.paymentMethod === 'STRIPE_WECHATPAY'}">
+		            <isset name="isWeChatPay" value="${true}" scope="page" />
+		            <isbreak>
+		        </isif>
+			</isloop>
+		    
+		    <isif condition="${isWeChatPay}">
+		    	<isinclude template="checkout/wechatqrcode" />
+		    <iselse/>
+		    	<isset name="stripeEnabled" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper').isStripeEnabled()}" scope="page" />
+				<isif condition="${stripeEnabled && pdict.Order.status == dw.order.Order.ORDER_STATUS_CREATED}">
+					<h1>${Resource.msg('stripe.confirmation.thankyou','stripe',null)}</h1>
+				<iselse/>
+					<h1>${Resource.msg('confirmation.thankyou','checkout',null)}</h1>
+				</isif>
+		    </isif>
 			<iscomment>
 				Stripe changes END
 			</iscomment>

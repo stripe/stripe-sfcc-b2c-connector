@@ -49,6 +49,34 @@
                 <externally-managed-flag>false</externally-managed-flag>
                 <min-length>0</min-length>
             </attribute-definition>
+            <attribute-definition attribute-id="stripeBankAccountTokenId">
+                <display-name xml:lang="x-default">Stripe ACH Debit Bank Account Token Id</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeBankAccountToken">
+                <display-name xml:lang="x-default">Stripe ACH Debit Bank Account Token</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeCustomerID">
+                <display-name xml:lang="x-default">Stripe ACH Debit Customer ID</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeWeChatQRCodeURL">
+                <display-name xml:lang="x-default">Stripe WeChat QR Code URL</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
         </custom-attribute-definitions>
     </type-extension>
 
@@ -307,7 +335,7 @@ See more here:  https://stripe.com/docs/sources&#13;
 
     <type-extension type-id="Basket">
         <custom-attribute-definitions>
-            <attribute-definition attribute-id="stripePaymentIntentID">
+            <attribute-definition attribute-id="stripeOM__stripePaymentIntentID">
                 <display-name xml:lang="x-default">Stripe payment intent ID</display-name>
                 <description xml:lang="x-default">Stripe payment intent ID</description>
                 <type>string</type>
@@ -318,6 +346,27 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <display-name xml:lang="x-default">Stripe payment intent in review</display-name>
                 <description xml:lang="x-default">Stripe payment intent in review</description>
                 <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeBankAccountToken">
+                <display-name xml:lang="x-default">Stripe Bank Account Token</display-name>
+                <description xml:lang="x-default">Stripe ACH Debit Bank Account Token</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeCustomerID">
+                <display-name xml:lang="x-default">Stripe Customer ID</display-name>
+                <description xml:lang="x-default">Stripe ACH Debit Customer ID</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeWeChatQRCodeURL">
+                <display-name xml:lang="x-default">Stripe WeChat QR Code URL</display-name>
+                <description xml:lang="x-default">Stripe WeChat QR Code URL</description>
+                <type>string</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
             </attribute-definition>
@@ -326,7 +375,7 @@ See more here:  https://stripe.com/docs/sources&#13;
 
     <type-extension type-id="Order">
         <custom-attribute-definitions>
-            <attribute-definition attribute-id="stripePaymentIntentID">
+            <attribute-definition attribute-id="stripeOM__stripePaymentIntentID">
                 <display-name xml:lang="x-default">Stripe payment intent ID</display-name>
                 <description xml:lang="x-default">Stripe payment intent ID</description>
                 <type>string</type>
@@ -340,11 +389,36 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
             </attribute-definition>
+            <attribute-definition attribute-id="stripeBankAccountToken">
+                <display-name xml:lang="x-default">Stripe Bank Account Token</display-name>
+                <description xml:lang="x-default">Stripe ACH Debit Bank Account Token</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeCustomerID">
+                <display-name xml:lang="x-default">Stripe Customer ID</display-name>
+                <description xml:lang="x-default">Stripe ACH Debit Customer ID</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeWeChatQRCodeURL">
+                <display-name xml:lang="x-default">Stripe WeChat QR Code URL</display-name>
+                <description xml:lang="x-default">Stripe WeChat QR Code URL</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
         </custom-attribute-definitions>
         <group-definitions>
             <attribute-group group-id="Stripe Payment Intent">
                 <display-name xml:lang="x-default">Stripe Payment Intent</display-name>
-                <attribute attribute-id="stripePaymentIntentID"/>
+                <attribute attribute-id="stripeOM__stripePaymentIntentID"/>
+                <attribute attribute-id="stripeIsPaymentIntentInReview"/>
+                <attribute attribute-id="stripeBankAccountToken"/>
+                <attribute attribute-id="stripeCustomerID"/>
+                <attribute attribute-id="stripeWeChatQRCodeURL"/>
             </attribute-group>
         </group-definitions>
     </type-extension>

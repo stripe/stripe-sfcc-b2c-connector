@@ -46,10 +46,12 @@ function Handle(args) {
 function Authorize(args) {
     let responsePayload;
     const OrderMgr = require('dw/order/OrderMgr');
+    const Site = require('dw/system/Site');
     const orderNo = args.OrderNo;
     const paymentInstrument = args.PaymentInstrument;
     const order = OrderMgr.getOrder(orderNo);
-    const paymentIntentId = order.custom.stripePaymentIntentID;
+    const paymentIntentId = order.custom.stripeOM__stripePaymentIntentID;
+    const stripeChargeCapture = Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
 
     if (!paymentIntentId) {
         responsePayload = {
@@ -63,11 +65,11 @@ function Authorize(args) {
             const paymentIntent = stripeService.paymentIntents.update(paymentIntentId, {
                 metadata: {
                     order_id: orderNo,
-                    site_id: dw.system.Site.getCurrent().getID()
+                    site_id: Site.getCurrent().getID()
                 }
             });
 
-            if (paymentIntent.status !== 'succeeded') {
+            if ((!stripeChargeCapture && paymentIntent.status !== 'requires_capture') || (stripeChargeCapture && paymentIntent.status !== 'succeeded')) {
                 throw new Error('Payment was not successful, payment intent status is ' + paymentIntent.status);
             }
 
@@ -86,7 +88,9 @@ function Authorize(args) {
                 paymentInstrument.custom.stripeChargeID = charge.id;
                 paymentInstrument.paymentTransaction.transactionID = charge.balance_transaction;
                 paymentInstrument.paymentTransaction.paymentProcessor = paymentProcessor;
-                args.Order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
+                if (paymentIntent.status === 'succeeded') {
+                    args.Order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
+                }
             });
 
             responsePayload = {

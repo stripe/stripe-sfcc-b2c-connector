@@ -22,6 +22,16 @@ const mockResults = [
         httpMethod: 'DELETE',
         mockedResponseId: 'customers.delete'
     },
+    { // stripe.customers.retrieve_source
+        urlRegEx: /customers\/cus_[^/]*$\/sources\/ba_[^/]*$/,
+        httpMethod: 'GET',
+        mockedResponseId: 'customers.retrieve_source'
+    },
+    { // stripe.customers.verify_bank_account
+        urlRegEx: /customers\/cus_[^/]*$\/sources\/ba_[^/]*$\/verify/,
+        httpMethod: 'POST',
+        mockedResponseId: 'customers.verify_bank_account'
+    },
 
     // PaymentMethods
     { // stripe.paymentMethods.create

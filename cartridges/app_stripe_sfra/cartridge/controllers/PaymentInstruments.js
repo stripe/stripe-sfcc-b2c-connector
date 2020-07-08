@@ -21,7 +21,7 @@ server.prepend('DeletePayment', userLoggedIn.validateLoggedInAjax, function (req
     var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
     var wallet = stripeHelper.getStripeWallet(customer);
 
-    if (stripeHelper.isStripeEnabled()) {
+    if (!stripeHelper.isStripeEnabled()) {
         return next();
     }
 

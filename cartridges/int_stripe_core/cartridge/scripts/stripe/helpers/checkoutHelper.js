@@ -130,6 +130,18 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
         if ('prUsed' in params) {
             paymentInstrument.custom.stripePRUsed = params.prUsed;
         }
+        
+        if ('bankAccountTokenId' in params) {
+        	paymentInstrument.custom.stripeBankAccountTokenId = params.bankAccountTokenId;
+        }
+        
+        if ('bankAccountToken' in params) {
+        	paymentInstrument.custom.stripeBankAccountToken = params.bankAccountToken;
+        }
+        
+        if ('stripeWeChatQRCodeURL' in params) {
+        	paymentInstrument.custom.stripeWeChatQRCodeURL = params.stripeWeChatQRCodeURL;
+        }
     }
 
     if (session.privacy.stripeOrderNumber) {
@@ -162,7 +174,7 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
     }
 
     if (paymentInstrument) {
-        delete lineItemCtnr.custom.stripePaymentIntentID; // eslint-disable-line
+        delete lineItemCtnr.custom.stripeOM__stripePaymentIntentID; // eslint-disable-line
         delete lineItemCtnr.custom.stripeIsPaymentIntentInReview; // eslint-disable-line
     }
 };
@@ -173,6 +185,7 @@ exports.createPaymentIntent = function (paymentInstrument) {
     var currentCurency = dw.util.Currency.getCurrency(paymentInstrument.paymentTransaction.amount.currencyCode);
     var multiplier = Math.pow(10, currentCurency.getDefaultFractionDigits());
     var amount = Math.round(paymentInstrument.paymentTransaction.amount.value * multiplier);
+    const stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
 
     const currency = paymentInstrument.paymentTransaction.amount.currencyCode.toLowerCase();
 
@@ -181,6 +194,7 @@ exports.createPaymentIntent = function (paymentInstrument) {
         amount: amount,
         currency: currency,
         confirmation_method: 'manual',
+        capture_method: stripeChargeCapture ? 'automatic' : 'manual',
         confirm: true
     };
 
@@ -395,3 +409,102 @@ exports.getShippingOptions = function () {
 
     return result;
 };
+
+/**
+ * Verify Bank Account for ACH Debit Payment charge
+ */
+exports.verifyBankAccount = function (order, firstAmount, secondAmount) {
+	
+	var Resource = require('dw/web/Resource');
+	
+	let stripeBankAccountToken = order.custom.stripeBankAccountToken;
+	
+	if (empty(stripeBankAccountToken))
+		throw new Error(Resource.msg('achdebit.error.emptybankaccount','stripe',null));
+	
+	let stripeCustomerID = order.custom.stripeCustomerID;
+	
+	if (empty(stripeCustomerID))
+		throw new Error(Resource.msg('achdebit.error.emptycustomerid','stripe',null));
+	
+	const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
+	
+	let result = false;
+	
+	var verifyBankAccountResult = stripeService.customers.verify_bank_account(stripeCustomerID, stripeBankAccountToken, firstAmount, secondAmount);
+	
+	return (verifyBankAccountResult.status == 'verified');
+};
+
+/**
+ * Creating an ACH charge
+ */
+exports.createAchCharge = function (order) {
+	
+	var Resource = require('dw/web/Resource');
+	
+	let stripeCustomerID = order.custom.stripeCustomerID;
+	
+	if (empty(stripeCustomerID))
+		throw new Error(Resource.msg('achdebit.error.emptycustomerid','stripe',null));
+	
+	let stripeOrder = exports.getStripeOrderDetails(order);
+
+	let chargePayload = {
+        amount: stripeOrder.amount,
+        currency: stripeOrder.currency,
+        customer: order.custom.stripeCustomerID
+    };
+	
+	const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
+	
+	return stripeService.charges.create(chargePayload);
+};
+
+/**
+ * Verify Bank Account for ACH Debit Payment charge and Creating an ACH charge
+ */
+exports.VerifyBankAccountAndCreateAchCharge = function (order, firstAmount, secondAmount) {
+	
+	var Resource = require('dw/web/Resource');
+	const Order = require('dw/order/Order');
+	
+	// verify Order
+	if (empty(order.custom.stripeBankAccountToken))
+		throw new Error(Resource.msg('achdebit.error.emptybankaccounttoken','stripe',null));
+	
+	if (empty(order.custom.stripeCustomerID))
+		throw new Error(Resource.msg('achdebit.error.emptycustomerid','stripe',null));
+	
+	if (!order.custom.stripeIsPaymentIntentInReview)
+		throw new Error(Resource.msg('achdebit.error.alreadyprocessedorder','stripe',null));
+	
+	const Transaction = require('dw/system/Transaction');
+	
+	var bankVerifyResult = this.verifyBankAccount(order, firstAmount, secondAmount);
+	
+	if (!bankVerifyResult)
+		throw new Error(Resource.msg('achdebit.error.errorverifybankaccount','stripe',null));
+	
+	var chargeResult = this.createAchCharge(order);
+	
+	if (!chargeResult.captured)
+		throw new Error(Resource.msg('achdebit.error.errorachdebitcapture','stripe',null));
+	
+	Transaction.wrap(function () {
+		order.custom.stripeIsPaymentIntentInReview = false;
+        order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
+    });
+	
+	return true;
+};
+
+exports.getWeChatQRCodeURL = function(orderNumber) {
+	
+	const OrderMgr = require('dw/order/OrderMgr');
+	
+	var order = OrderMgr.getOrder(orderNumber);
+	
+	return !empty(order) ? order.custom.stripeWeChatQRCodeURL : '';
+	
+}

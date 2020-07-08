@@ -47,7 +47,11 @@
         <iselse/>
             <isinclude template="checkout/billing/paymentOptions/creditCardContent" />
         </isif>
-
+    
+    <iselseif condition="${paymentOption.ID === 'STRIPE_ACH_DEBIT'}"/>
+        <isinclude template="checkout/billing/paymentOptions/achDebitContent" />
+	<iselseif condition="${paymentOption.ID === 'STRIPE_WECHATPAY'}"/>
+        <isinclude template="checkout/billing/paymentOptions/wechatContent" />
     <iselseif condition="${paymentOption.ID === 'STRIPE_IDEAL'}"/>
         <isinclude template="checkout/billing/paymentOptions/idealContent" />
     <iselseif condition="${paymentOption.ID === 'STRIPE_SOFORT'}"/>

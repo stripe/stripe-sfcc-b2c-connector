@@ -268,6 +268,26 @@ exports.customers = {
         };
 
         return callService(requestObject);
+    },
+    retrieve_source: function (customerId, source_id) {
+    	var requestObject = {
+            endpoint: '/customers/' + customerId + '/sources/' + source_id,
+            httpMethod: 'GET'
+        };
+    	
+    	return callService(requestObject);
+    },
+    verify_bank_account: function (customerId, source_id, firstAmount, secondAmount) {
+    	var requestObject = {
+            endpoint: '/customers/' + customerId + '/sources/' + source_id + '/verify',
+            httpMethod: 'POST',
+            payload: {
+            	amounts: [firstAmount, secondAmount]
+            }
+            
+        };
+    	
+    	return callService(requestObject);
     }
 };
 

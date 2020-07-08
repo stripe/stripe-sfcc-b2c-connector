@@ -105,10 +105,12 @@ function createCharge(stripeNotificationObject, order, stripePaymentInstrument) 
         description: 'Charge for ' + customerEmail + ', order ' + order.orderNo
     };
 
-    var stripeCustomerId = stripePaymentInstrument.custom.stripeCustomerID || getStripeCustomerIdFromOrder(order);
-
-    if (stripeCustomerId) {
-        createChargePayload.customer = stripeCustomerId;
+    if (stripePaymentInstrument.paymentMethod != 'STRIPE_WECHATPAY') {
+	    var stripeCustomerId = stripePaymentInstrument.custom.stripeCustomerID || getStripeCustomerIdFromOrder(order);
+	
+	    if (stripeCustomerId) {
+	        createChargePayload.customer = stripeCustomerId;
+	    }
     }
 
     const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
@@ -118,6 +120,12 @@ function createCharge(stripeNotificationObject, order, stripePaymentInstrument) 
         Transaction.wrap(function () {
             stripePaymentInstrument.custom.stripeChargeID = charge.id; // eslint-disable-line
             stripeNotificationObject.custom.processingStatus = 'PENDING_CHARGE'; // eslint-disable-line
+            
+            // Update in review and payment status for WeChat orders
+            if (stripePaymentInstrument.paymentMethod === 'STRIPE_WECHATPAY') {
+            	order.custom.stripeIsPaymentIntentInReview = false;
+            	order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
+            }
         });
         stripeLogger.info('Charge was successfull for order {0}, CO event id {1}, source {2}', order.orderNo, stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId);
     } catch (e) {
@@ -319,22 +327,27 @@ function processNotificationObject(stripeNotificationObject) {
         );
         return;
     }
-
-    const piStripeSourceId = stripePaymentInstrument.custom.stripeSourceID;
-    if (!piStripeSourceId) {
-        stripeLogger.info('\nSource id does not exists in payment instrument or empty. SFCC order id: {0}', orderNo);
-        return;
-    }
-
-    if (coStripeSourceId !== piStripeSourceId) {
-        stripeLogger.info(
-            '\nSources do not match, SFCC order id: {0}, CO event id: {1}, \nSource from webhook: {2}, Source in payment transaction: {3}',
-            orderNo,
-            stripeEventId,
-            coStripeSourceId,
-            piStripeSourceId
-        );
-        return;
+    
+    // we do not store source Id for orders placed with WeChat
+    // so we skip the following checks for WeChat orders
+    if (stripePaymentInstrument.paymentMethod != 'STRIPE_WECHATPAY') {
+    	
+	    const piStripeSourceId = stripePaymentInstrument.custom.stripeSourceID;
+	    if (!piStripeSourceId) {
+	        stripeLogger.info('\nSource id does not exists in payment instrument or empty. SFCC order id: {0}', orderNo);
+	        return;
+	    }
+	
+	    if (coStripeSourceId !== piStripeSourceId) {
+	        stripeLogger.info(
+	            '\nSources do not match, SFCC order id: {0}, CO event id: {1}, \nSource from webhook: {2}, Source in payment transaction: {3}',
+	            orderNo,
+	            stripeEventId,
+	            coStripeSourceId,
+	            piStripeSourceId
+	        );
+	        return;
+	    }
     }
 
     const stripeEventType = stripeNotificationObject.custom.stripeType;

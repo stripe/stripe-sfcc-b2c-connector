@@ -119,6 +119,7 @@ function getOwnerDetails() {
 
 function getSourceType(selectedPaymentMethod) {
     return {
+    	STRIPE_ACH_DEBIT: 'ach_debit',
         STRIPE_ALIPAY: 'alipay',
         STRIPE_BANCONTACT: 'bancontact',
         STRIPE_EPS: 'eps',
@@ -205,7 +206,7 @@ function handleServerResponse(response) {
                     method: 'POST',
                     dataType: 'json',
                     data: {
-                        csrf_token: $('[name="csrf_token"]')
+                        csrf_token: $('[name="csrf_token"]').val()
                     }
                 }).done(function (json) {
                     handleServerResponse(json);
@@ -321,8 +322,29 @@ document.querySelector('button.submit-payment').addEventListener('click', functi
                 });
             }
             break;
-        case 'STRIPE_ALIPAY':
+        case 'STRIPE_ACH_DEBIT':
+        	
+        	var form = document.getElementById('dwfrm_billing');
+        	if (!form.reportValidity()) {
+        		form.focus();
+        		form.scrollIntoView();
+        		break;
+        	}
+   	
+        	if (!validateAchDebitForm())
+        		break;
+        	
+        	var achDebitParams = getBankAccountRequestParamsForAchDebit();   	
+        	stripe.createToken('bank_account', achDebitParams).then(processBankAccountRequestResult);	
+        	break;
+        	
         case 'STRIPE_WECHATPAY':
+        	
+        	createSourcePayload = getCreateWeChatSourcePayload();
+            stripe.createSource(createSourcePayload).then(processWeChatCreateSourceResult);
+        	break;
+        	
+        case 'STRIPE_ALIPAY':
         case 'STRIPE_BANCONTACT':
         case 'STRIPE_EPS':
         case 'STRIPE_GIROPAY':
@@ -499,3 +521,188 @@ $('body').on('checkout:updateCheckoutView', function (e, data) {
     var stripeOrderAmountInput = document.getElementById('stripe_order_amount');
     stripeOrderAmountInput.value = data.order.totals.grandTotalValue;
 });
+
+
+/**
+ * Validates the ACH Debit form.
+ * @returns {boolean} Returns true if the ACH Debit form is valid. Returns false if the ACH Debit form is invalid.
+ */
+function validateAchDebitForm() {
+	
+	// validate Account Holder Name
+	var accountHolderName = document.getElementById('ach-account-holdername');
+
+	if (!accountHolderName.value) {
+
+		alert(accountHolderName.dataset.emptyerrormsg);
+		return false;
+	}
+	
+	// validate Account Type
+	var accountType = document.getElementById('ach-account-type');
+
+	if (!accountType.value) {
+
+		alert(accountType.dataset.emptyerrormsg);
+		return false;
+	}
+	
+	// validate Account Number
+	var accountNumber = document.getElementById('ach-account-number');
+
+	if (!accountNumber.value) {
+
+		alert(accountNumber.dataset.emptyerrormsg);
+		return false;
+	}
+	
+	// validate Routing Number
+	var routingNumber = document.getElementById('ach-routing-number');
+
+	if (!routingNumber.value) {
+
+		alert(routingNumber.dataset.emptyerrormsg);
+		return false;
+	}
+
+    return true;
+}
+
+function getBankAccountRequestParamsForAchDebit() {
+	
+	var stripeOrderCurrencyInput = document.getElementById('stripe_order_currency');
+    var currencyCode = stripeOrderCurrencyInput.value && stripeOrderCurrencyInput.value.toLowerCase();
+	
+	return {
+        country: document.getElementById('stripeAccountCountry').value,
+        currency: currencyCode,
+        routing_number: document.getElementById('ach-routing-number').value,
+        account_number: document.getElementById('ach-account-number').value,
+        account_holder_name: document.getElementById('ach-account-holdername').value,
+        account_holder_type: document.getElementById('ach-account-type').value
+    };
+}
+
+function processBankAccountRequestResult(result) {
+	
+	if (result.error) {
+        alert(result.error.message);
+    } else {
+    	
+    	// init bank account token id
+    	var bankAccountTokenIDInputs = document.getElementsByName('stripe_bank_account_token_id');
+    	bankAccountTokenIDInputs.forEach(function (input) {
+            input.value = result.token.id;
+        });
+    	
+    	// init bank account token
+    	var bankAccountTokenInputs = document.getElementsByName('stripe_bank_account_token');
+    	bankAccountTokenInputs.forEach(function (input) {
+            input.value = result.token.bank_account.id;
+        });
+    	
+    	var stripeReturnURL = document.getElementById('stripe_return_url').value;
+    	
+    	$('body').on('checkout:updateCheckoutView', function (e, data) {
+            window.location.replace(stripeReturnURL);
+        });
+    	
+    	$('.submit-payment').click();
+    	$.spinner().start();
+    }
+}
+
+// fix issue with SFRA select payment method when edit payment from Order confirmation
+var ready = (callback) => {
+  if (document.readyState != "loading") callback();
+  else document.addEventListener("DOMContentLoaded", callback);
+}
+
+ready(() => { 
+  
+  document.querySelector(".payment-summary .edit-button").addEventListener("click", (e) => { 
+  
+  		var list = document.querySelector(".payment-form").querySelectorAll('.tab-pane');
+  		for (var i = 0; i < list.length; ++i) {
+		   list[i].classList.remove('active');
+		}
+  		
+  		var activePaymentMethod = document.getElementsByClassName("nav-link credit-card-tab active");
+  		if (activePaymentMethod.length) {
+  		
+  			var selectedPaymentContent = document.getElementById(activePaymentMethod[0].attributes['href'].value.replace('#', ''));
+  			
+  			if (selectedPaymentContent) {
+  				selectedPaymentContent.classList.add('active');
+  			}
+  		}
+   });  
+  
+  document.querySelector(".shipping-summary .edit-button").addEventListener("click", (e) => { 
+
+  		var list = document.querySelector(".payment-form").querySelectorAll('.tab-pane');
+  		for (var i = 0; i < list.length; ++i) {
+		   list[i].classList.remove('active');
+		}
+  		
+  		var activePaymentMethod = document.getElementsByClassName("nav-link credit-card-tab active");
+  		if (activePaymentMethod.length) {
+  		
+  			var selectedPaymentContent = document.getElementById(activePaymentMethod[0].attributes['href'].value.replace('#', ''));
+  			
+  			if (selectedPaymentContent) {
+  				selectedPaymentContent.classList.add('active');
+  			}
+  		}
+   });
+
+});
+
+function getCreateWeChatSourcePayload() {
+	var stripeSiteIdInput = document.getElementById('stripe_site_id');
+    var stripeOrderNumberInput = document.getElementById('stripe_order_number');
+    var stripeOrderAmountInput = document.getElementById('stripe_order_amount');
+    var stripeOrderCurrencyInput = document.getElementById('stripe_order_currency');
+
+    var amountToPay = parseFloat(stripeOrderAmountInput.value);
+    var currencyCode = stripeOrderCurrencyInput.value && stripeOrderCurrencyInput.value.toLowerCase();
+
+    return {
+        type: 'wechat',
+        amount: amountToPay,
+        currency: currencyCode,
+        statement_descriptor: stripeOrderNumberInput.value,
+        metadata: {
+            site_id: stripeSiteIdInput.value,
+            order_id: stripeOrderNumberInput.value
+        },
+        owner: getOwnerDetails()
+    };
+}
+
+function processWeChatCreateSourceResult(result) {
+	
+    if (result.error) {
+        alert(result.error.message);
+    } else {
+        var sourceIdInputs = document.getElementsByName('stripe_source_id');
+        var sourceClientSecretInput = document.getElementById('stripe_source_client_secret');
+        var sourceWeChatQRCodeURL = document.getElementById('stripe_wechat_qrcode_url');
+
+        sourceIdInputs.forEach(function (input) {
+            input.value = result.source.id;
+        });
+
+        sourceClientSecretInput.value = result.source.client_secret;
+        sourceWeChatQRCodeURL.value = result.source.wechat.qr_code_url;
+        
+        var stripeReturnURL = document.getElementById('stripe_return_url').value;
+    	
+    	$('body').on('checkout:updateCheckoutView', function (e, data) {
+            window.location.replace(stripeReturnURL);
+        });
+        
+        $('.submit-payment').click();
+    	$.spinner().start();
+    }
+}

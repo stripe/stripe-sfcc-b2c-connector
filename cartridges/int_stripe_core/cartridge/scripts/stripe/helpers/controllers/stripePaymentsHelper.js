@@ -8,9 +8,14 @@
  * @return {Object} - Response payload to return to client
  */
 function generateCardsPaymentResponse(intent) {
+    const stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
     var responsePayload;
-
-    if (
+    if (intent.status === 'requires_capture' && !stripeChargeCapture) {
+        // The payment requires capture which will be made later
+        responsePayload = {
+            success: true
+        };
+    } else if (
         intent.status === 'requires_action' &&
         intent.next_action.type === 'use_stripe_sdk'
     ) {
@@ -53,14 +58,14 @@ function beforePaymentAuthorization() {
 
             if (stripePaymentInstrument && stripePaymentInstrument.paymentMethod === 'CREDIT_CARD') {
                 var paymentIntent;
-                var paymentIntentId = basket.custom.stripePaymentIntentID;
+                var paymentIntentId = basket.custom.stripeOM__stripePaymentIntentID;
                 if (paymentIntentId) {
                     paymentIntent = checkoutHelper.confirmPaymentIntent(paymentIntentId);
                 } else {
                     paymentIntent = checkoutHelper.createPaymentIntent(stripePaymentInstrument);
 
                     Transaction.wrap(function () {
-                        basket.custom.stripePaymentIntentID = paymentIntent.id;
+                        basket.custom.stripeOM__stripePaymentIntentID = paymentIntent.id;
                     });
                 }
 
@@ -71,6 +76,38 @@ function beforePaymentAuthorization() {
                 }
 
                 responsePayload = generateCardsPaymentResponse(paymentIntent);
+
+            } else if (stripePaymentInstrument && stripePaymentInstrument.paymentMethod === 'STRIPE_ACH_DEBIT') {
+
+            	const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
+            	
+            	const newStripeCustomer = stripeService.customers.create({
+            		source: stripePaymentInstrument.custom.stripeBankAccountTokenId
+                });
+            	
+            	let stripeCustomerId = newStripeCustomer.id;
+            	
+            	Transaction.wrap(function () {
+                    basket.custom.stripeCustomerID = stripeCustomerId;
+                    basket.custom.stripeBankAccountToken = stripePaymentInstrument.custom.stripeBankAccountToken;
+                    basket.custom.stripeIsPaymentIntentInReview = true;
+                });
+            	
+            	responsePayload = {
+                    success: true
+                };
+            	
+            } else if (stripePaymentInstrument && stripePaymentInstrument.paymentMethod === 'STRIPE_WECHATPAY') {
+
+            	Transaction.wrap(function () {
+                    basket.custom.stripeWeChatQRCodeURL = stripePaymentInstrument.custom.stripeWeChatQRCodeURL;
+                    basket.custom.stripeIsPaymentIntentInReview = true;
+                });
+            	
+            	responsePayload = {
+                    success: true
+                };
+            	
             } else {
                 responsePayload = {
                     success: true
@@ -115,15 +152,22 @@ function handleAPM(sfra) {
 
     var redirectUrl = '';
     try {
+    	
         const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
-        const source = stripeService.sources.retrieve(sourceId);
 
-        if (source.client_secret !== sourceClientSecret) {
-            throw new Error('Source client secret mismatch');
-        }
-
-        if (['chargeable', 'pending'].indexOf(source.status) < 0) {
-            throw new Error('Source not authorized.');
+        // handle payments with source id
+        // Please Note: for ACH Debit payments, the source id is empty
+        if (!empty(sourceId)) {
+        	
+	        const source = stripeService.sources.retrieve(sourceId);
+	
+	        if (source.client_secret !== sourceClientSecret) {
+	            throw new Error('Source client secret mismatch');
+	        }
+	
+	        if (['chargeable', 'pending'].indexOf(source.status) < 0) {
+	            throw new Error('Source not authorized.');
+	        }
         }
 
         if (sfra) {
