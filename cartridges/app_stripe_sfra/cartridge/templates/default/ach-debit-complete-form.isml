@@ -59,7 +59,7 @@
                             <isif condition="${!empty(pdict.result)}">
                             	<div class="row">
 	                            	<div class="col" style="color:#FF0000;" id="result">
-	                            		<isprint value="${pdict.result}" encoding="off" />
+	                            		<isprint value="${pdict.result}" encoding="on" />
 	                            	</div>
 	                            </div>
                             </isif>

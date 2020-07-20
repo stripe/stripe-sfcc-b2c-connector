@@ -28,7 +28,7 @@
 			
 			<isif condition="${!empty(pdict.result)}">
             	<div class="form-row" style="color:#FF0000;" id="result">
-             		<isprint value="${pdict.result}" encoding="off" />
+             		<isprint value="${pdict.result}" encoding="on" />
             	</div>
             </isif>
 			

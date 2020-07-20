@@ -5,34 +5,11 @@
         "import/no-unresolved": "off",
         "indent": ["error", 4, { "SwitchCase": 1, "VariableDeclarator": 1 }],
         "func-names": "off",
-        "require-jsdoc": "off",
+        "require-jsdoc": "error",
         "valid-jsdoc": ["error", { "preferType": { "Boolean": "boolean", "Number": "number", "object": "Object", "String": "string" }, "requireReturn": false}],
         "vars-on-top": "off",
         "global-require": "off",
         "no-shadow": ["error", { "allow": ["err", "callback"]}],
-        "max-len": "off",
-        "linebreak-style": 0,
-        "no-plusplus": "off",
-        "keyword-spacing": [2, {"before": true, "after": true}]
-    },
-    "env": {
-        "es6": true,
-        "mocha": true,
-        "jquery": true,
-        "browser": true,
-        "node": true,
-        "jasmine": true,
-        "protractor": true
-    },
-    "parserOptions": {
-        "ecmaVersion": 2017,
-        "sourceType": "module"
-    },
-    "globals": {
-        "request": true,
-        "response": true,
-        "customer": true,
-        "dw": true,
-        "empty": true
+        "max-len": "off"
     }
 }

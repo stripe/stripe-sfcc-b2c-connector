@@ -18,7 +18,7 @@
             <isprint value="${pdict.paymentForm.cardOwner.label}" encoding="htmlcontent" />
         </label>
         <input type="text" class="form-control" id="cardOwner"
-            <isprint value="${pdict.paymentForm.cardOwner.attributes}" encoding="off" />
+            <isprint value="${pdict.paymentForm.cardOwner.attributes}" encoding="on" />
             autocomplete="cc-name">
         <div class="invalid-feedback">
             <isprint value="${pdict.paymentForm.cardOwner.error}" encoding="htmlcontent" />
