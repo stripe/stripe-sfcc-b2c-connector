@@ -1,2 +1,7 @@
 cartridges/app_stripe_sfra/cartridge/static/
+cartridges/app_stripe_core/cartridge/static/
+cartridges/int_stripe_core/cartridge/static/
 documentation/
+tests/
+protractor-conf.js
+webpack.config.js

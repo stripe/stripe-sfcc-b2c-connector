@@ -1,3 +1,5 @@
+/* eslint-env es6 */
+
 'use strict';
 
 var server = require('server');

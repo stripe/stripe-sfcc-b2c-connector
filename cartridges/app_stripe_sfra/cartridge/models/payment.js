@@ -1,3 +1,6 @@
+/* global request, dw */
+/* eslint-disable no-plusplus */
+
 'use strict';
 
 var PaymentMgr = require('dw/order/PaymentMgr');

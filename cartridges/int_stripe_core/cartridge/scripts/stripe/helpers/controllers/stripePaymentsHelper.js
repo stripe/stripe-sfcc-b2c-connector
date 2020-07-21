@@ -1,3 +1,6 @@
+/* eslint-env es6 */
+/* global request, dw, empty */
+
 'use strict';
 
 /**
@@ -76,38 +79,33 @@ function beforePaymentAuthorization() {
                 }
 
                 responsePayload = generateCardsPaymentResponse(paymentIntent);
-
             } else if (stripePaymentInstrument && stripePaymentInstrument.paymentMethod === 'STRIPE_ACH_DEBIT') {
+                const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
-            	const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
-            	
-            	const newStripeCustomer = stripeService.customers.create({
-            		source: stripePaymentInstrument.custom.stripeBankAccountTokenId
+                const newStripeCustomer = stripeService.customers.create({
+                    source: stripePaymentInstrument.custom.stripeBankAccountTokenId
                 });
-            	
-            	let stripeCustomerId = newStripeCustomer.id;
-            	
-            	Transaction.wrap(function () {
+
+                let stripeCustomerId = newStripeCustomer.id;
+
+                Transaction.wrap(function () {
                     basket.custom.stripeCustomerID = stripeCustomerId;
                     basket.custom.stripeBankAccountToken = stripePaymentInstrument.custom.stripeBankAccountToken;
                     basket.custom.stripeIsPaymentIntentInReview = true;
                 });
-            	
-            	responsePayload = {
+
+                responsePayload = {
                     success: true
                 };
-            	
             } else if (stripePaymentInstrument && stripePaymentInstrument.paymentMethod === 'STRIPE_WECHATPAY') {
-
-            	Transaction.wrap(function () {
+                Transaction.wrap(function () {
                     basket.custom.stripeWeChatQRCodeURL = stripePaymentInstrument.custom.stripeWeChatQRCodeURL;
                     basket.custom.stripeIsPaymentIntentInReview = true;
                 });
-            	
-            	responsePayload = {
+
+                responsePayload = {
                     success: true
                 };
-            	
             } else {
                 responsePayload = {
                     success: true
@@ -152,22 +150,20 @@ function handleAPM(sfra) {
 
     var redirectUrl = '';
     try {
-    	
         const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
         // handle payments with source id
         // Please Note: for ACH Debit payments, the source id is empty
         if (!empty(sourceId)) {
-        	
-	        const source = stripeService.sources.retrieve(sourceId);
-	
-	        if (source.client_secret !== sourceClientSecret) {
-	            throw new Error('Source client secret mismatch');
-	        }
-	
-	        if (['chargeable', 'pending'].indexOf(source.status) < 0) {
-	            throw new Error('Source not authorized.');
-	        }
+            const source = stripeService.sources.retrieve(sourceId);
+
+            if (source.client_secret !== sourceClientSecret) {
+                throw new Error('Source client secret mismatch');
+            }
+
+            if (['chargeable', 'pending'].indexOf(source.status) < 0) {
+                throw new Error('Source not authorized.');
+            }
         }
 
         if (sfra) {

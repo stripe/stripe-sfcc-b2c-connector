@@ -1,5 +1,13 @@
+/* eslint-env es6 */
+/* global request, customer */
+
 'use strict';
 
+/**
+* Add New Card
+*
+* @returns {array} - array with result info
+*/
 function AddNewCard() {
     const stripePaymentMethodId = request.httpParameterMap.payment_method_id.stringValue;
     const stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
@@ -24,6 +32,9 @@ function AddNewCard() {
 module.exports.AddNewCard = AddNewCard;
 module.exports.AddNewCard.public = true;
 
+/**
+* Make card default
+*/
 function MakeDefault() {
     const stripeId = request.httpParameterMap.stripe_id.stringValue;
     const stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');

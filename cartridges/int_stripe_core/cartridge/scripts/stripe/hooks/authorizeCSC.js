@@ -1,3 +1,6 @@
+/* eslint-env es6 */
+/* global dw */
+
 'use strict';
 
 const Logger = require('dw/system/Logger').getLogger('Stripe', 'stripe');

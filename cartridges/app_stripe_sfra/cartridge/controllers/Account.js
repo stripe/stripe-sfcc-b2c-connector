@@ -1,3 +1,5 @@
+/* global customer */
+
 'use strict';
 
 var server = require('server');

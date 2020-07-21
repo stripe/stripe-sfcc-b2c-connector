@@ -1,5 +1,5 @@
 /* eslint-disable no-alert */
-/* globals Stripe */
+/* globals Stripe, $ */
 // v1
 var $form = $('.payment-form');
 var stripe = Stripe(document.getElementById('stripePublicKey').value);

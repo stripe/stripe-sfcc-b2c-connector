@@ -1,8 +1,17 @@
+/* eslint-env es6 */
+/* global request */
+
 'use strict';
 
 var PaymentMgr = require('dw/order/PaymentMgr');
 var Transaction = require('dw/system/Transaction');
 
+/**
+* Handle alternative payment
+*
+* @param {array} args with paramenters
+* @returns {array} - array with result info
+*/
 function Handle(args) {
     const checkoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
     const paramsMap = request.httpParameterMap;
@@ -31,6 +40,12 @@ function Handle(args) {
     }
 }
 
+/**
+* Authorize alternative payment
+*
+* @param {array} args with paramenters
+* @returns {Object} - object with result info
+*/
 function Authorize(args) {
     const paymentInstrument = args.PaymentInstrument;
     const paymentProcessor = PaymentMgr.getPaymentMethod(paymentInstrument.getPaymentMethod()).getPaymentProcessor();

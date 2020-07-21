@@ -1,6 +1,8 @@
-'use strict';
+/* eslint-env es6 */
+/* eslint-disable no-plusplus */
+/* global session, customer, dw, empty */
 
-/* global session */
+'use strict';
 
 /**
  * Returns the country for Payment Request button from Site Preferences.
@@ -130,17 +132,17 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
         if ('prUsed' in params) {
             paymentInstrument.custom.stripePRUsed = params.prUsed;
         }
-        
+
         if ('bankAccountTokenId' in params) {
-        	paymentInstrument.custom.stripeBankAccountTokenId = params.bankAccountTokenId;
+            paymentInstrument.custom.stripeBankAccountTokenId = params.bankAccountTokenId;
         }
-        
+
         if ('bankAccountToken' in params) {
-        	paymentInstrument.custom.stripeBankAccountToken = params.bankAccountToken;
+            paymentInstrument.custom.stripeBankAccountToken = params.bankAccountToken;
         }
-        
+
         if ('stripeWeChatQRCodeURL' in params) {
-        	paymentInstrument.custom.stripeWeChatQRCodeURL = params.stripeWeChatQRCodeURL;
+            paymentInstrument.custom.stripeWeChatQRCodeURL = params.stripeWeChatQRCodeURL;
         }
     }
 
@@ -332,6 +334,11 @@ exports.createOrder = function (currentBasket) {
     return order;
 };
 
+/**
+ * Checks if order is APM
+ * @param {dw.order.Order} order object
+ * @returns {bool} true if AMP order
+ */
 exports.isAPMOrder = function (order) {
     for (let i = 0; i < order.paymentInstruments.length; i++) {
         let paymentInstrument = order.paymentInstruments[i];
@@ -412,99 +419,115 @@ exports.getShippingOptions = function () {
 
 /**
  * Verify Bank Account for ACH Debit Payment charge
+ * @param {dw.order.Order} order object
+ * @param {Integer} firstAmount first amount to charge
+ * @param {Integer} secondAmount second amount to charge
+ * @returns {bool} true if succeeded
  */
 exports.verifyBankAccount = function (order, firstAmount, secondAmount) {
-	
-	var Resource = require('dw/web/Resource');
-	
-	let stripeBankAccountToken = order.custom.stripeBankAccountToken;
-	
-	if (empty(stripeBankAccountToken))
-		throw new Error(Resource.msg('achdebit.error.emptybankaccount','stripe',null));
-	
-	let stripeCustomerID = order.custom.stripeCustomerID;
-	
-	if (empty(stripeCustomerID))
-		throw new Error(Resource.msg('achdebit.error.emptycustomerid','stripe',null));
-	
-	const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
-	
-	let result = false;
-	
-	var verifyBankAccountResult = stripeService.customers.verify_bank_account(stripeCustomerID, stripeBankAccountToken, firstAmount, secondAmount);
-	
-	return (verifyBankAccountResult.status == 'verified');
+    var Resource = require('dw/web/Resource');
+
+    let stripeBankAccountToken = order.custom.stripeBankAccountToken;
+
+    if (empty(stripeBankAccountToken)) {
+        throw new Error(Resource.msg('achdebit.error.emptybankaccount', 'stripe', null));
+    }
+
+    let stripeCustomerID = order.custom.stripeCustomerID;
+
+    if (empty(stripeCustomerID)) {
+        throw new Error(Resource.msg('achdebit.error.emptycustomerid', 'stripe', null));
+    }
+
+    const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
+
+    var verifyBankAccountResult = stripeService.customers.verify_bank_account(stripeCustomerID, stripeBankAccountToken, firstAmount, secondAmount);
+
+    return (verifyBankAccountResult.status === 'verified');
 };
 
 /**
  * Creating an ACH charge
+ * @param {dw.order.Order} order object
+ * @returns {Object} service call result object
  */
 exports.createAchCharge = function (order) {
-	
-	var Resource = require('dw/web/Resource');
-	
-	let stripeCustomerID = order.custom.stripeCustomerID;
-	
-	if (empty(stripeCustomerID))
-		throw new Error(Resource.msg('achdebit.error.emptycustomerid','stripe',null));
-	
-	let stripeOrder = exports.getStripeOrderDetails(order);
+    var Resource = require('dw/web/Resource');
 
-	let chargePayload = {
+    let stripeCustomerID = order.custom.stripeCustomerID;
+
+    if (empty(stripeCustomerID)) {
+        throw new Error(Resource.msg('achdebit.error.emptycustomerid', 'stripe', null));
+    }
+
+    let stripeOrder = exports.getStripeOrderDetails(order);
+
+    let chargePayload = {
         amount: stripeOrder.amount,
         currency: stripeOrder.currency,
         customer: order.custom.stripeCustomerID
     };
-	
-	const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
-	
-	return stripeService.charges.create(chargePayload);
+
+    const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
+
+    return stripeService.charges.create(chargePayload);
 };
 
 /**
  * Verify Bank Account for ACH Debit Payment charge and Creating an ACH charge
+ * @param {dw.order.Order} order object
+ * @param {Integer} firstAmount first amount to charge
+ * @param {Integer} secondAmount second amount to charge
+ * @returns {bool} true on success
  */
 exports.VerifyBankAccountAndCreateAchCharge = function (order, firstAmount, secondAmount) {
-	
-	var Resource = require('dw/web/Resource');
-	const Order = require('dw/order/Order');
-	
-	// verify Order
-	if (empty(order.custom.stripeBankAccountToken))
-		throw new Error(Resource.msg('achdebit.error.emptybankaccounttoken','stripe',null));
-	
-	if (empty(order.custom.stripeCustomerID))
-		throw new Error(Resource.msg('achdebit.error.emptycustomerid','stripe',null));
-	
-	if (!order.custom.stripeIsPaymentIntentInReview)
-		throw new Error(Resource.msg('achdebit.error.alreadyprocessedorder','stripe',null));
-	
-	const Transaction = require('dw/system/Transaction');
-	
-	var bankVerifyResult = this.verifyBankAccount(order, firstAmount, secondAmount);
-	
-	if (!bankVerifyResult)
-		throw new Error(Resource.msg('achdebit.error.errorverifybankaccount','stripe',null));
-	
-	var chargeResult = this.createAchCharge(order);
-	
-	if (!chargeResult.captured)
-		throw new Error(Resource.msg('achdebit.error.errorachdebitcapture','stripe',null));
-	
-	Transaction.wrap(function () {
-		order.custom.stripeIsPaymentIntentInReview = false;
+    var Resource = require('dw/web/Resource');
+    const Order = require('dw/order/Order');
+
+    // verify Order
+    if (empty(order.custom.stripeBankAccountToken)) {
+        throw new Error(Resource.msg('achdebit.error.emptybankaccounttoken', 'stripe', null));
+    }
+
+    if (empty(order.custom.stripeCustomerID)) {
+        throw new Error(Resource.msg('achdebit.error.emptycustomerid', 'stripe', null));
+    }
+
+    if (!order.custom.stripeIsPaymentIntentInReview) {
+        throw new Error(Resource.msg('achdebit.error.alreadyprocessedorder', 'stripe', null));
+    }
+
+    const Transaction = require('dw/system/Transaction');
+
+    var bankVerifyResult = this.verifyBankAccount(order, firstAmount, secondAmount);
+
+    if (!bankVerifyResult) {
+        throw new Error(Resource.msg('achdebit.error.errorverifybankaccount', 'stripe', null));
+    }
+
+    var chargeResult = this.createAchCharge(order);
+
+    if (!chargeResult.captured) {
+        throw new Error(Resource.msg('achdebit.error.errorachdebitcapture', 'stripe', null));
+    }
+
+    Transaction.wrap(function () {
+        order.custom.stripeIsPaymentIntentInReview = false; // eslint-disable-line no-param-reassign
         order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
     });
-	
-	return true;
+
+    return true;
 };
 
-exports.getWeChatQRCodeURL = function(orderNumber) {
-	
-	const OrderMgr = require('dw/order/OrderMgr');
-	
-	var order = OrderMgr.getOrder(orderNumber);
-	
-	return !empty(order) ? order.custom.stripeWeChatQRCodeURL : '';
-	
-}
+/**
+ * Get WeChat QR Code URL by Order Number
+ * @param {Integer} orderNumber to get QR Code URL
+ * @returns {string} WeChat QR Code URL
+ */
+exports.getWeChatQRCodeURL = function (orderNumber) {
+    const OrderMgr = require('dw/order/OrderMgr');
+
+    var order = OrderMgr.getOrder(orderNumber);
+
+    return !empty(order) ? order.custom.stripeWeChatQRCodeURL : '';
+};

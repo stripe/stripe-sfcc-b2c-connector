@@ -1,3 +1,5 @@
+/* global dw */
+
 'use strict';
 
 var base = module.superModule;

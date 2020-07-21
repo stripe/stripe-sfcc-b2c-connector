@@ -1,4 +1,8 @@
-/* global stripe, stripeAccountCountry, stripeShippingOptions, elements, serviceUrl */
+/* global stripe, stripeAccountCountry, stripeShippingOptions, elements, serviceUrl, $ */
+
+/**
+ * Init Payment Request Button
+ */
 function initPRB() {
     var stripeOrderAmountInput = document.getElementById('stripe_order_amount');
     var stripeOrderCurrencyInput = document.getElementById('stripe_order_currency');

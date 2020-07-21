@@ -1,3 +1,6 @@
+/* eslint-env es6 */
+/* eslint-disable no-plusplus */
+
 'use strict';
 
 const CustomObjectMgr = require('dw/object/CustomObjectMgr');
@@ -14,6 +17,10 @@ const logger = Logger.getLogger('Stripe', 'stripe');
 
 const NOTIFICATIONS_CUSTOM_OBJECT_TYPE = 'StripeWebhookNotifications';
 
+/**
+* checks if SFRA options is enabled from Site Prefs
+* @returns {bool} if SFRA is enabled
+*/
 function isSFRA() {
     return Site.current.getCustomPreferenceValue('stripeIsSFRA');
 }
@@ -105,12 +112,12 @@ function createCharge(stripeNotificationObject, order, stripePaymentInstrument) 
         description: 'Charge for ' + customerEmail + ', order ' + order.orderNo
     };
 
-    if (stripePaymentInstrument.paymentMethod != 'STRIPE_WECHATPAY') {
-	    var stripeCustomerId = stripePaymentInstrument.custom.stripeCustomerID || getStripeCustomerIdFromOrder(order);
-	
-	    if (stripeCustomerId) {
-	        createChargePayload.customer = stripeCustomerId;
-	    }
+    if (stripePaymentInstrument.paymentMethod !== 'STRIPE_WECHATPAY') {
+        var stripeCustomerId = stripePaymentInstrument.custom.stripeCustomerID || getStripeCustomerIdFromOrder(order);
+
+        if (stripeCustomerId) {
+            createChargePayload.customer = stripeCustomerId;
+        }
     }
 
     const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
@@ -120,11 +127,11 @@ function createCharge(stripeNotificationObject, order, stripePaymentInstrument) 
         Transaction.wrap(function () {
             stripePaymentInstrument.custom.stripeChargeID = charge.id; // eslint-disable-line
             stripeNotificationObject.custom.processingStatus = 'PENDING_CHARGE'; // eslint-disable-line
-            
+
             // Update in review and payment status for WeChat orders
             if (stripePaymentInstrument.paymentMethod === 'STRIPE_WECHATPAY') {
-            	order.custom.stripeIsPaymentIntentInReview = false;
-            	order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
+                order.custom.stripeIsPaymentIntentInReview = false; // eslint-disable-line no-param-reassign
+                order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
             }
         });
         stripeLogger.info('Charge was successfull for order {0}, CO event id {1}, source {2}', order.orderNo, stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId);
@@ -158,9 +165,9 @@ function failOrder(stripeNotificationObject, order, stripePaymentInstrument) {
         } else {
             stripeLogger.info('\nSuccessfully set order status to failed');
         }
-        
+
         if (stripePaymentInstrument.paymentMethod === 'STRIPE_WECHATPAY') {
-        	order.custom.stripeIsPaymentIntentInReview = false;
+            order.custom.stripeIsPaymentIntentInReview = false; // eslint-disable-line no-param-reassign
         }
 
         stripeNotificationObject.custom.processingStatus = 'FAIL_OR_CANCEL';  // eslint-disable-line
@@ -212,6 +219,12 @@ function placeOrder(stripeNotificationObject, order, stripePaymentInstrument) {
     stripeLogger.info('Successfully proccesed CO with event id: {0}, source id: {1} , updated SFCC order status to "EXPORT_STATUS_READY". Set up CO processingStatus to {2}, email send - {3}', stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId, 'PROCESSED', statusMail.status === Status.OK ? 'true' : 'false');
 }
 
+/**
+ * Places an order after review.
+ *
+ * @param {dw.object.CustomObject} stripeNotificationObject - Notification CO
+ * @param {dw.order.Order} order - Order to place
+ */
 function placeOrderAfterReview(stripeNotificationObject, order) {
     Transaction.wrap(function () {
         var placeOrderStatus = OrderMgr.placeOrder(order);
@@ -238,6 +251,12 @@ function placeOrderAfterReview(stripeNotificationObject, order) {
     stripeLogger.info('Successfully proccesed CO with event id: {0}, source id: {1} , updated SFCC order status to "EXPORT_STATUS_READY". Set up CO processingStatus to {2}, email send - {3}', stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId, 'PROCESSED', statusMail.status === Status.OK ? 'true' : 'false');
 }
 
+/**
+ * Fail an order after review.
+ *
+ * @param {dw.object.CustomObject} stripeNotificationObject - Notification CO
+ * @param {dw.order.Order} order - Order to place
+ */
 function failOrderAfterReview(stripeNotificationObject, order) {
     Transaction.wrap(function () {
         order.addNote('Stripe Processing Job Note(failed details)', stripeNotificationObject.custom.stripeWebhookData);
@@ -258,6 +277,11 @@ function failOrderAfterReview(stripeNotificationObject, order) {
     stripeLogger.info('\nSuccessfully proccesed CO with event id: {0}, source id: {1}, updated SFCC order status to "FAILED". Set up CO processingStatus to {2}, email send - {3}', stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId, 'FAIL_OR_CANCEL', statusMail.status === Status.OK ? 'true' : 'false');
 }
 
+/**
+ * Process Review Notification.
+ *
+ * @param {dw.object.CustomObject} stripeNotificationObject - Notification CO
+ */
 function processReviewNotification(stripeNotificationObject) {
     var event = JSON.parse(stripeNotificationObject.custom.stripeWebhookData);
     if (event.type === 'review.closed') {
@@ -332,27 +356,26 @@ function processNotificationObject(stripeNotificationObject) {
         );
         return;
     }
-    
+
     // we do not store source Id for orders placed with WeChat
     // so we skip the following checks for WeChat orders
-    if (stripePaymentInstrument.paymentMethod != 'STRIPE_WECHATPAY') {
-    	
-	    const piStripeSourceId = stripePaymentInstrument.custom.stripeSourceID;
-	    if (!piStripeSourceId) {
-	        stripeLogger.info('\nSource id does not exists in payment instrument or empty. SFCC order id: {0}', orderNo);
-	        return;
-	    }
-	
-	    if (coStripeSourceId !== piStripeSourceId) {
-	        stripeLogger.info(
-	            '\nSources do not match, SFCC order id: {0}, CO event id: {1}, \nSource from webhook: {2}, Source in payment transaction: {3}',
-	            orderNo,
-	            stripeEventId,
-	            coStripeSourceId,
-	            piStripeSourceId
-	        );
-	        return;
-	    }
+    if (stripePaymentInstrument.paymentMethod !== 'STRIPE_WECHATPAY') {
+        const piStripeSourceId = stripePaymentInstrument.custom.stripeSourceID;
+        if (!piStripeSourceId) {
+            stripeLogger.info('\nSource id does not exists in payment instrument or empty. SFCC order id: {0}', orderNo);
+            return;
+        }
+
+        if (coStripeSourceId !== piStripeSourceId) {
+            stripeLogger.info(
+                '\nSources do not match, SFCC order id: {0}, CO event id: {1}, \nSource from webhook: {2}, Source in payment transaction: {3}',
+                orderNo,
+                stripeEventId,
+                coStripeSourceId,
+                piStripeSourceId
+            );
+            return;
+        }
     }
 
     const stripeEventType = stripeNotificationObject.custom.stripeType;
