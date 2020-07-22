@@ -1,0 +1,15 @@
+<div class="tab-pane ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">
+    <fieldset class="payment-form-fields">
+    
+    	<input type="hidden" class="form-control" name="${pdict.forms.billingForm.paymentMethod.htmlName}"
+            value="${paymentOption.ID}">
+        <input type="hidden" name="stripe_wechat_qrcode_url" id="stripe_wechat_qrcode_url">
+
+		<div class="row">
+            <div class="col-12">
+            	<p>${Resource.msg('wechatpay.qrcodemessage', 'stripe',null)}</p>
+            </div>
+        </div>
+        
+    </fieldset>
+</div>

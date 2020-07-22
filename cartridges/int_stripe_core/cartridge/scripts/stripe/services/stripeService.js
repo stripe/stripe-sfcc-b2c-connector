@@ -1,3 +1,5 @@
+/* eslint-env es6 */
+
 'use strict';
 
 /* API Includes */
@@ -265,6 +267,26 @@ exports.customers = {
         var requestObject = {
             endpoint: '/customers/' + customerId,
             httpMethod: 'DELETE'
+        };
+
+        return callService(requestObject);
+    },
+    retrieve_source: function (customerId, sourceId) {
+        var requestObject = {
+            endpoint: '/customers/' + customerId + '/sources/' + sourceId,
+            httpMethod: 'GET'
+        };
+
+        return callService(requestObject);
+    },
+    verify_bank_account: function (customerId, sourceId, firstAmount, secondAmount) {
+        var requestObject = {
+            endpoint: '/customers/' + customerId + '/sources/' + sourceId + '/verify',
+            httpMethod: 'POST',
+            payload: {
+                amounts: [firstAmount, secondAmount]
+            }
+
         };
 
         return callService(requestObject);

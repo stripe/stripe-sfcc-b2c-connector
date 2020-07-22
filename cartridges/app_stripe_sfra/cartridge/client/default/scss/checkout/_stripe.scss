@@ -7,3 +7,16 @@
         padding: 0;
     }
 }
+
+#wechat-qrcode-wrapper {
+
+	margin:20px 0 60px 0;
+	text-align:center;
+
+	#qrcode {
+		width:min-content;
+		display:inline-block;
+		margin-bottom:20px;
+	}
+
+}

@@ -1,0 +1,34 @@
+<isset name="stripeCheckoutHelper" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper')}" scope="page" />
+
+<isscript>
+    var assets = require('*/cartridge/scripts/assets.js');
+    assets.addJs('/js/qrcode.js');
+</isscript>
+
+<isset name="stripeWeChatQRCodeURL" value="${stripeCheckoutHelper.getWeChatQRCodeURL(pdict.order.orderNumber)}" scope="page" />
+
+<div id="wechat-qrcode-wrapper">
+
+	<h1>${Resource.msg('wechatpay.completeyourorder', 'stripe', null)}</h1>
+
+	<p>${Resource.msg('wechatpay.scanqrcode', 'stripe', null)} ${pdict.order.totals.grandTotal}</p>
+	
+	<div id="qrcode"></div>
+	
+	<p>${Resource.msg('wechatpay.qrcodealternative', 'stripe', null)}:</p>
+	<a href="${stripeWeChatQRCodeURL}" target="_blank">${stripeWeChatQRCodeURL}</a>
+
+</div>
+
+<script type="text/javascript">
+
+	var ready = (callback) => {
+	  if (document.readyState != "loading") callback();
+	  else document.addEventListener("DOMContentLoaded", callback);
+	}
+	
+	ready(() => { 
+	  new QRCode(document.getElementById("qrcode"), "${stripeWeChatQRCodeURL}");
+	});
+
+</script>

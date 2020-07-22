@@ -1,3 +1,6 @@
+/* eslint-env es6 */
+/* eslint-disable no-plusplus */
+
 'use strict';
 
 const mockResults = [
@@ -21,6 +24,16 @@ const mockResults = [
         urlRegEx: /customers\/cus_[^/]*$/,
         httpMethod: 'DELETE',
         mockedResponseId: 'customers.delete'
+    },
+    { // stripe.customers.retrieve_source
+        urlRegEx: /customers\/cus_[^/]*$\/sources\/ba_[^/]*$/,
+        httpMethod: 'GET',
+        mockedResponseId: 'customers.retrieve_source'
+    },
+    { // stripe.customers.verify_bank_account
+        urlRegEx: /customers\/cus_[^/]*$\/sources\/ba_[^/]*$\/verify/,
+        httpMethod: 'POST',
+        mockedResponseId: 'customers.verify_bank_account'
     },
 
     // PaymentMethods

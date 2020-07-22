@@ -1,3 +1,6 @@
+/* eslint-env es6 */
+/* global request, response */
+
 'use strict';
 
 const NOTIFICATIONS_CUSTOM_OBJECT_TYPE = 'StripeWebhookNotifications';

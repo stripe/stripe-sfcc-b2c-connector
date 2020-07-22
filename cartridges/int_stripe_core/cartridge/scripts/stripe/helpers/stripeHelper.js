@@ -1,3 +1,6 @@
+/* eslint-env es6 */
+/* global dw, empty */
+
 'use strict';
 
 /**

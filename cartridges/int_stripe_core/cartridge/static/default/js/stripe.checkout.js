@@ -269,6 +269,7 @@ function getOwnerDetails() {
 
 function getSourceType(selectedPaymentMethod) {
     return {
+    	STRIPE_ACH_DEBIT: 'ach_debit',
         STRIPE_ALIPAY: 'alipay',
         STRIPE_BANCONTACT: 'bancontact',
         STRIPE_EPS: 'eps',
@@ -359,14 +360,21 @@ function onSubmitButtonClicked(event) {
                 });
             }
             break;
-        case 'STRIPE_ALIPAY':
+        case 'STRIPE_ACH_DEBIT':
+        	event.preventDefault();
+        	
+        	var achDebitParams = getBankAccountRequestParamsForAchDebit();   	
+        	stripe.createToken('bank_account', achDebitParams).then(processBankAccountRequestResult);
+        	
+        	break;
         case 'STRIPE_WECHATPAY':
             event.preventDefault();
 
-            createSourcePayload = getCreateSourcePayload(selectedPaymentMethod);
+            createSourcePayload = getCreateWeChatSourcePayload();
 
-            stripe.createSource(createSourcePayload).then(processCreateSourceResult);
+            stripe.createSource(createSourcePayload).then(processWeChatCreateSourceResult);
             break;
+        case 'STRIPE_ALIPAY':
         case 'STRIPE_BANCONTACT':
         case 'STRIPE_EPS':
         case 'STRIPE_GIROPAY':
@@ -528,3 +536,75 @@ if (placeOrderButton) {
     initSummary();
 }
 
+function getBankAccountRequestParamsForAchDebit() {
+	
+	var stripeOrderCurrencyInput = document.getElementById('stripe_order_currency');
+    var currencyCode = stripeOrderCurrencyInput.value && stripeOrderCurrencyInput.value.toLowerCase();
+	
+	return {
+        country: document.getElementById('stripeAccountCountry').value,
+        currency: currencyCode,
+        routing_number: document.getElementById('ach-routing-number').value,
+        account_number: document.getElementById('ach-account-number').value,
+        account_holder_name: document.getElementById('ach-account-holdername').value,
+        account_holder_type: document.getElementById('ach-account-type').value
+    };
+}
+
+function processBankAccountRequestResult(result) {
+	
+	if (result.error) {
+        alert(result.error.message);
+    } else {
+    	
+    	// init bank account token id
+    	var bankAccountTokenIdInput = document.getElementById('stripe_bank_account_token_id');
+    	bankAccountTokenIdInput.value = result.token.id;
+    	
+    	// init bank account token
+    	var bankAccountTokenInput = document.getElementById('stripe_bank_account_token');
+    	bankAccountTokenInput.value = result.token.bank_account.id;
+ 	
+    	document.getElementById('dwfrm_billing').submit();
+    }
+}
+
+//t WeChat
+function getCreateWeChatSourcePayload() {
+	var stripeSiteIdInput = document.getElementById('stripe_site_id');
+    var stripeOrderNumberInput = document.getElementById('stripe_order_number');
+    var stripeOrderAmountInput = document.getElementById('stripe_order_amount');
+    var stripeOrderCurrencyInput = document.getElementById('stripe_order_currency');
+
+    var amountToPay = parseFloat(stripeOrderAmountInput.value);
+    var currencyCode = stripeOrderCurrencyInput.value && stripeOrderCurrencyInput.value.toLowerCase();
+
+    return {
+        type: 'wechat',
+        amount: amountToPay,
+        currency: currencyCode,
+        statement_descriptor: stripeOrderNumberInput.value,
+        metadata: {
+            site_id: stripeSiteIdInput.value,
+            order_id: stripeOrderNumberInput.value
+        },
+        owner: getOwnerDetails()
+    };
+}
+
+function processWeChatCreateSourceResult(result) {
+    if (result.error) {
+        alert(result.error.message);
+    } else {
+        var sourceIdInput = document.getElementById('stripe_source_id');
+        var sourceClientSecretInput = document.getElementById('stripe_source_client_secret');
+        var sourceWeChatQRCodeURL = document.getElementById('stripe_wechat_qrcode_url');
+
+        sourceIdInput.value = result.source.id;
+
+        sourceClientSecretInput.value = result.source.client_secret;
+        sourceWeChatQRCodeURL.value = result.source.wechat.qr_code_url;     
+
+        document.getElementById('dwfrm_billing').submit();
+    }
+}

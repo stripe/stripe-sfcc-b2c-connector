@@ -1,5 +1,6 @@
 /* eslint-disable new-cap */
 /* eslint-disable no-unused-vars */
+/* global dw */
 // v1
 
 'use strict';

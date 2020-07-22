@@ -1,4 +1,5 @@
 /* eslint-disable new-cap */
+/* global response */
 
 'use strict';
 

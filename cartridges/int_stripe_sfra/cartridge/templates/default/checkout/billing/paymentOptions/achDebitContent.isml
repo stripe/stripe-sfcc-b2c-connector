@@ -1,0 +1,49 @@
+<div class="tab-pane ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">
+    <fieldset class="payment-form-fields">
+    
+    	<input type="hidden" class="form-control" name="${pdict.forms.billingForm.paymentMethod.htmlName}"
+            value="${paymentOption.ID}">
+        <input type="hidden" name="stripe_bank_account_token_id" id="stripe_bank_account_token_id">
+        <input type="hidden" name="stripe_bank_account_token" id="stripe_bank_account_token">
+
+		<div class="row">
+            <div class="col-12">
+                <div class="form-group required">
+                    <label for="ach-account-holdername" class="form-control-label">
+                        ${Resource.msg('ach.account.holdername', 'stripe',null)}
+                    </label>
+                    <input id="ach-account-holdername" type="text" class="form-control"
+                      data-emptyerrormsg="${Resource.msg('ach.account.holdernamemissingerrmsg', 'stripe', null)}">
+                </div>
+                <div class="form-group required">
+                    <label for="ach-account-type" class="form-control-label">
+                        ${Resource.msg('ach.account.type', 'stripe', null)}
+                    </label>
+                    
+                    <select id="ach-account-type" id="ach-account-type" class="form-control"
+                    	data-emptyerrormsg="${Resource.msg('ach.account.accounttypemissingerrmsg', 'stripe', null)}">
+						<option value="" selected="selected">${Resource.msg('ach.account.select','stripe',null)}</option>
+						<option value="individual">${Resource.msg('ach.account.typeindividual','stripe',null)}</option>
+						<option value="company">${Resource.msg('ach.account.typecompany','stripe',null)}</option>	
+					</select>
+                </div>
+                <div class="form-group required">
+                    <label for="ach-account-number" class="form-control-label">
+                        ${Resource.msg('ach.account.accountnumber', 'stripe',null)}
+                    </label>
+                    <input id="ach-account-number" type="text" class="form-control"
+                    	data-emptyerrormsg="${Resource.msg('ach.account.accountnumbermissingerrmsg', 'stripe', null)}">
+                </div>
+                <div class="form-group required">
+                    <label for="ach-routing-number" class="form-control-label">
+                        ${Resource.msg('ach.account.routingnumber', 'stripe',null)}
+                    </label>
+                    <input id="ach-routing-number" type="text" class="form-control"
+                    	data-emptyerrormsg="${Resource.msg('ach.account.routingnumbermissingerrmsg', 'stripe', null)}">
+                </div>
+                <p>${Resource.msg('ach.account.note', 'stripe',null)}</p>
+            </div>
+        </div>
+        
+    </fieldset>
+</div>

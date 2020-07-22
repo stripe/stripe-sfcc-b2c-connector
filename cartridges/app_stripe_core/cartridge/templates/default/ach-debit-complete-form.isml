@@ -1,0 +1,47 @@
+<iscontent type="text/html" charset="UTF-8" compact="true"/>
+<isdecorate template="content/pt_customerservice">
+
+	<isinclude template="util/modules"/>
+
+	<h1>${Resource.msg('ach.completeorder.title', 'stripe', null)}
+	<div class="dialog-required"> <span class="required-indicator">&#8226; <em>${Resource.msg('global.requiredfield','locale',null)}</em></span></div>
+	</h1>
+	
+	<strong>${Resource.msg('ach.completeorder.description', 'stripe', null)}</strong>
+
+	<form action="${URLUtils.url('AchDebit-VerifyAndCharge')}" method="post" class="form-horizontal" id="VerifyAndCharge">
+
+		<fieldset>
+
+			<isinputfield formfield="${pdict.CurrentForms.achdebitcomplete.ordernumber}" type="input"/>
+			
+			<isinputfield formfield="${pdict.CurrentForms.achdebitcomplete.firstamount}" type="input"/>
+			
+			<isinputfield formfield="${pdict.CurrentForms.achdebitcomplete.secondamount}" type="input"/>
+			
+			<isscript>
+				var attributes = {
+					rows: 8,
+					cols: 40
+				};
+			</isscript>
+			
+			<isif condition="${!empty(pdict.result)}">
+            	<div class="form-row" style="color:#FF0000;" id="result">
+             		<isprint value="${pdict.result}" encoding="on" />
+            	</div>
+            </isif>
+			
+			<div class="form-row form-row-button">
+				<button id="sendBtn" type="submit" value="${Resource.msg('global.send','locale',null)}" name="${pdict.CurrentForms.contactus.send.htmlName}">
+					${Resource.msg('global.submit','locale',null)}
+				</button>
+			</div>
+
+		</fieldset>
+
+	</form>
+
+
+</isdecorate>
+

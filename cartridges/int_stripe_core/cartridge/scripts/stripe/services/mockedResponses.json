@@ -154,7 +154,36 @@
         "object": "customer",
         "deleted": true
     },
-
+    "customers.retrieve_source": {
+    	"id":"ba_1Gikm6I7LppFHGIyyhec9pNm",
+    	"object":"bank_account",
+    	"account_holder_name":"Test Testov",
+    	"account_holder_type":"individual",
+    	"bank_name":"STRIPE TEST BANK",
+    	"country":"US",
+    	"currency":"usd",
+    	"customer":"cus_HHJPPKt78rvuQO",
+    	"fingerprint":"K98YrP9Rk2x6IWtq",
+    	"last4":"6789",
+    	"metadata":{},
+    	"routing_number":"110000000",
+    	"status":"verified"
+    },
+    "customers.verify_bank_account": {
+    	"id":"ba_1Gikm6I7LppFHGIyyhec9pNm",
+    	"object":"bank_account",
+    	"account_holder_name":"Test Testov",
+    	"account_holder_type":"individual",
+    	"bank_name":"STRIPE TEST BANK",
+    	"country":"US",
+    	"currency":"usd",
+    	"customer":"cus_HHJPPKt78rvuQO",
+    	"fingerprint":"K98YrP9Rk2x6IWtq",
+    	"last4":"6789",
+    	"metadata":{},
+    	"routing_number":"110000000",
+    	"status":"verified"
+    },
     "paymentMethods.create": {
         "id": "pm_1EUmyr2x6R10KRrhlYS3l97f",
         "object": "payment_method",

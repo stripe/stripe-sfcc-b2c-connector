@@ -1,9 +1,13 @@
+/* eslint-env es6 */
+/* global dw */
+
 'use strict';
 
 const Logger = require('dw/system/Logger').getLogger('Stripe', 'stripe');
 const Status = require('dw/system/Status');
 const Transaction = require('dw/system/Transaction');
 const Order = require('dw/order/Order');
+const Site = require('dw/system/Site');
 
 /**
  * A hook to authorize credit/debit card payments.
@@ -29,6 +33,7 @@ exports.authorizeCreditCard = function (order, paymentInstrument, cvc) {
         var currentCurency = dw.util.Currency.getCurrency(amount.currencyCode);
         var multiplier = Math.pow(10, currentCurency.getDefaultFractionDigits());
         var orderAmount = Math.round(amount.value * multiplier);
+        const stripeChargeCapture = Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
 
         const stripe = require('*/cartridge/scripts/stripe/services/stripeService');
 
@@ -72,16 +77,19 @@ exports.authorizeCreditCard = function (order, paymentInstrument, cvc) {
             description: 'MOTO transacion',
             metadata: {
                 order_id: order.orderNo,
-                site_id: dw.system.Site.getCurrent().getID()
+                site_id: Site.getCurrent().getID()
             },
             confirm: true,
             payment_method_options: { card: { moto: true } }
         });
 
-        if (paymentIntent.status === 'succeeded') {
+        if (paymentIntent.status === 'succeeded' ||
+         (paymentIntent.status === 'requires_capture' && !stripeChargeCapture)) {
             Transaction.wrap(function () {
-                order.custom.stripePaymentIntentID = paymentIntent.id; // eslint-disable-line
-                order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
+                order.custom.stripeOM__stripePaymentIntentID = paymentIntent.id; // eslint-disable-line
+                if (paymentIntent.status === 'succeeded') {
+                    order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
+                }
             });
         } else {
             throw new Error('Transaction auhtorization was not successful');

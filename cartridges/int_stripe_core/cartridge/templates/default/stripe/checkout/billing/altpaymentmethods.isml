@@ -1,6 +1,9 @@
 <input type="hidden" name="stripe_source_id" id="stripe_source_id">
 <input type="hidden" name="stripe_source_client_secret" id="stripe_source_client_secret">
 <input type="hidden" name="stripe_redirect_url" id="stripe_redirect_url">
+<input type="hidden" name="stripe_bank_account_token_id" id="stripe_bank_account_token_id">
+<input type="hidden" name="stripe_bank_account_token" id="stripe_bank_account_token">
+<input type="hidden" name="stripe_wechat_qrcode_url" id="stripe_wechat_qrcode_url">
 
 <isset name="stripeOrder" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getStripeOrderDetails(pdict.Basket)}" scope="page" />
 
@@ -11,7 +14,62 @@
 <input type="hidden" id="stripe_return_url" value="${URLUtils.https("StripePayments-HandleAPM")}">
 
 <iscomment>
-    Alipay
+    ACH Debit
+    -------------------
+</iscomment>
+<div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_ACH_DEBIT'}">payment-method-expanded</isif>" data-method="STRIPE_ACH_DEBIT">
+
+	<div class="form-indent">
+		<div class="form-group required">
+           <label for="ach-account-holdername" class="form-control-label">
+               ${Resource.msg('ach.account.holdername', 'stripe',null)}
+           </label>
+           <input id="ach-account-holdername" type="text" class="form-control"
+                 data-emptyerrormsg="${Resource.msg('ach.account.holdernamemissingerrmsg', 'stripe', null)}">
+        </div>
+        <div class="form-group required">
+          <label for="ach-account-type" class="form-control-label">
+                  ${Resource.msg('ach.account.type', 'stripe', null)}
+          </label>
+  
+          <select id="ach-account-type" id="ach-account-type" class="form-control"
+              	data-emptyerrormsg="${Resource.msg('ach.account.accounttypemissingerrmsg', 'stripe', null)}">
+				<option value="" selected="selected">${Resource.msg('ach.account.select','stripe',null)}</option>
+				<option value="individual">${Resource.msg('ach.account.typeindividual','stripe',null)}</option>
+				<option value="company">${Resource.msg('ach.account.typecompany','stripe',null)}</option>	
+		  </select>
+        </div>
+        <div class="form-group required">
+              <label for="ach-account-number" class="form-control-label">
+                  ${Resource.msg('ach.account.accountnumber', 'stripe',null)}
+              </label>
+              <input id="ach-account-number" type="text" class="form-control"
+              	data-emptyerrormsg="${Resource.msg('ach.account.accountnumbermissingerrmsg', 'stripe', null)}">
+        </div>
+        <div class="form-group required">
+              <label for="ach-routing-number" class="form-control-label">
+                  ${Resource.msg('ach.account.routingnumber', 'stripe',null)}
+              </label>
+              <input id="ach-routing-number" type="text" class="form-control"
+              	data-emptyerrormsg="${Resource.msg('ach.account.routingnumbermissingerrmsg', 'stripe', null)}">
+        </div>
+        <p>${Resource.msg('ach.account.note', 'stripe',null)}</p>
+	</div>
+</div>
+
+<iscomment>
+    WeChat
+    -------------------
+</iscomment>
+<div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_WECHATPAY'}">payment-method-expanded</isif>" data-method="STRIPE_WECHATPAY">
+
+	<div class="form-indent">
+        <p>${Resource.msg('wechatpay.qrcodemessage', 'stripe',null)}</p>
+	</div>
+</div>
+
+<iscomment>
+    Alipay 
     -------------------
 </iscomment>
 <div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_ALIPAY'}">payment-method-expanded</isif>" data-method="STRIPE_ALIPAY">

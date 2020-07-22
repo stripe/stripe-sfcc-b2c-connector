@@ -1,3 +1,6 @@
+/* eslint-env es6 */
+/* eslint-disable no-plusplus */
+
 'use strict';
 
 /**

@@ -1,3 +1,7 @@
+/* eslint-env es6 */
+
+'use strict';
+
 /**
  * Retrieves the Stripe customer ID from SFCC customer profile.
  *

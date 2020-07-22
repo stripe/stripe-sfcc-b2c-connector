@@ -1,0 +1,85 @@
+<isdecorate template="common/layout/page">
+    <isscript>
+        var assets = require('*/cartridge/scripts/assets.js');
+        assets.addJs('/js/contactUs.js');
+        assets.addCss('/css/contactUs.css');
+    </isscript>
+
+    <div class="hero slant-down">
+        <h1 class="page-title">${Resource.msg('ach.completeorder.title', 'stripe', null)}</h1>
+    </div>
+    
+
+    <div class="container">
+        <div class="row justify-content-center">
+        	<div class="col-12">
+        		<strong>${Resource.msg('ach.completeorder.description', 'stripe', null)}</strong>
+        	</div>
+            <div class="col-sm-8 col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <form action="${pdict.actionUrl}" method="POST" name="ach-debit-complete">
+                            
+                            <!--- order number --->
+                            <div class="row order-number">
+                                <div class="col">
+                                    <div class="form-group required">
+                                        <label class="form-control-label" for="order-number">
+                                            ${Resource.msg('ach.completeorder.ordernumber', 'stripe', null)}
+                                        </label>
+                                        <input type="text" required class="form-control required" id="orderNumber" name="orderNumber">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!--- first amount --->
+                            <div class="row first-amount">
+                                <div class="col">
+                                    <div class="form-group required">
+                                        <label class="form-control-label" for="first-amount">
+                                            ${Resource.msg('ach.completeorder.firstamount', 'stripe', null)}
+                                        </label>
+                                        <input type="text" required class="form-control required" id="firstAmount" name="firstAmount">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!--- second amount --->
+                            <div class="row second-amount">
+                                <div class="col">
+                                    <div class="form-group required">
+                                        <label class="form-control-label" for="second-amount">
+                                            ${Resource.msg('ach.completeorder.secondamount', 'stripe', null)}
+                                        </label>
+                                        <input type="text" required class="form-control required" id="secondAmount" name="secondAmount">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <isif condition="${!empty(pdict.result)}">
+                            	<div class="row">
+	                            	<div class="col" style="color:#FF0000;" id="result">
+	                            		<isprint value="${pdict.result}" encoding="on" />
+	                            	</div>
+	                            </div>
+                            </isif>
+
+                            <!--- ach debit submit --->
+                            <div class="row ach-debit-submnit">
+                                <div class="col-sm-6">
+                                </div>
+                                <div class="col">
+                                    <div class="form-group">
+                                        <button class="btn btn-block btn-primary" type="submit" name="submit" value="submit">
+                                            ${Resource.msg('ach.completeorder.submit', 'stripe', null)}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</isdecorate>

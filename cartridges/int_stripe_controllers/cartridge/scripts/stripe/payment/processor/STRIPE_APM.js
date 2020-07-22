@@ -1,3 +1,4 @@
+/* eslint-env es6 */
 /* eslint-disable new-cap */
 /* eslint-disable no-unused-vars */
 // v1

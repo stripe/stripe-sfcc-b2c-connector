@@ -1,5 +1,7 @@
+/* eslint-env es6 */
 /* eslint-disable no-unused-vars */
 /* eslint-disable new-cap */
+/* global dw */
 // v1
 
 'use strict';
@@ -114,4 +116,3 @@ function savePaymentInformation(req, basket, billingData) {
 
 exports.processForm = processForm;
 exports.savePaymentInformation = savePaymentInformation;
-

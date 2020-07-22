@@ -1,3 +1,6 @@
+/* eslint-env es6 */
+/* global request */
+
 /**
  * Maps Stripe card brand like 'visa' to SFCC card type, exactly as defined in
  * BM > Merchant Tools > Ordering > Payment Methods > Credit/Debit Cards.
