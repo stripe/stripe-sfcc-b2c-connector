@@ -1,7 +1,5 @@
 /* eslint-disable no-alert */
-/* eslint-disable no-plusplus */
-/* eslint-disable require-jsdoc */
-/* globals Stripe, $ */
+/* globals cardElement, cardNumberElement, Stripe */
 // v1
 var $form = $('.payment-form');
 var stripe = Stripe(document.getElementById('stripePublicKey').value);
@@ -40,19 +38,19 @@ function setCustomCardBrandIcon(brand) {
     brandIconElement.classList.add(pfClass);
 }
 
-var cardElement = null;
-var cardNumberElement = null;
+window.cardElement = null;
+window.cardNumberElement = null;
 
 if (document.getElementById('card-element')) {
-    cardElement = elements.create('card', { style: $form.data('element-style') });
-    cardElement.mount('#card-element');
+	window.cardElement = elements.create('card', { style: $form.data('element-style') });
+	window.cardElement.mount('#card-element');
 } else if (document.getElementById('stripe-custom-card-group')) {
     var style = JSON.parse(document.getElementById('stripe-custom-card-group').dataset.elementstyle);
 
-    cardNumberElement = elements.create('cardNumber', {
+    window.cardNumberElement = elements.create('cardNumber', {
         style: style
     });
-    cardNumberElement.mount('#card-number-element');
+    window.cardNumberElement.mount('#card-number-element');
 
     var cardExpiryElement = elements.create('cardExpiry', {
         style: style
@@ -64,7 +62,7 @@ if (document.getElementById('card-element')) {
     });
     cardCvcElement.mount('#card-cvc-element');
 
-    cardNumberElement.on('change', function (event) {
+    window.cardNumberElement.on('change', function (event) {
         // Switch brand logo
         if (event.brand) {
             setCustomCardBrandIcon(event.brand);
@@ -74,12 +72,28 @@ if (document.getElementById('card-element')) {
     });
 }
 
-$('button[type="submit"]').on('click', function (e) {
-    e.preventDefault();
-    var stripeCardEl = (!cardElement) ? cardNumberElement : cardElement;
+var $cardHolderNameInput = $('#stripe-cardholder-name');
+
+function closeDialog() {
+    var $dialogContainer = $('#dialog-container');
+    if ($dialogContainer.length) {
+        $dialogContainer.dialog('close');
+    }
+}
+
+var cancelBtn = document.getElementById('stripeCancelBtn');
+cancelBtn.addEventListener('click', function () {
+    closeDialog();
+});
+
+var $addCardBtn = $('#stripeApplyBtn');
+$addCardBtn.on('click', function () {
+    // https://stripe.com/docs/payments/payment-methods/saving
+
+    var stripeCardEl = (!window.cardElement) ? window.cardNumberElement : window.cardElement;
     stripe.createPaymentMethod('card', stripeCardEl, {
         billing_details: {
-            name: $('#cardOwner').val()
+            name: $cardHolderNameInput.val()
         }
     }).then(function (result) {
         if (result.error) {
@@ -95,7 +109,8 @@ $('button[type="submit"]').on('click', function (e) {
                 }
             }).done(function (msg) {
                 if (msg.success) {
-                    window.location.href = $form.data('wallet-url');
+                    // eslint-disable-next-line no-restricted-globals
+                    location.reload();
                 } else {
                     alert(msg.error);
                 }
@@ -108,4 +123,5 @@ $('button[type="submit"]').on('click', function (e) {
             });
         }
     });
+    closeDialog();
 });

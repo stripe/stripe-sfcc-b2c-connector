@@ -1,6 +1,6 @@
 /* eslint-env es6 */
 /* eslint-disable no-plusplus */
-/* global session, customer, dw, empty */
+/* global session, customer, dw, empty, request */
 
 'use strict';
 
@@ -71,6 +71,24 @@ function isStripePaymentInstrument(paymentInstrument) {
 }
 
 /**
+ * Check if customer cards should always be saved for guest customers
+ * @returns {boolean} true if customer cards always should be saved
+ */
+function shouldAlwaysSaveGuessCustomerCards() {
+    return dw.system.Site.getCurrent().getCustomPreferenceValue('stripeSaveCustomerCards').value === 'always';
+}
+
+/**
+ * Check if customer should be asked before save cards on Stripe side
+ * @returns {boolean} true customer should be asked before save cards on Stripe side
+ */
+function shouldAskBeforeSaveGuessCustomerCards() {
+    return dw.system.Site.getCurrent().getCustomPreferenceValue('stripeSaveCustomerCards').value === 'ask';
+}
+
+exports.shouldAskBeforeSaveGuessCustomerCards = shouldAskBeforeSaveGuessCustomerCards;
+
+/**
  * Gets the Stripe payment instrument created for a given line item container.
  *
  * @param {dw.order.LineItemContainer} lineItemCtnr - Line item container
@@ -103,6 +121,8 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
     exports.removeStripePaymentInstruments(lineItemCtnr);
 
     const paymentInstrument = lineItemCtnr.createPaymentInstrument(paymentMethodId, this.getNonGiftCertificateAmount(lineItemCtnr));
+
+    const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
     if (params) {
         if ('sourceId' in params) {
@@ -156,8 +176,6 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
 
         if (params.saveCard) {
             if (!stripeCustomerId) {
-                const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
-
                 const newStripeCustomer = stripeService.customers.create({
                     email: customer.profile.email,
                     name: customer.profile.firstName + ' ' + customer.profile.lastName
@@ -175,8 +193,26 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
         }
     }
 
+    if (!customer.authenticated && (shouldAlwaysSaveGuessCustomerCards() || (shouldAskBeforeSaveGuessCustomerCards() && params.saveGuessCard))) {
+        const customerEmail = lineItemCtnr.getCustomerEmail();
+
+        const guessCustomerName = lineItemCtnr.getBillingAddress().getFullName();
+
+        const newStripeGuessCustomer = stripeService.customers.create({
+            email: customerEmail,
+            name: guessCustomerName
+        });
+
+        paymentInstrument.custom.stripeSavePaymentForReAuthorise = true;
+
+        paymentInstrument.custom.stripeSavePaymentInstrument = true;
+
+        if (newStripeGuessCustomer && newStripeGuessCustomer.id) {
+            paymentInstrument.custom.stripeCustomerID = newStripeGuessCustomer.id;
+        }
+    }
+
     if (paymentInstrument) {
-        delete lineItemCtnr.custom.stripeOM__stripePaymentIntentID; // eslint-disable-line
         delete lineItemCtnr.custom.stripeIsPaymentIntentInReview; // eslint-disable-line
     }
 };
@@ -204,8 +240,12 @@ exports.createPaymentIntent = function (paymentInstrument) {
         createPaymentIntentPayload.customer = paymentInstrument.custom.stripeCustomerID;
     }
 
-    if (paymentInstrument.custom.stripeSavePaymentInstrument) {
+    if (!stripeChargeCapture && paymentInstrument.custom.stripeSavePaymentInstrument) {
         createPaymentIntentPayload.save_payment_method = true;
+    }
+
+    if (!stripeChargeCapture && paymentInstrument.custom.stripeSavePaymentForReAuthorise) {
+        createPaymentIntentPayload.setup_future_usage = 'off_session';
     }
 
     const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
@@ -384,9 +424,98 @@ exports.getStripeOrderDetails = function (basket) {
     var currentCurency = dw.util.Currency.getCurrency(stripeOrderAmount.getCurrencyCode());
     var multiplier = Math.pow(10, currentCurency.getDefaultFractionDigits());
     var stripeOrderAmountCalculated = Math.round(stripeOrderAmount.getValue() * multiplier);
+
+    var billingAddress = basket.billingAddress;
+    var billingAddressCountryCode = billingAddress ? billingAddress.countryCode.value : '';
+
+    var shippingAddress = null;
+    var shipments = basket.getShipments();
+    var iter = shipments.iterator();
+    while (iter != null && iter.hasNext()) {
+        var shipment = iter.next();
+        shippingAddress = shipment.getShippingAddress();
+
+        if (shippingAddress) {
+            break;
+        }
+    }
+
+    var orderShipping = {
+        phone: shippingAddress ? shippingAddress.getPhone() : '',
+        address: {
+            line1: shippingAddress ? shippingAddress.getAddress1() : '',
+            line2: shippingAddress ? shippingAddress.getAddress2() : '',
+            city: shippingAddress ? shippingAddress.getCity() : '',
+            postal_code: shippingAddress ? shippingAddress.getPostalCode() : '',
+            country: shippingAddress ? shippingAddress.getCountryCode().value : '',
+            state: shippingAddress ? shippingAddress.getStateCode() : ''
+        }
+    };
+
+    var shippingFirstName = shippingAddress ? shippingAddress.getFirstName() : '';
+    var shippingLastName = shippingAddress ? shippingAddress.getLastName() : '';
+
+    var orderItems = [];
+
+    var subTotal = new dw.value.Money(0, stripeOrderAmount.getCurrencyCode());
+
+    var productLineItems = basket.getAllProductLineItems().iterator();
+    while (productLineItems.hasNext()) {
+        var productLineItem = productLineItems.next();
+
+        if (productLineItem.price.available) {
+            var product = productLineItem.getProduct();
+            var productID = (product) ? product.getID() : '';
+            var productName = (product) ? product.getName() : '';
+
+            var productItem = {
+                type: 'sku',
+                parent: productID,
+                description: productName,
+                quantity: productLineItem.quantity.value,
+                currency: productLineItem.price.currencyCode,
+                amount: Math.round(productLineItem.getAdjustedPrice().getValue() * multiplier)
+            };
+            orderItems.push(productItem);
+
+            subTotal = subTotal.add(productLineItem.getAdjustedPrice());
+        }
+    }
+
+    // add shipping
+    var shippingTotalPrice = basket.getAdjustedShippingTotalPrice();
+    if (shippingTotalPrice.available) {
+        var shippingItem = {
+            type: 'shipping',
+            description: 'Shipping',
+            currency: shippingTotalPrice.currencyCode,
+            amount: Math.round(shippingTotalPrice.getValue() * multiplier)
+        };
+        orderItems.push(shippingItem);
+
+        subTotal = subTotal.add(shippingTotalPrice);
+    }
+
+    // add tax
+    var totalTax = stripeOrderAmount.subtract(subTotal);
+    if (totalTax.value > 0) {
+        var taxItem = {
+            type: 'tax',
+            description: 'Taxes',
+            currency: basket.totalTax.currencyCode,
+            amount: Math.round(totalTax.getValue() * multiplier)
+        };
+        orderItems.push(taxItem);
+    }
+
     return {
         amount: stripeOrderAmountCalculated,
-        currency: stripeOrderAmount.getCurrencyCode().toLowerCase()
+        currency: stripeOrderAmount.getCurrencyCode().toLowerCase(),
+        purchase_country: billingAddressCountryCode,
+        order_items: JSON.stringify(orderItems),
+        order_shipping: JSON.stringify(orderShipping),
+        shipping_first_name: shippingFirstName,
+        shipping_last_name: shippingLastName
     };
 };
 
@@ -512,6 +641,11 @@ exports.VerifyBankAccountAndCreateAchCharge = function (order, firstAmount, seco
     }
 
     Transaction.wrap(function () {
+        if (order.status === Order.ORDER_STATUS_CREATED) {
+            const OrderMgr = require('dw/order/OrderMgr');
+            OrderMgr.placeOrder(order);
+        }
+
         order.custom.stripeIsPaymentIntentInReview = false; // eslint-disable-line no-param-reassign
         order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
     });
@@ -530,4 +664,10 @@ exports.getWeChatQRCodeURL = function (orderNumber) {
     var order = OrderMgr.getOrder(orderNumber);
 
     return !empty(order) ? order.custom.stripeWeChatQRCodeURL : '';
+};
+
+exports.getSiteLocale = function () {
+    var locale = request.getLocale();
+
+    return locale ? locale.replace('_', '-') : null;
 };

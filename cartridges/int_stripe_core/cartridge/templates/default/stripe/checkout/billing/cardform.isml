@@ -22,7 +22,11 @@
 	<div class="form-row">
 		<label class="label" for="cardholder-name">${Resource.msg('creditcard.detailslabel','stripe',null)}</label>
 		<div class="field-wrapper">
-			<div id="card-element" class="new-card-element payment-elements-input"></div>
+			<isif condition="${require('*/cartridge/scripts/stripe/helpers/stripeHelper').isCustomCardForm()}">
+				<isinclude template="stripe/checkout/billing/stripe_custom_cardform" />
+			<iselse>
+				<div id="card-element" class="new-card-element payment-elements-input"></div>
+			</isif>
 		</div>
 	</div>
 	<isif condition="${canSaveCard}">
@@ -30,7 +34,7 @@
 			<div class="field-wrapper">
 				<input class="input-checkbox" type="checkbox" name="stripe_save_card" id="stripe_save_card">
 			</div>
-			<label for="stripe_save_card"><span>${Resource.msg('creditcard.savecard','forms',null)}</span></label>
+			<label for="stripe_save_card"><span>${Resource.msg('guesscustomer.savecard','stripe',null)}</span></label>
 		</div>
 	<iselse/>
 		<div>&nbsp;</div>
@@ -69,4 +73,13 @@
 			</div>
 		</div>
 	</div>
+</isif>
+
+<isif condition="${!customer.authenticated && require('*/cartridge/scripts/stripe/helpers/checkoutHelper').shouldAskBeforeSaveGuessCustomerCards()}">
+	<div class="form-group custom-control custom-checkbox">
+		<input class="input-checkbox custom-control-input" type="checkbox" name="stripe_save_guess_card" id="stripe_save_guess_card">
+		<label class="custom-control-label" for="stripe_save_guess_card"><span>${Resource.msg('guesscustomer.savecard','stripe',null)}</span></label>
+	</div>
+<iselse>
+	<input class="input-checkbox custom-control-input" type="hidden" name="stripe_save_guess_card" id="stripe_save_guess_card">
 </isif>

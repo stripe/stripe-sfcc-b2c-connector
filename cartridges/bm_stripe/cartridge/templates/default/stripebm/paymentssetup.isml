@@ -1,0 +1,42 @@
+<iscontent type="text/html" charset="UTF-8" />
+
+<isdecorate template="application/MenuFrame">
+    <isset name="stripePaymentMethodDefinitons" value="${require('*/cartridge/scripts/helpers/stripeBmHelper').getStripePaymentMethods()}" scope="page" />
+    <h1 class="dw-nc-text-heading dw-nc-text-heading-large dw-nc-text-brand">${Resource.msg('paymentssetup.title','stripebm', null)}</h1>
+    <p>${Resource.msg('paymentssetup.info','stripebm', null)}</p>
+
+    <form class="stripe-payments-setup-form" id="stripe-payments-setup-form"
+		action="${URLUtils.url('StripeBM-HandlePaymentsSetup')}" method="POST">
+
+	    <table width="100%" cellspacing="15" cellpadding="0" border="0">
+			<tbody>
+				<isloop items="${stripePaymentMethodDefinitons}" var="stripePaymentMethod">
+					<tr>
+						<td style="width:20%">
+							${stripePaymentMethod.name}
+						</td>
+						<td style="width:80%">
+							<input id="${stripePaymentMethod.id}" type="checkbox"
+								   name="${stripePaymentMethod.id}"
+								   <isif condition="${stripePaymentMethod.isactive}">checked</isif> />
+						</td>
+					</tr>
+	            </isloop>
+	            <tr>
+					<td colspan="2">
+						<strong id="payment-setup-result"></strong>
+					</td>
+				</tr>
+				<tr>
+					<td style="width:20%">
+						<button type="submit" name="submit" class="button stripe-payment-setup-submit">${Resource.msg('payemntssetup.submit','stripebm', null)}</button>
+					</td>
+					<td style="width:80%">
+					</td>
+				</tr>
+			</tbody>
+	    </table>
+    </form>
+    
+    <script type="text/javascript" src="${URLUtils.staticURL('js/stripebm.js')}"></script>
+</isdecorate>

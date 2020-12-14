@@ -32,7 +32,8 @@ function Handle(args) {
         cardExpMonth: paramsMap.stripe_card_expiration_month.stringValue,
         cardExpYear: paramsMap.stripe_card_expiration_year.stringValue,
         saveCard: paramsMap.stripe_save_card.value,
-        prUsed: prUsed
+        prUsed: prUsed,
+        saveGuessCard: paramsMap.stripe_save_guess_card.value
     };
 
     try {
@@ -60,12 +61,10 @@ function Handle(args) {
 */
 function Authorize(args) {
     let responsePayload;
-    const OrderMgr = require('dw/order/OrderMgr');
     const Site = require('dw/system/Site');
     const orderNo = args.OrderNo;
     const paymentInstrument = args.PaymentInstrument;
-    const order = OrderMgr.getOrder(orderNo);
-    const paymentIntentId = order.custom.stripeOM__stripePaymentIntentID;
+    const paymentIntentId = paymentInstrument.paymentTransaction.getTransactionID();
     const stripeChargeCapture = Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
 
     if (!paymentIntentId) {
@@ -101,7 +100,11 @@ function Authorize(args) {
             const paymentProcessor = args.PaymentProcessor || PaymentMgr.getPaymentMethod(paymentInstrument.getPaymentMethod()).getPaymentProcessor();
             Transaction.wrap(function () {
                 paymentInstrument.custom.stripeChargeID = charge.id;
-                paymentInstrument.paymentTransaction.transactionID = charge.balance_transaction;
+
+                if (charge.balance_transaction) {
+                    paymentInstrument.paymentTransaction.transactionID = charge.balance_transaction;
+                }
+
                 paymentInstrument.paymentTransaction.paymentProcessor = paymentProcessor;
                 if (paymentIntent.status === 'succeeded') {
                     args.Order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);

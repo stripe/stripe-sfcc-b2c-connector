@@ -104,8 +104,31 @@
         </currencies>
     </payment-method>
 
+    <payment-method method-id="STRIPE_KLARNA">
+        <name xml:lang="x-default">Klarna</name>
+        <enabled-flag>true</enabled-flag>
+        <processor-id>STRIPE_APM</processor-id>
+        <currencies>
+            <currency>USD</currency>
+            <currency>EUR</currency>
+            <currency>DKK</currency>
+            <currency>NOK</currency>
+            <currency>SEK</currency>
+            <currency>GBP</currency>
+        </currencies>
+    </payment-method>
+
     <payment-method method-id="STRIPE_GIROPAY">
         <name xml:lang="x-default">Giropay</name>
+        <enabled-flag>true</enabled-flag>
+        <processor-id>STRIPE_APM</processor-id>
+        <currencies>
+            <currency>EUR</currency>
+        </currencies>
+    </payment-method>
+
+    <payment-method method-id="STRIPE_MULTIBANCO">
+        <name xml:lang="x-default">Multibanco</name>
         <enabled-flag>true</enabled-flag>
         <processor-id>STRIPE_APM</processor-id>
         <currencies>

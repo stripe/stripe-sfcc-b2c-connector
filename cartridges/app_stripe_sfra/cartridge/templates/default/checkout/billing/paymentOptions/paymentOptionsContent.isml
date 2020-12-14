@@ -14,6 +14,7 @@
 <input type="hidden" id="stripePaymentButtonStyle" value="${JSON.stringify(stripeHelper.getPaymentRequestButtonStyle())}" />
 <input type="hidden" id="stripeAccountCountry" value="${stripeCheckoutHelper.getPRCountry()}" />
 <input type="hidden" id="beforePaymentAuthURL" value="${URLUtils.https('StripePayments-BeforePaymentAuthorization')}" />
+<input type="hidden" id="getStripeOrderItemsURL" value="${URLUtils.https('StripePayments-GetStripeOrderItems')}" />
 <input type="hidden" id="billingPageUrl" value="${URLUtils.url('Checkout-Begin', 'stage', 'payment')}" />
 
 <input type="hidden" name="stripe_source_client_secret" id="stripe_source_client_secret">
@@ -26,6 +27,15 @@
 <input type="hidden" id="stripe_site_id" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getSiteID()}">
 <input type="hidden" id="stripe_order_number" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getNewStripeOrderNumber()}">
 <input type="hidden" id="stripe_return_url" value="${URLUtils.https("StripePayments-HandleAPM")}">
+
+<input type="hidden" id="stripe_purchase_country" value="${stripeOrder.purchase_country}">
+<input type="hidden" id="stripe_order_items" value="${stripeOrder.order_items}">
+<input type="hidden" id="stripe_order_shipping" value="${stripeOrder.order_shipping}">
+<input type="hidden" id="stripe_shipping_first_name" value="${stripeOrder.shipping_first_name}">
+<input type="hidden" id="stripe_shipping_last_name" value="${stripeOrder.shipping_last_name}">
+
+<input type="hidden" id="stripe_site_locale" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getSiteLocale()}">
+
 
 <isloop items="${pdict.order.billing.payment.applicablePaymentMethods}" var="paymentOption">
 
@@ -52,6 +62,8 @@
         <isinclude template="checkout/billing/paymentOptions/achDebitContent" />
 	<iselseif condition="${paymentOption.ID === 'STRIPE_WECHATPAY'}"/>
         <isinclude template="checkout/billing/paymentOptions/wechatContent" />
+    <iselseif condition="${paymentOption.ID === 'STRIPE_KLARNA'}"/>
+        <isinclude template="checkout/billing/paymentOptions/klarnaContent" />
     <iselseif condition="${paymentOption.ID === 'STRIPE_IDEAL'}"/>
         <isinclude template="checkout/billing/paymentOptions/idealContent" />
     <iselseif condition="${paymentOption.ID === 'STRIPE_SOFORT'}"/>

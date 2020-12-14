@@ -1,0 +1,16 @@
+<div class="stripe-custom-card-group" id="stripe-custom-card-group"
+  data-elementstyle="${JSON.stringify(require('*/cartridge/scripts/stripe/helpers/stripeHelper').getStripeCardFormStyle())}">
+  <div>
+    <span>${Resource.msg('customcardform.cardnumber', 'stripe', null)}</span>
+    <div id="card-number-element" class="field"></div>
+    <span class="brand"><i class="pf pf-credit-card" id="brand-icon"></i></span>
+  </div>
+  <div>
+    <span>${Resource.msg('customcardform.expirydate', 'stripe', null)}</span>
+    <div id="card-expiry-element" class="field"></div>
+  </div>
+  <div>
+    <span>${Resource.msg('customcardform.cvc', 'stripe', null)}</span>
+    <div id="card-cvc-element" class="field"></div>
+  </div>
+</div>

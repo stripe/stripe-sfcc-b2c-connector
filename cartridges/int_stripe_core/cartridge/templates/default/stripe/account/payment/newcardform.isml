@@ -11,7 +11,11 @@
 			</div>
 		</div>
 		<!-- placeholder for Elements -->
-		<div id="card-element" class="form-indent"></div>
+		<isif condition="${require('*/cartridge/scripts/stripe/helpers/stripeHelper').isCustomCardForm()}">
+			<isinclude template="stripe/checkout/billing/stripe_custom_cardform" />
+		<iselse>
+			<div id="card-element" class="form-indent"></div>
+		</isif>
 		<div class="form-row form-row-button">
 			<button id="stripeApplyBtn" type="button" value="${Resource.msg('global.apply','locale',null)}">
 				${Resource.msg('global.apply', 'locale', null)}

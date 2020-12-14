@@ -1,4 +1,5 @@
 /* eslint-env es6 */
+/* eslint-disable no-plusplus */
 /* global request, response */
 
 'use strict';
@@ -23,7 +24,8 @@ const Transaction = require('dw/system/Transaction');
 const CustomObjectMgr = require('dw/object/CustomObjectMgr');
 const Site = require('dw/system/Site');
 const Logger = require('dw/system/Logger');
-
+const OrderMgr = require('dw/order/OrderMgr');
+const Order = require('dw/order/Order');
 
 /**
 * According to site pref setting will return status of possibility to store CO.
@@ -100,6 +102,96 @@ function computeSignature(payload, secret) {
     return Encoding.toHex(HMAC.digest(payload, secret));
 }
 
+/**
+ * Retrieves Stripe customer ID from customer profile associated with a given order.
+ *
+ * @param {dw.order.Order} order - Order to get Stripe customer ID from
+ * @returns {string} - Stripe customer ID if available or null;
+ */
+function getStripeCustomerIdFromOrder(order) {
+    const orderCustomer = order.getCustomer();
+    var stripeCustomerId = null;
+
+    if (orderCustomer && orderCustomer.profile && ('stripeCustomerID' in orderCustomer.profile.custom) && orderCustomer.profile.custom.stripeCustomerID) {
+        stripeCustomerId = orderCustomer.profile.custom.stripeCustomerID;
+    }
+
+    return stripeCustomerId;
+}
+
+/**
+ * Process Klarna Source Chargeable Notification
+ *
+ * @param {Object} json - Payload object
+ * @returns {string} - true if success;
+ */
+function processKlarnaSourceChargeableNotification(json) {
+    if (!json || !json.data || !json.data.object
+        || !json.data.object.metadata || !json.data.object.metadata.order_id
+        || !json.data.object.amount || !json.data.object.currency || !json.data.object.id) {
+        return false;
+    }
+
+    const orderId = json.data.object.metadata.order_id;
+    var order = OrderMgr.getOrder(orderId);
+    if (!order) {
+        return false;
+    }
+
+    var stripePaymentInstrument = null;
+    for (let i = 0; i < order.paymentInstruments.length; i++) {
+        let paymentInstrument = order.paymentInstruments[i];
+        let paymentTransaction = paymentInstrument.paymentTransaction;
+        let paymentProcessor = paymentTransaction && paymentTransaction.paymentProcessor;
+
+        if (paymentProcessor && 'STRIPE_APM'.equals(paymentProcessor.ID)) {
+            stripePaymentInstrument = paymentInstrument;
+            break;
+        }
+    }
+
+    if (!stripePaymentInstrument) {
+        return false;
+    }
+
+    var customerEmail = order.getCustomerEmail();
+
+    var createChargePayload = {
+        amount: json.data.object.amount,
+        currency: json.data.object.currency,
+        source: json.data.object.id,
+        description: 'Charge for ' + customerEmail + ', order ' + order.orderNo
+    };
+
+    var stripeCustomerId = stripePaymentInstrument.custom.stripeCustomerID || getStripeCustomerIdFromOrder(order);
+
+    if (stripeCustomerId) {
+        createChargePayload.customer = stripeCustomerId;
+    }
+
+    const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
+
+    try {
+        const charge = stripeService.charges.create(createChargePayload);
+        Transaction.wrap(function () {
+            stripePaymentInstrument.custom.stripeChargeID = charge.id; // eslint-disable-line
+
+            if (order.status === Order.ORDER_STATUS_CREATED) {
+                OrderMgr.placeOrder(order);
+            }
+
+            order.custom.stripeIsPaymentIntentInReview = false; // eslint-disable-line no-param-reassign
+            order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
+            order.setExportStatus(Order.EXPORT_STATUS_READY);
+        });
+    } catch (e) {
+        Logger.error('Stripe Klarna charge error: ' + JSON.stringify(e));
+        return false;
+    }
+
+    return true;
+}
+
 exports.processIncomingNotification = function () {
     const DEFAULT_TOLERANCE = 300;
     const EXPECTED_SCHEME = 'v1';
@@ -138,9 +230,19 @@ exports.processIncomingNotification = function () {
             return false;
         }
 
-        var success = Transaction.wrap(function () {
-            var json = JSON.parse(payload);
+        var json = JSON.parse(payload);
 
+        // check if Klarna charge transaction, if yes process it immediately
+        if (json && json.data && json.data.object && json.data.object.type === 'klarna'
+            && json.data.object.object && json.data.object.object === 'source'
+            && json.type === 'source.chargeable') {
+            var result = processKlarnaSourceChargeableNotification(json);
+            if (result) {
+                return true;
+            }
+        }
+
+        var success = Transaction.wrap(function () {
             if (CustomObjectMgr.getCustomObject(NOTIFICATIONS_CUSTOM_OBJECT_TYPE, json.id) === null) {
                 if (isWebHookStatusValid(json.type) && isSourceHasValidType(json)) {
                     var stripeNotification = CustomObjectMgr.createCustomObject(NOTIFICATIONS_CUSTOM_OBJECT_TYPE, json.id);

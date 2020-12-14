@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<form xmlns="http://www.demandware.com/xml/form/2008-04-19">
+	
+	<field formid="ordernumber" label="achdebitcomplete.ordernumber.label" type="string" mandatory="true" binding="orderNumber" max-length="50"/>
+	<field formid="firstamount" label="achdebitcomplete.firstamount.label" type="string" mandatory="true" binding="firstAmount" max-length="50"/>
+	<field formid="secondamount" label="achdebitcomplete.secondamount.label" type="string" mandatory="true" binding="secondAmount" max-length="50"/>
+	
+	<action formid="submit" valid-form="true"/>
+</form>

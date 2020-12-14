@@ -1,0 +1,40 @@
+<div class="tab-pane ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">
+    <fieldset class="payment-form-fields">
+        <input type="hidden" class="form-control" name="${pdict.forms.billingForm.paymentMethod.htmlName}"
+            value="${paymentOption.ID}">
+        <input type="hidden" name="stripe_source_id" id="stripe_source_id">
+
+        <div class="row">
+            <div id="klarna-widget-wrapper" class="col-12" data-errormsg="${Resource.msg('klarna.missingfieldserrormsg', 'stripe', null)}">
+
+                <iscomment>Klarna Pay Over Time</iscomment>
+                <div id="klarna_pay_later-wrapper" style="display:none;">
+                    <div id="klarna_pay_later_img_wrapper" style="float:right;">
+                    </div>
+                    <input type="radio" class="klarna-payment-method" id="klarna_pay_later" name="klarna_payment_option" value="pay_later">
+                    <label id="klarna_pay_later_label" for="klarna_pay_later">${Resource.msg('klarna.paylater', 'stripe', null)}</label><br />
+                    <div id="klarna_pay_later_container" />
+                </div>
+
+                <iscomment>Klarna Pay Over Time</iscomment>
+                <div id="klarna_pay_over_time-wrapper" style="display:none;">
+                    <div id="klarna_pay_over_time_img_wrapper" style="float:right;">
+                    </div>
+                    <input type="radio" class="klarna-payment-method" id="klarna_pay_over_time" name="klarna_payment_option" value="pay_over_time">
+                    <label id="klarna_pay_over_time_label" for="klarna_pay_over_time">${Resource.msg('klarna.payovertime', 'stripe', null)}</label><br />
+                    <div id="klarna_pay_over_time_container" />
+                </div>
+
+                <iscomment>Klarna Pay Now</iscomment>
+                <div id="klarna_pay_now-wrapper" style="display:none;">
+                    <div id="klarna_pay_now_img_wrapper" style="float:right;">
+                    </div>
+                    <input type="radio" class="klarna-payment-method" id="klarna_pay_now" name="klarna_payment_option" value="pay_now">
+                    <label id="klarna_pay_now_label" for="klarna_pay_now">${Resource.msg('klarna.paynow', 'stripe', null)}</label><br />
+                    <div id="klarna_pay_now_container" />
+                </div>
+            </div>
+        </div>
+        
+    </fieldset>
+</div>

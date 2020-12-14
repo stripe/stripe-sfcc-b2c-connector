@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<extensions xmlns="http://www.demandware.com/xml/bmmodules/2007-12-11" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.demandware.com/xml/bmmodules/2007-12-11 bmext.xsd">
+	<!-- =============================================================== -->
+	<!-- ==                                                           == -->
+	<!-- ==  SITE   MENU   EXTENSIONS                                 == -->
+	<!-- ==                                                           == -->
+	<!-- =============================================================== -->
+
+    <menuitem id="stripeIntegration" position="9000" site="false">
+		<name xml:lang="x-default">Stripe</name>
+		<short_description xml:lang="x-default">Stripe Integration</short_description>
+		<description xml:lang="x-default">Stripe Integration</description>
+		<icon>icons/channel_ico.gif</icon>
+	</menuitem>
+	
+	<menuaction id="StripeIntegration" menupath="stripeIntegration" position="9002" site="false">
+		<name xml:lang="x-default">Stripe Quick Setup</name>
+		<short_description xml:lang="x-default">
+			Stripe Quick Setup
+		</short_description>
+		<description xml:lang="x-default">
+			Stripe Quick Setup
+		</description>
+		<exec pipeline="StripeBM" node="QuickSetup" />
+		<sub-pipelines>
+			<pipeline name="StripeBM-QuickSetup" />
+			<pipeline name="StripeBM-HandleStripeQuickSetup" />
+		</sub-pipelines>
+		<parameters>
+		</parameters>
+		<permissions>
+		</permissions>
+		<icon>icons/channel_ico.gif</icon>
+	</menuaction>
+	
+	<menuitem id="stripeSite" position="9000" site="true">
+		<name xml:lang="x-default">Stripe</name>
+		<short_description xml:lang="x-default">Stripe</short_description>
+		<description xml:lang="x-default">Stripe</description>
+		<icon>icons/channel_ico.gif</icon>
+	</menuitem>
+	
+	<menuaction id="stripePaymentsMethods" menupath="stripeSite" position="9001" site="true">
+		<name xml:lang="x-default">Stripe Payment Methods Setup</name>
+		<short_description xml:lang="x-default">
+			Stripe Payment Methods Setup
+		</short_description>
+		<description xml:lang="x-default">
+			Stripe Payment Methods Setup
+		</description>
+		<exec pipeline="StripeBM" node="PaymentsSetup" />
+		<sub-pipelines>
+			<pipeline name="StripeBM-PaymentsSetup" />
+			<pipeline name="StripeBM-HandlePaymentsSetup" />
+		</sub-pipelines>
+		<parameters>
+		</parameters>
+		<permissions>
+		</permissions>
+		<icon>icons/sitespaymentmethods_ico.gif</icon>
+	</menuaction>
+
+</extensions>

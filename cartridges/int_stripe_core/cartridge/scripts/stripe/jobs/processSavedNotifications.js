@@ -128,15 +128,25 @@ function createCharge(stripeNotificationObject, order, stripePaymentInstrument) 
             stripePaymentInstrument.custom.stripeChargeID = charge.id; // eslint-disable-line
             stripeNotificationObject.custom.processingStatus = 'PENDING_CHARGE'; // eslint-disable-line
 
+            if (order.status === Order.ORDER_STATUS_CREATED) {
+                OrderMgr.placeOrder(order);
+            }
+
             // Update in review and payment status for WeChat orders
-            if (stripePaymentInstrument.paymentMethod === 'STRIPE_WECHATPAY') {
+            if (stripePaymentInstrument.paymentMethod === 'STRIPE_WECHATPAY'
+                || stripePaymentInstrument.paymentMethod === 'STRIPE_KLARNA') {
                 order.custom.stripeIsPaymentIntentInReview = false; // eslint-disable-line no-param-reassign
                 order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
+
+                order.setExportStatus(Order.EXPORT_STATUS_READY);
+            } else if (stripePaymentInstrument.paymentMethod === 'STRIPE_MULTIBANCO') {
+                order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
+                order.setExportStatus(Order.EXPORT_STATUS_READY);
             }
         });
         stripeLogger.info('Charge was successfull for order {0}, CO event id {1}, source {2}', order.orderNo, stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId);
     } catch (e) {
-        stripeLogger.info('Unsuccessful charge for order {0}, CO event id {1}, source {2}', order.orderNo, stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId);
+        stripeLogger.info('Unsuccessful charge for order {0}, CO event id {1}, source {2} message {3}', order.orderNo, stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId, e.message);
     }
 }
 

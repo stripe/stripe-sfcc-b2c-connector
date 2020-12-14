@@ -86,7 +86,10 @@ exports.authorizeCreditCard = function (order, paymentInstrument, cvc) {
         if (paymentIntent.status === 'succeeded' ||
          (paymentIntent.status === 'requires_capture' && !stripeChargeCapture)) {
             Transaction.wrap(function () {
-                order.custom.stripeOM__stripePaymentIntentID = paymentIntent.id; // eslint-disable-line
+                if (paymentIntent.id) {
+                    paymentInstrument.getPaymentTransaction().setTransactionID(paymentIntent.id); // eslint-disable-line
+                }
+
                 if (paymentIntent.status === 'succeeded') {
                     order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
                 }

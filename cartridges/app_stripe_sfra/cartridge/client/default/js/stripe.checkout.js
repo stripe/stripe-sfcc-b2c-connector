@@ -13,16 +13,79 @@ var sepaIbanElement;
 var stripe = Stripe(document.getElementById('stripePublicKey').value);
 var elements = stripe.elements();
 
-var cardElement = elements.create('card');
-cardElement.mount('#card-element');
-cardElement.addEventListener('change', function (event) {
+function setCustomCardOutcome(result) {
     var displayError = document.getElementById('card-errors');
-    if (event.error) {
-        displayError.textContent = event.error.message;
+    if (result.error) {
+        displayError.textContent = result.error.message;
     } else {
         displayError.textContent = '';
     }
-});
+}
+
+var cardBrandToPfClass = {
+    visa: 'pf-visa',
+    mastercard: 'pf-mastercard',
+    amex: 'pf-american-express',
+    discover: 'pf-discover',
+    diners: 'pf-diners',
+    jcb: 'pf-jcb',
+    unknown: 'pf-credit-card'
+};
+
+function setCustomCardBrandIcon(brand) {
+    var brandIconElement = document.getElementById('brand-icon');
+    var pfClass = 'pf-credit-card';
+    if (brand in cardBrandToPfClass) {
+        pfClass = cardBrandToPfClass[brand];
+    }
+
+    for (var i = brandIconElement.classList.length - 1; i >= 0; i--) {
+        brandIconElement.classList.remove(brandIconElement.classList[i]);
+    }
+    brandIconElement.classList.add('pf');
+    brandIconElement.classList.add(pfClass);
+}
+
+var cardElement = null;
+var cardNumberElement = null;
+if (document.getElementById('card-element')) {
+    cardElement = elements.create('card');
+    cardElement.mount('#card-element');
+    cardElement.addEventListener('change', function (event) {
+        var displayError = document.getElementById('card-errors');
+        if (event.error) {
+            displayError.textContent = event.error.message;
+        } else {
+            displayError.textContent = '';
+        }
+    });
+} else if (document.getElementById('stripe-custom-card-group')) {
+    var style = JSON.parse(document.getElementById('stripe-custom-card-group').dataset.elementstyle);
+
+    cardNumberElement = elements.create('cardNumber', {
+        style: style
+    });
+    cardNumberElement.mount('#card-number-element');
+
+    var cardExpiryElement = elements.create('cardExpiry', {
+        style: style
+    });
+    cardExpiryElement.mount('#card-expiry-element');
+
+    var cardCvcElement = elements.create('cardCvc', {
+        style: style
+    });
+    cardCvcElement.mount('#card-cvc-element');
+
+    cardNumberElement.on('change', function (event) {
+        // Switch brand logo
+        if (event.brand) {
+            setCustomCardBrandIcon(event.brand);
+        }
+
+        setCustomCardOutcome(event);
+    });
+}
 
 var newCardFormContainer = document.getElementById('new-card-form-container');
 var savedCardsFormContainer = document.getElementById('saved-cards-container');
@@ -105,19 +168,46 @@ function copyNewCardDetails(paymentMethod) {
 }
 
 function getOwnerDetails() {
-    var stateElement = document.querySelector('select[name$="_stateCode"]') || document.querySelector('input[name$="_stateCode"]');
+    var stateElement = document.querySelector('.billing-address select[name$="_stateCode"]') || document.querySelector('.billing-address input[name$="_stateCode"]')
+        || document.querySelector('select[name$="_stateCode"]') || document.querySelector('input[name$="_stateCode"]');
+
+    var ownerNames = (document.querySelector('.billing-address input[name$="_firstName"]') && document.querySelector('.billing-address input[name$="_lastName"]'))
+        ? document.querySelector('.billing-address input[name$="_firstName"]').value + ' ' + document.querySelector('.billing-address input[name$="_lastName"]').value
+        : document.querySelector('input[name$="_firstName"]').value + ' ' + document.querySelector('input[name$="_lastName"]').value;
+
+    var addrLine1 = document.querySelector('.billing-address input[name$="_address1"]') ?
+        document.querySelector('.billing-address input[name$="_address1"]').value : document.querySelector('input[name$="_address1"]').value;
+
+    var addrLine2 = document.querySelector('.billing-address input[name$="_address2"]') ?
+        document.querySelector('.billing-address input[name$="_address2"]').value : document.querySelector('input[name$="_address2"]').value;
+
+    var addrCity = document.querySelector('.billing-address input[name$="_city"]') ?
+        document.querySelector('.billing-address input[name$="_city"]').value : document.querySelector('input[name$="_city"]').value;
+
+    var addrPostalCode = document.querySelector('.billing-address input[name$="_postalCode"]') ?
+        document.querySelector('.billing-address input[name$="_postalCode"]').value : document.querySelector('input[name$="_postalCode"]').value;
+
+    var addrCountry = document.querySelector('.billing-address select[name$="_country"]') ?
+        document.querySelector('.billing-address select[name$="_country"]').value : document.querySelector('select[name$="_country"]').value;
+
+    var ownerEmail = document.querySelector('.billing-address input[name$="_email"]') ?
+        document.querySelector('.billing-address input[name$="_email"]').value : document.querySelector('input[name$="_email"]').value;
+
+    var ownerPhone = document.querySelector('.billing-address input[name$="_phone"]') ?
+        document.querySelector('.billing-address input[name$="_phone"]').value : document.querySelector('input[name$="_phone"]').value;
+
     return {
-        name: document.querySelector('input[name$="_firstName"]').value + ' ' + document.querySelector('input[name$="_lastName"]').value,
+        name: ownerNames,
         address: {
-            line1: document.querySelector('input[name$="_address1"]').value,
-            line2: document.querySelector('input[name$="_address2"]').value,
-            city: document.querySelector('input[name$="_city"]').value,
-            postal_code: document.querySelector('input[name$="_postalCode"]').value,
-            country: document.querySelector('select[name$="_country"]').value,
+            line1: addrLine1,
+            line2: addrLine2,
+            city: addrCity,
+            postal_code: addrPostalCode,
+            country: addrCountry,
             state: stateElement ? stateElement.value : ''
         },
-        email: document.querySelector('input[name$="_email"]').value,
-        phone: document.querySelector('input[name$="_phone"]').value
+        email: ownerEmail,
+        phone: ownerPhone
     };
 }
 
@@ -133,7 +223,8 @@ function getSourceType(selectedPaymentMethod) {
         STRIPE_P24: 'p24',
         STRIPE_SEPA_DEBIT: 'sepa_debit',
         STRIPE_SOFORT: 'sofort',
-        STRIPE_WECHATPAY: 'wechat'
+        STRIPE_WECHATPAY: 'wechat',
+        STRIPE_KLARNA: 'klarna'
     }[selectedPaymentMethod];
 }
 
@@ -317,6 +408,158 @@ function getCreateWeChatSourcePayload() {
     };
 }
 
+function getCreateKlarnaSourcePayload() {
+    var stripeSiteIdInput = document.getElementById('stripe_site_id');
+    var stripeOrderNumberInput = document.getElementById('stripe_order_number');
+    var stripeOrderAmountInput = document.getElementById('stripe_order_amount');
+    var stripeOrderCurrencyInput = document.getElementById('stripe_order_currency');
+    var stripeOrderItemsInput = document.getElementById('stripe_order_items');
+    var stripeOrderShippingInput = document.getElementById('stripe_order_shipping');
+
+    var stripeShippingFirstName = document.getElementById('stripe_shipping_first_name').value;
+    var stripeShippingLastName = document.getElementById('stripe_shipping_last_name').value;
+
+    var stripeSiteLocale = document.getElementById('stripe_site_locale').value;
+
+    var stripeOrderPurchaseCoutry = document.getElementById('stripe_purchase_country').value ?
+        document.getElementById('stripe_purchase_country').value :
+        document.getElementById('billingCountry').value;
+    var stripeOrderItems = JSON.parse(stripeOrderItemsInput.value);
+
+    var amountToPay = parseFloat(stripeOrderAmountInput.value);
+    var currencyCode = stripeOrderCurrencyInput.value && stripeOrderCurrencyInput.value.toLowerCase();
+
+    var firstName = document.querySelector('input[name$="_firstName"]').value;
+    var lastName = document.querySelector('input[name$="_lastName"]').value;
+
+    var stripeOrderShipping = JSON.parse(stripeOrderShippingInput.value);
+
+    // update values with shipping form
+    var form = document.getElementById('dwfrm_shipping');
+    if ($(form).length > 0) {
+        var phone = $('input[name$=_phone]', form).val();
+        if (phone) {
+            stripeOrderShipping.phone = phone;
+        }
+
+        var line1 = $('input[name$=_address1]', form).val();
+        if (line1) {
+            stripeOrderShipping.address.line1 = line1;
+        }
+
+        var line2 = $('input[name$=_address2]', form).val();
+        if (line2) {
+            stripeOrderShipping.address.line2 = line2;
+        }
+
+        var city = $('input[name$=_city]', form).val();
+        if (city) {
+            stripeOrderShipping.address.city = city;
+        }
+
+        var postalCode = $('input[name$=_postalCode]', form).val();
+        if (postalCode) {
+            stripeOrderShipping.address.postal_code = postalCode;
+        }
+
+        var country = $('input[name$=_country]', form).val();
+
+        if (country) {
+            stripeOrderShipping.address.country = country;
+        }
+
+        var state = $('select[name$=_stateCode],input[name$=_stateCode]', form).val();
+        if (state) {
+            stripeOrderShipping.address.state = state;
+        }
+    }
+
+    return {
+        type: 'klarna',
+        amount: amountToPay,
+        currency: currencyCode,
+        klarna: {
+            product: 'payment',
+            purchase_country: stripeOrderPurchaseCoutry.toUpperCase(),
+            first_name: firstName,
+            last_name: lastName,
+            shipping_first_name: stripeShippingFirstName,
+            shipping_last_name: stripeShippingLastName,
+            locale: stripeSiteLocale
+        },
+        order: {
+            items: stripeOrderItems,
+            shipping: stripeOrderShipping
+        },
+        metadata: {
+            site_id: stripeSiteIdInput.value,
+            order_id: stripeOrderNumberInput.value
+        },
+        owner: getOwnerDetails()
+    };
+}
+
+function processKlarnaCreateSourceResult(result) {
+    if (result.error) {
+        alert(result.error.message);
+    } else {
+        var sourceIdInputs = document.getElementsByName('stripe_source_id');
+
+        sourceIdInputs.forEach(function (input) {
+            input.value = result.source.id;
+        });
+
+        // Initialize the SDK
+        window.Klarna.Payments.init({
+            client_token: result.source.klarna.client_token
+        });
+
+        // Load the widget for each payment method category:
+        // - pay_later
+        // - pay_over_time
+        // - pay_now
+        var availableCategories = result.source.klarna.payment_method_categories.split(',');
+        var paymentMethodSelected = false;
+        for (let i = 0; i < availableCategories.length; ++i) {
+            var category = availableCategories[i];
+
+            var klarnaPaymentMethodWrapper = document.getElementById('klarna_' + category + '-wrapper');
+            if (klarnaPaymentMethodWrapper) {
+                klarnaPaymentMethodWrapper.style.display = 'block';
+
+                var klarnaLabel = document.getElementById('klarna_' + category + '_label');
+                if (klarnaLabel && result.source.klarna[category + '_name']) {
+                    klarnaLabel.innerHTML = result.source.klarna[category + '_name'];
+                }
+
+                var klarnaImgWrapper = document.getElementById('klarna_' + category + '_img_wrapper');
+                if (klarnaImgWrapper && result.source.klarna[category + '_asset_urls_standard']) {
+                    klarnaImgWrapper.innerHTML = "<img src='" + result.source.klarna[category + '_asset_urls_standard'] + "' />";
+                }
+            }
+
+            if (!paymentMethodSelected) {
+                document.getElementById('klarna_' + category).checked = true;
+                paymentMethodSelected = true;
+            }
+
+            window.Klarna.Payments.load({
+                container: '#klarna_' + category + '_container',
+                payment_method_category: category
+            }, function (res) {
+                if (res.show_form) {
+                    /*
+                     * this payment method category can be used, allow the customer
+                     * to choose it in your interface.
+                     */
+                } else {
+                    // this payment method category is not available
+                }
+            });
+        }
+    }
+}
+
 /**
  * Validates the ACH Debit form.
  * @returns {boolean} Returns true if the ACH Debit form is valid. Returns false if the ACH Debit form is invalid.
@@ -403,33 +646,80 @@ function processBankAccountRequestResult(result) {
 // eslint-disable-next-line consistent-return
 document.querySelector('button.place-order').addEventListener('click', function (event) {
     event.stopImmediatePropagation();
-    if (forceSubmit) return true;
 
-    $.ajax({
-        url: document.getElementById('beforePaymentAuthURL').value,
-        method: 'POST',
-        dataType: 'json',
-        data: {
-            csrf_token: $('[name="csrf_token"]').val()
-        }
-    }).done(function (json) {
-        handleServerResponse(json);
-    }).fail(function (msg) {
-        if (msg.responseJSON.redirectUrl) {
-            window.location.href = msg.responseJSON.redirectUrl;
-        } else {
-            alert(msg.error);
-        }
-    });
+    if (window.localStorage.getItem('stripe_payment_method') === 'STRIPE_KLARNA') {
+        var klarnaPaymentOption = window.localStorage.getItem('stripe_klarna_payment_option');
+
+        window.Klarna.Payments.authorize({
+            payment_method_category: klarnaPaymentOption
+        }, function (res) {
+            if (res.approved) {
+                // success
+                $.ajax({
+                    url: document.getElementById('beforePaymentAuthURL').value,
+                    method: 'POST',
+                    dataType: 'json',
+                    data: {
+                        csrf_token: $('[name="csrf_token"]').val()
+                    }
+                }).done(function (json) {
+                    handleServerResponse(json);
+                }).fail(function (msg) {
+                    if (msg.responseJSON.redirectUrl) {
+                        window.location.href = msg.responseJSON.redirectUrl;
+                    } else {
+                        alert(msg.error);
+                    }
+                });
+            } else if (res.error) {
+                // Payment not authorized or an error has occurred
+                alert(res.error);
+                $('.payment-summary .edit-button').click();
+            } else {
+                // handle other states
+                alert('Order not approved');
+                $('.payment-summary .edit-button').click();
+            }
+        });
+    } else {
+        if (forceSubmit) return true;
+
+        $.ajax({
+            url: document.getElementById('beforePaymentAuthURL').value,
+            method: 'POST',
+            dataType: 'json',
+            data: {
+                csrf_token: $('[name="csrf_token"]').val()
+            }
+        }).done(function (json) {
+            handleServerResponse(json);
+        }).fail(function (msg) {
+            if (msg.responseJSON.redirectUrl) {
+                window.location.href = msg.responseJSON.redirectUrl;
+            } else {
+                alert(msg.error);
+            }
+        });
+    }
 });
 
 document.querySelector('button.submit-payment').addEventListener('click', function (event) {
+    let billingForm = document.getElementById('dwfrm_billing');
+    $(billingForm).find('.form-control.is-invalid').removeClass('is-invalid');
+    if (!billingForm.reportValidity()) {
+        billingForm.focus();
+        billingForm.scrollIntoView();
+        return;
+    }
+
     event.stopImmediatePropagation();
 
     var activeTabId = $('.tab-pane.active').attr('id');
     var paymentInfoSelector = '#dwfrm_billing .' + activeTabId + ' .payment-form-fields input.form-control';
     var selectedPaymentMethod = $(paymentInfoSelector).val();
     var createSourcePayload;
+
+    window.localStorage.setItem('stripe_payment_method', selectedPaymentMethod);
 
     switch (selectedPaymentMethod) {
         case 'CREDIT_CARD':
@@ -440,7 +730,8 @@ document.querySelector('button.submit-payment').addEventListener('click', functi
                 $('.submit-payment').click();
             } else {
                 var owner = getOwnerDetails();
-                stripe.createPaymentMethod('card', cardElement, {
+                var stripeCardEl = (!cardElement) ? cardNumberElement : cardElement;
+                stripe.createPaymentMethod('card', stripeCardEl, {
                     billing_details: {
                         name: owner.name,
                         address: owner.address,
@@ -475,6 +766,20 @@ document.querySelector('button.submit-payment').addEventListener('click', functi
         case 'STRIPE_WECHATPAY':
             createSourcePayload = getCreateWeChatSourcePayload();
             stripe.createSource(createSourcePayload).then(processWeChatCreateSourceResult);
+            break;
+        case 'STRIPE_KLARNA':
+            var selectedCategory = document.querySelector('.klarna-payment-method:checked').value;
+            window.localStorage.setItem('stripe_klarna_payment_option', selectedCategory);
+
+            var stripeReturnURL = document.getElementById('stripe_return_url').value;
+
+            // eslint-disable-next-line no-unused-vars
+            $('body').on('checkout:updateCheckoutView', function (e, data) {
+                window.location.replace(stripeReturnURL);
+            });
+
+            $('.submit-payment').click();
+            $.spinner().start();
             break;
         case 'STRIPE_ALIPAY':
         case 'STRIPE_BANCONTACT':
@@ -648,10 +953,46 @@ if (prbPlaceholder) {
     initPRB();
 }
 
+function refreshKlarnaWhenIsActive() {
+    // check if Klarna is active
+    var activePaymentMethod = document.getElementsByClassName('nav-link credit-card-tab active');
+    if (!activePaymentMethod.length || !activePaymentMethod[0].attributes['href'].value.includes('KLARNA')) {
+        return;
+    }
+
+    // validate Billing Form
+    let billingForm = document.getElementById('dwfrm_billing');
+    $(billingForm).find('.form-control.is-invalid').removeClass('is-invalid');
+    if (!billingForm.reportValidity()) {
+        billingForm.focus();
+        billingForm.scrollIntoView();
+        return;
+    }
+
+    // create source and load Klarna widget
+    var createSourcePayload = getCreateKlarnaSourcePayload();
+    stripe.createSource(createSourcePayload).then(processKlarnaCreateSourceResult);
+}
+
 // Update stored order amount on shipping method change
-$('body').on('checkout:updateCheckoutView', function (e, data) {
-    var stripeOrderAmountInput = document.getElementById('stripe_order_amount');
-    stripeOrderAmountInput.value = data.order.totals.grandTotalValue;
+$('body').on('checkout:updateCheckoutView', function () {
+    $.ajax({
+        url: document.getElementById('getStripeOrderItemsURL').value,
+        method: 'GET',
+        dataType: 'json'
+    }).done(function (json) {
+        var stripeOrderAmountInput = document.getElementById('stripe_order_amount');
+        if (stripeOrderAmountInput) {
+            stripeOrderAmountInput.value = json.amount;
+        }
+
+        var stripeOrderItems = document.getElementById('stripe_order_items');
+        if (stripeOrderItems) {
+            stripeOrderItems.value = json.orderItems;
+        }
+
+        refreshKlarnaWhenIsActive();
+    });
 });
 
 // fix issue with SFRA select payment method when edit payment from Order confirmation
@@ -678,6 +1019,12 @@ ready(() => {
             if (selectedPaymentContent) {
                 selectedPaymentContent.classList.add('active');
             }
+
+            if (activePaymentMethod[0].attributes['href'].value.includes('KLARNA')) {
+                // create source and load Klarna widgets
+                var createSourcePayload = getCreateKlarnaSourcePayload();
+                stripe.createSource(createSourcePayload).then(processKlarnaCreateSourceResult);
+            }
         }
     });
 
@@ -696,5 +1043,76 @@ ready(() => {
             }
         }
     });
-});
 
+    var klarnaLiEl = document.querySelectorAll("li.nav-item[data-method-id='STRIPE_KLARNA']");
+    if (klarnaLiEl.length > 0) {
+        klarnaLiEl[0].addEventListener('click', function (event) {
+            if (!document.querySelector('input[name$="_address1"]').value
+                || !document.querySelector('input[name$="_city"]').value
+                || !document.querySelector('input[name$="_postalCode"]').value
+                || !document.querySelector('select[name$="_country"]').value
+                || !document.querySelector('input[name$="_email"]').value
+                || !document.querySelector('input[name$="_phone"]').value) {
+                alert(document.getElementById('klarna-widget-wrapper').dataset.errormsg);
+
+                event.stopPropagation();
+                $('.nav-item a.active').click();
+                return false;
+            }
+
+            let billingForm = document.getElementById('dwfrm_billing');
+            $(billingForm).find('.form-control.is-invalid').removeClass('is-invalid');
+            if (!billingForm.reportValidity()) {
+                billingForm.focus();
+                billingForm.scrollIntoView();
+                event.stopPropagation();
+                $('.nav-item a.active').click();
+                return false;
+            }
+
+            // create source and load Klarna widgets
+            var createSourcePayload = getCreateKlarnaSourcePayload();
+            stripe.createSource(createSourcePayload).then(processKlarnaCreateSourceResult);
+
+            return true;
+        });
+    }
+
+    if (document.querySelector('#dwfrm_billing input[name$="_firstName"]')) {
+        document.querySelector('#dwfrm_billing input[name$="_firstName"]').addEventListener('change', refreshKlarnaWhenIsActive);
+    }
+
+    if (document.querySelector('#dwfrm_billing input[name$="_lastName"]')) {
+        document.querySelector('#dwfrm_billing input[name$="_lastName"]').addEventListener('change', refreshKlarnaWhenIsActive);
+    }
+
+    if (document.querySelector('#dwfrm_billing input[name$="_address1"]')) {
+        document.querySelector('#dwfrm_billing input[name$="_address1"]').addEventListener('change', refreshKlarnaWhenIsActive);
+    }
+
+    if (document.querySelector('#dwfrm_billing input[name$="_address2"]')) {
+        document.querySelector('#dwfrm_billing input[name$="_address2"]').addEventListener('change', refreshKlarnaWhenIsActive);
+    }
+
+    if (document.querySelector('#dwfrm_billing input[name$="_city"]')) {
+        document.querySelector('#dwfrm_billing input[name$="_city"]').addEventListener('change', refreshKlarnaWhenIsActive);
+    }
+
+    if (document.querySelector('#dwfrm_billing input[name$="_postalCode"]')) {
+        document.querySelector('#dwfrm_billing input[name$="_postalCode"]').addEventListener('change', refreshKlarnaWhenIsActive);
+    }
+
+    if (document.querySelector('#dwfrm_billing select[name$="_country"]')) {
+        document.querySelector('#dwfrm_billing select[name$="_country"]').addEventListener('change', refreshKlarnaWhenIsActive);
+    }
+
+    if (document.querySelector('#dwfrm_billing input[name$="_email"]')) {
+        document.querySelector('#dwfrm_billing input[name$="_email"]').addEventListener('change', refreshKlarnaWhenIsActive);
+    }
+
+    if (document.querySelector('#dwfrm_billing input[name$="_phone"]')) {
+        document.querySelector('#dwfrm_billing input[name$="_phone"]').addEventListener('change', refreshKlarnaWhenIsActive);
+    }
+
+    refreshKlarnaWhenIsActive();
+});

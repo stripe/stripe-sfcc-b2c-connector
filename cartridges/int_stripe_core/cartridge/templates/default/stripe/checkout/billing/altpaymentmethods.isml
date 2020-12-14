@@ -13,14 +13,22 @@
 <input type="hidden" id="stripe_order_number" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getNewStripeOrderNumber()}">
 <input type="hidden" id="stripe_return_url" value="${URLUtils.https("StripePayments-HandleAPM")}">
 
+<input type="hidden" id="stripe_purchase_country" value="${stripeOrder.purchase_country}">
+<input type="hidden" id="stripe_order_items" value="${stripeOrder.order_items}">
+<input type="hidden" id="stripe_order_shipping" value="${stripeOrder.order_shipping}">
+<input type="hidden" id="stripe_shipping_first_name" value="${stripeOrder.shipping_first_name}">
+<input type="hidden" id="stripe_shipping_last_name" value="${stripeOrder.shipping_last_name}">
+
+<input type="hidden" id="stripe_site_locale" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getSiteLocale()}">
+
 <iscomment>
     ACH Debit
     -------------------
 </iscomment>
 <div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_ACH_DEBIT'}">payment-method-expanded</isif>" data-method="STRIPE_ACH_DEBIT">
 
-	<div class="form-indent">
-		<div class="form-group required">
+    <div class="form-indent">
+        <div class="form-group required">
            <label for="ach-account-holdername" class="form-control-label">
                ${Resource.msg('ach.account.holdername', 'stripe',null)}
            </label>
@@ -33,28 +41,28 @@
           </label>
   
           <select id="ach-account-type" id="ach-account-type" class="form-control"
-              	data-emptyerrormsg="${Resource.msg('ach.account.accounttypemissingerrmsg', 'stripe', null)}">
-				<option value="" selected="selected">${Resource.msg('ach.account.select','stripe',null)}</option>
-				<option value="individual">${Resource.msg('ach.account.typeindividual','stripe',null)}</option>
-				<option value="company">${Resource.msg('ach.account.typecompany','stripe',null)}</option>	
-		  </select>
+                  data-emptyerrormsg="${Resource.msg('ach.account.accounttypemissingerrmsg', 'stripe', null)}">
+                <option value="" selected="selected">${Resource.msg('ach.account.select','stripe',null)}</option>
+                <option value="individual">${Resource.msg('ach.account.typeindividual','stripe',null)}</option>
+                <option value="company">${Resource.msg('ach.account.typecompany','stripe',null)}</option>    
+          </select>
         </div>
         <div class="form-group required">
               <label for="ach-account-number" class="form-control-label">
                   ${Resource.msg('ach.account.accountnumber', 'stripe',null)}
               </label>
               <input id="ach-account-number" type="text" class="form-control"
-              	data-emptyerrormsg="${Resource.msg('ach.account.accountnumbermissingerrmsg', 'stripe', null)}">
+                  data-emptyerrormsg="${Resource.msg('ach.account.accountnumbermissingerrmsg', 'stripe', null)}">
         </div>
         <div class="form-group required">
               <label for="ach-routing-number" class="form-control-label">
                   ${Resource.msg('ach.account.routingnumber', 'stripe',null)}
               </label>
               <input id="ach-routing-number" type="text" class="form-control"
-              	data-emptyerrormsg="${Resource.msg('ach.account.routingnumbermissingerrmsg', 'stripe', null)}">
+                  data-emptyerrormsg="${Resource.msg('ach.account.routingnumbermissingerrmsg', 'stripe', null)}">
         </div>
         <p>${Resource.msg('ach.account.note', 'stripe',null)}</p>
-	</div>
+    </div>
 </div>
 
 <iscomment>
@@ -63,9 +71,47 @@
 </iscomment>
 <div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_WECHATPAY'}">payment-method-expanded</isif>" data-method="STRIPE_WECHATPAY">
 
-	<div class="form-indent">
+    <div class="form-indent">
         <p>${Resource.msg('wechatpay.qrcodemessage', 'stripe',null)}</p>
-	</div>
+    </div>
+</div>
+
+<iscomment>
+    Klarna 
+    -------------------
+</iscomment>
+<div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_KLARNA'}">payment-method-expanded</isif>" data-method="STRIPE_KLARNA">
+    <div class="form-indent">
+        <div id="klarna-widget-wrapper" class="col-12" data-errormsg="${Resource.msg('klarna.missingfieldserrormsg', 'stripe', null)}">
+
+            <iscomment>Klarna Pay Over Time</iscomment>
+            <div id="klarna_pay_later-wrapper" style="display:none;">
+                <div id="klarna_pay_later_img_wrapper" style="float:right;">
+                </div>
+                <input type="radio" class="klarna-payment-method" id="klarna_pay_later" name="klarna_payment_option" value="pay_later">
+                <label id=klarna_pay_later_label" for="klarna_pay_later">${Resource.msg('klarna.paylater', 'stripe', null)}</label><br />
+                <div id="klarna_pay_later_container" />
+            </div>
+
+            <iscomment>Klarna Pay Over Time</iscomment>
+            <div id="klarna_pay_over_time-wrapper" style="display:none;">
+                <div id="klarna_pay_over_time_img_wrapper" style="float:right;">
+                </div>
+                <input type="radio" class="klarna-payment-method" id="klarna_pay_over_time" name="klarna_payment_option" value="pay_over_time">
+                <label id="klarna_pay_over_time_label" for="klarna_pay_over_time">${Resource.msg('klarna.payovertime', 'stripe', null)}</label><br />
+                <div id="klarna_pay_over_time_container" />
+            </div>
+
+            <iscomment>Klarna Pay Now</iscomment>
+            <div id="klarna_pay_now-wrapper" style="display:none;">
+                <div id="klarna_pay_now_img_wrapper" style="float:right;">
+                </div>
+                <input type="radio" class="klarna-payment-method" id="klarna_pay_now" name="klarna_payment_option" value="pay_now">
+                <label id="klarna_pay_now" for="klarna_pay_now">${Resource.msg('klarna.paynow', 'stripe', null)}</label><br />
+                <div id="klarna_pay_now_container" />
+            </div>
+        </div>
+    </div>
 </div>
 
 <iscomment>
@@ -105,22 +151,22 @@
     -------------------
 </iscomment>
 <div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_IDEAL'}">payment-method-expanded</isif>" data-method="STRIPE_IDEAL">
-	<div class="form-row required">
-		<label class="label" for="ideal-name">${Resource.msg('method.name.label','stripe',null)}</label>
-		<div class="field-wrapper">
-			<input id="ideal-name" type="text" class="input-text required">
-		</div>
-	</div>
-	<div class="form-row">
-		<label class="label" for="ideal-bank-element">
-			${Resource.msg('ideal.bank.element.label','stripe',null)}
-		</label>
-		<div class="field-wrapper">
-			<div class="payment-elements-select" id="ideal-bank-element">
-				<!-- A Stripe Element will be inserted here. -->
-			</div>
-		</div>
-	</div>
+    <div class="form-row required">
+        <label class="label" for="ideal-name">${Resource.msg('method.name.label','stripe',null)}</label>
+        <div class="field-wrapper">
+            <input id="ideal-name" type="text" class="input-text required">
+        </div>
+    </div>
+    <div class="form-row">
+        <label class="label" for="ideal-bank-element">
+            ${Resource.msg('ideal.bank.element.label','stripe',null)}
+        </label>
+        <div class="field-wrapper">
+            <div class="payment-elements-select" id="ideal-bank-element">
+                <!-- A Stripe Element will be inserted here. -->
+            </div>
+        </div>
+    </div>
 </div>
 
 <iscomment>
@@ -138,22 +184,22 @@
 </iscomment>
 <div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_SOFORT'}">payment-method-expanded</isif>" data-method="STRIPE_SOFORT">
 
-	<div class="form-row">
-		<label class="label" for="sofort_country_code">
-			${Resource.msg('sofort.country.code.label','stripe',null)}
-		</label>
-		<div class="form-indent">
-		<select name="sofort_country_code" id="sofort_country_code">
-			<option>${Resource.msg('sofort.country.select','stripe',null)}</option>
-			<option value="AT">${Resource.msg('sofort.country.AT','stripe',null)}</option>
-			<option value="BE">${Resource.msg('sofort.country.BE','stripe',null)}</option>
-			<option value="DE">${Resource.msg('sofort.country.DE','stripe',null)}</option>
-			<option value="IT">${Resource.msg('sofort.country.IT','stripe',null)}</option>
-			<option value="NL">${Resource.msg('sofort.country.NL','stripe',null)}</option>
-			<option value="ES">${Resource.msg('sofort.country.ES','stripe',null)}</option>
-		</select>
-		</div>
-	</div>
+    <div class="form-row">
+        <label class="label" for="sofort_country_code">
+            ${Resource.msg('sofort.country.code.label','stripe',null)}
+        </label>
+        <div class="form-indent">
+        <select name="sofort_country_code" id="sofort_country_code">
+            <option>${Resource.msg('sofort.country.select','stripe',null)}</option>
+            <option value="AT">${Resource.msg('sofort.country.AT','stripe',null)}</option>
+            <option value="BE">${Resource.msg('sofort.country.BE','stripe',null)}</option>
+            <option value="DE">${Resource.msg('sofort.country.DE','stripe',null)}</option>
+            <option value="IT">${Resource.msg('sofort.country.IT','stripe',null)}</option>
+            <option value="NL">${Resource.msg('sofort.country.NL','stripe',null)}</option>
+            <option value="ES">${Resource.msg('sofort.country.ES','stripe',null)}</option>
+        </select>
+        </div>
+    </div>
 </div>
 
 <iscomment>
@@ -161,29 +207,29 @@
     -------------------
 </iscomment>
 <div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_SEPA_DEBIT'}">payment-method-expanded</isif>" data-method="STRIPE_SEPA_DEBIT">
-	<div class="form-row required">
-		<label class="label" for="sepa-name">${Resource.msg('method.name.label','stripe',null)}</label>
-		<div class="field-wrapper">
-			<input id="sepa-name" type="text" class="input-text required">
-		</div>
-	</div>
-	<div class="form-row">
-		<label class="label">
-			${Resource.msg('sepa.iban.label','stripe',null)}
-		</label>
-		<div class="field-wrapper" id="sepa-iban-element">
-			<div class="payment-elements-input" id="sepa-iban-element">
-				<!-- A Stripe Element will be inserted here. -->
-			</div>
-		</div>
-		<div id="sepa-bank-name" class="form-indent"></div>
-		<!-- Used to display form errors. -->
-	  	<div id="sepa-error-message" role="alert" class="form-indent"></div>
-	</div>
+    <div class="form-row required">
+        <label class="label" for="sepa-name">${Resource.msg('method.name.label','stripe',null)}</label>
+        <div class="field-wrapper">
+            <input id="sepa-name" type="text" class="input-text required">
+        </div>
+    </div>
+    <div class="form-row">
+        <label class="label">
+            ${Resource.msg('sepa.iban.label','stripe',null)}
+        </label>
+        <div class="field-wrapper" id="sepa-iban-element">
+            <div class="payment-elements-input" id="sepa-iban-element">
+                <!-- A Stripe Element will be inserted here. -->
+            </div>
+        </div>
+        <div id="sepa-bank-name" class="form-indent"></div>
+        <!-- Used to display form errors. -->
+          <div id="sepa-error-message" role="alert" class="form-indent"></div>
+    </div>
 
-	<!-- Display mandate acceptance text. -->
-	<div id="mandate-acceptance" class="form-indent">
-		${Resource.msg('sepa.mandate.acceptance','stripe',null)}
-	</div>
+    <!-- Display mandate acceptance text. -->
+    <div id="mandate-acceptance" class="form-indent">
+        ${Resource.msg('sepa.mandate.acceptance','stripe',null)}
+    </div>
 
 </div>
