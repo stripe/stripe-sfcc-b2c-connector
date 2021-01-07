@@ -29,12 +29,16 @@
     <!-- Card Number -->
     <div class="form-group
         <isif condition="${pdict.paymentForm.cardNumber.mandatory === true}">required</isif>">
-        <label class="form-control-label" for="cardNumber">
-            <isprint value="${pdict.paymentForm.cardNumber.label}" encoding="htmlcontent" />
-        </label>
-        <div class="form-control">
-            <div id="card-element"></div>
-        </div>
+        <isif condition="${require('*/cartridge/scripts/stripe/helpers/stripeHelper').isCustomCardForm()}">
+            <isinclude template="stripe/checkout/billing/stripe_custom_cardform" />
+        <iselse>
+            <label class="form-control-label" for="cardNumber">
+	            <isprint value="${pdict.paymentForm.cardNumber.label}" encoding="htmlcontent" />
+	        </label>
+            <div class="form-control">
+                <div id="card-element"></div>
+            </div>
+        </isif>
     </div>
 
 

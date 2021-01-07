@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-expressions */
 
 const { expect, assert } = require('chai');
-const stripeService = require('../mocks/int_stripe_core/cartridge/scripts/stripe/services/stripeService');
+const stripeService = require('../mocks/int_stripe_core/cartridge/scripts/stripe/services/StripeService');
 const LocalServiceRegistry = require('../mocks/dw-mocks/dw/svc/LocalServiceRegistry');
 
 describe('Stripe Service', () => {

@@ -1,0 +1,64 @@
+<iscontent type="text/html" charset="UTF-8" />
+
+<isdecorate template="application/MenuFrame">
+
+    <h1 class="dw-nc-text-heading dw-nc-text-heading-large dw-nc-text-brand">${Resource.msg('quicksetup.title','stripebm', null)}</h1>
+    <p>${Resource.msg('quicksetup.description','stripebm', null)}</p>
+
+    <form class="stripe-quick-setup-form" id="stripe-quick-setup-form"
+		action="${URLUtils.url('StripeBM-HandleStripeQuickSetup')}" method="POST">
+	    <table width="100%" cellspacing="15" cellpadding="0" border="0">
+			<tbody>
+				<tr>
+					<td style="width:30%">
+						${Resource.msg('quicksetup.sitestoappy','stripebm', null)}
+					</td>
+					<td style="width:70%">
+						<input type="hidden" id="stripe_site_ids" name="stripe_site_ids" />
+						<isloop items="${dw.system.Site.getAllSites()}" var="site">
+			                <input id="siteid_${site.getID()}" type="checkbox" name="siteid"
+			                	data-siteid="${site.getID()}" />
+			                <label for="siteid_${site.getID()}">${site.getName()}</label><br />
+			            </isloop>
+			            <strong id="quick-setup-sites-error-msg" style="display:none;color:#F00;">${Resource.msg('quicksetup.nositeselectederrmsg','stripebm', null)}</strong>
+					</td>
+				</tr>
+				<tr>
+					<td style="width:30%">
+						${Resource.msg('quicksetup.publickey','stripebm', null)}
+					</td>
+					<td style="width:70%">
+						<input id="stripe_public_key" name="stripe_public_key" required />
+					</td>
+				</tr>
+				<tr>
+					<td style="width:30%">
+						${Resource.msg('quicksetup.privatekey','stripebm', null)}
+					</td>
+					<td style="width:70%">
+						<input id="stripe_private_key" name="stripe_private_key" required />
+					</td>
+				</tr>
+				<tr>
+					<td colspan="2">
+						${Resource.msg('quicksetup.note','stripebm', null)}
+					</td>
+				</tr>
+				<tr>
+					<td colspan="2">
+						<strong id="quick-setup-result"></strong>
+					</td>
+				</tr>
+				<tr>
+					<td style="width:30%">
+						<button type="submit" name="submit" class="button stripe-quick-setup-submit">${Resource.msg('quicksetup.setup','stripebm', null)}</button>
+					</td>
+					<td style="width:70%">
+					</td>
+				</tr>
+			</tbody>
+	    </table>
+    </form>
+    
+    <script type="text/javascript" src="${URLUtils.staticURL('js/stripebm.js')}"></script>
+</isdecorate>

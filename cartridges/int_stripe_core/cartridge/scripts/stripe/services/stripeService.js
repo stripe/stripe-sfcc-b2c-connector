@@ -131,6 +131,8 @@ function getStripeServiceDefinition() {
             const Site = require('dw/system/Site');
             const apiKey = Site.current.getCustomPreferenceValue('stripeApiKey');
 
+            svc.addHeader('X-Stripe-Client-User-Agent', '{"AppName":"Stripe SFCCB2C", "partner_id", "pp_partner_Fs71dOwRYXhmze", "url", "https://stripe.com/docs/plugins/salesforce-commerce-cloud", "version": "20.2.0"}');
+
             svc.addHeader('apiKey', apiKey);
             svc.addHeader('Authorization', 'Bearer ' + apiKey);
             svc.addHeader('User-Agent', 'Stripe-SFCC-LINK/19.6.0');
@@ -287,6 +289,14 @@ exports.customers = {
                 amounts: [firstAmount, secondAmount]
             }
 
+        };
+
+        return callService(requestObject);
+    },
+    list: function (email) {
+        var requestObject = {
+            endpoint: '/customers?email=' + email + '&limit=5',
+            httpMethod: 'GET'
         };
 
         return callService(requestObject);

@@ -61,14 +61,15 @@ function beforePaymentAuthorization() {
 
             if (stripePaymentInstrument && stripePaymentInstrument.paymentMethod === 'CREDIT_CARD') {
                 var paymentIntent;
-                var paymentIntentId = basket.custom.stripeOM__stripePaymentIntentID;
+                var paymentIntentId = (stripePaymentInstrument.paymentTransaction) ?
+                    stripePaymentInstrument.paymentTransaction.getTransactionID() : null;
                 if (paymentIntentId) {
                     paymentIntent = checkoutHelper.confirmPaymentIntent(paymentIntentId);
                 } else {
                     paymentIntent = checkoutHelper.createPaymentIntent(stripePaymentInstrument);
 
                     Transaction.wrap(function () {
-                        basket.custom.stripeOM__stripePaymentIntentID = paymentIntent.id;
+                        stripePaymentInstrument.paymentTransaction.setTransactionID(paymentIntent.id);
                     });
                 }
 
@@ -100,6 +101,14 @@ function beforePaymentAuthorization() {
             } else if (stripePaymentInstrument && stripePaymentInstrument.paymentMethod === 'STRIPE_WECHATPAY') {
                 Transaction.wrap(function () {
                     basket.custom.stripeWeChatQRCodeURL = stripePaymentInstrument.custom.stripeWeChatQRCodeURL;
+                    basket.custom.stripeIsPaymentIntentInReview = true;
+                });
+
+                responsePayload = {
+                    success: true
+                };
+            } else if (stripePaymentInstrument && stripePaymentInstrument.paymentMethod === 'STRIPE_KLARNA') {
+                Transaction.wrap(function () {
                     basket.custom.stripeIsPaymentIntentInReview = true;
                 });
 

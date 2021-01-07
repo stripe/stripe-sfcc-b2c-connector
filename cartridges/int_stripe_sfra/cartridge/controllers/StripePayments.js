@@ -27,4 +27,21 @@ server.get('HandleAPM', function (req, res, next) {
     next();
 });
 
+/**
+ * Get Stripe Order Items used for Klarna Widget
+ */
+server.get('GetStripeOrderItems', function (req, res, next) {
+    var BasketMgr = require('dw/order/BasketMgr');
+    var basket = BasketMgr.getCurrentBasket();
+
+    var stripeOrderDetails = basket ? require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getStripeOrderDetails(basket) : null;
+
+    res.json({
+        amount: stripeOrderDetails ? stripeOrderDetails.amount : [],
+        orderItems: stripeOrderDetails ? stripeOrderDetails.order_items : []
+    });
+
+    next();
+});
+
 module.exports = server.exports();
