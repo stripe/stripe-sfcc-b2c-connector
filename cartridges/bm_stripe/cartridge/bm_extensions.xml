@@ -59,5 +59,25 @@
 		</permissions>
 		<icon>icons/sitespaymentmethods_ico.gif</icon>
 	</menuaction>
+	
+	<menuaction id="stripePaymentsRefund" menupath="stripeSite" position="9002" site="true">
+		<name xml:lang="x-default">Stripe Payments Refund</name>
+		<short_description xml:lang="x-default">
+			Stripe Payments Refund
+		</short_description>
+		<description xml:lang="x-default">
+			Stripe Payments Refund
+		</description>
+		<exec pipeline="StripeBM" node="PaymentsRefund" />
+		<sub-pipelines>
+			<pipeline name="StripeBM-PaymentsRefund" />
+			<pipeline name="StripeBM-HandlePaymentsRefund" />
+		</sub-pipelines>
+		<parameters>
+		</parameters>
+		<permissions>
+		</permissions>
+		<icon>icons/sitespaymentmethods_ico.gif</icon>
+	</menuaction>
 
 </extensions>

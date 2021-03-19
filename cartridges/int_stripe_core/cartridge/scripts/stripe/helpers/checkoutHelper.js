@@ -447,7 +447,7 @@ exports.getStripeOrderDetails = function (basket) {
             line2: shippingAddress ? shippingAddress.getAddress2() : '',
             city: shippingAddress ? shippingAddress.getCity() : '',
             postal_code: shippingAddress ? shippingAddress.getPostalCode() : '',
-            country: shippingAddress ? shippingAddress.getCountryCode().value : '',
+            country: shippingAddress && shippingAddress.getCountryCode() ? shippingAddress.getCountryCode().value.toUpperCase() : '',
             state: shippingAddress ? shippingAddress.getStateCode() : ''
         }
     };
@@ -641,13 +641,14 @@ exports.VerifyBankAccountAndCreateAchCharge = function (order, firstAmount, seco
     }
 
     Transaction.wrap(function () {
-        if (order.status === Order.ORDER_STATUS_CREATED) {
+        if (order.status.value === Order.ORDER_STATUS_CREATED) {
             const OrderMgr = require('dw/order/OrderMgr');
             OrderMgr.placeOrder(order);
         }
 
         order.custom.stripeIsPaymentIntentInReview = false; // eslint-disable-line no-param-reassign
         order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
+        order.setExportStatus(Order.EXPORT_STATUS_READY);
     });
 
     return true;

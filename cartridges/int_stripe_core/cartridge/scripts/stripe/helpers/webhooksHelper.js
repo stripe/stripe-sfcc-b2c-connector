@@ -1,6 +1,6 @@
 /* eslint-env es6 */
 /* eslint-disable no-plusplus */
-/* global request, response */
+/* global request, response, empty */
 
 'use strict';
 
@@ -26,6 +26,7 @@ const Site = require('dw/system/Site');
 const Logger = require('dw/system/Logger');
 const OrderMgr = require('dw/order/OrderMgr');
 const Order = require('dw/order/Order');
+const PaymentTransaction = require('dw/order/PaymentTransaction');
 
 /**
 * According to site pref setting will return status of possibility to store CO.
@@ -127,13 +128,23 @@ function getStripeCustomerIdFromOrder(order) {
  */
 function processKlarnaSourceChargeableNotification(json) {
     if (!json || !json.data || !json.data.object
-        || !json.data.object.metadata || !json.data.object.metadata.order_id
         || !json.data.object.amount || !json.data.object.currency || !json.data.object.id) {
         return false;
     }
 
-    const orderId = json.data.object.metadata.order_id;
-    var order = OrderMgr.getOrder(orderId);
+    // Ensure valid order
+    var order = null;
+
+    // try to get Order by Meta Data (if provided)
+    if (!empty(json.data.object.metadata) && !empty(json.data.object.metadata.order_id)) {
+        const orderNo = json.data.object.metadata.order_id;
+        order = OrderMgr.getOrder(orderNo);
+    } else if (!empty(json.data.object.payment_intent)) {
+        order = OrderMgr.searchOrder('custom.stripePaymentIntentID={0}', json.data.object.payment_intent);
+    } else if (!empty(json.data.object.id)) {
+        order = OrderMgr.searchOrder('custom.stripePaymentSourceID={0}', json.data.object.id);
+    }
+
     if (!order) {
         return false;
     }
@@ -176,7 +187,12 @@ function processKlarnaSourceChargeableNotification(json) {
         Transaction.wrap(function () {
             stripePaymentInstrument.custom.stripeChargeID = charge.id; // eslint-disable-line
 
-            if (order.status === Order.ORDER_STATUS_CREATED) {
+            if (charge.balance_transaction && stripePaymentInstrument.paymentTransaction) {
+                stripePaymentInstrument.paymentTransaction.transactionID = charge.balance_transaction;
+                stripePaymentInstrument.paymentTransaction.type = PaymentTransaction.TYPE_CAPTURE;
+            }
+
+            if (order.status.value === Order.ORDER_STATUS_CREATED) {
                 OrderMgr.placeOrder(order);
             }
 
@@ -234,8 +250,7 @@ exports.processIncomingNotification = function () {
 
         // check if Klarna charge transaction, if yes process it immediately
         if (json && json.data && json.data.object && json.data.object.type === 'klarna'
-            && json.data.object.object && json.data.object.object === 'source'
-            && json.type === 'source.chargeable') {
+            && json.data.object.object === 'source' && json.type === 'source.chargeable') {
             var result = processKlarnaSourceChargeableNotification(json);
             if (result) {
                 return true;
@@ -252,20 +267,30 @@ exports.processIncomingNotification = function () {
                     stripeNotification.custom.stripeObjectType = json.data.object.object;
                     stripeNotification.custom.amount = json.data.object.amount;
                     stripeNotification.custom.currency = json.data.object.currency;
+
                     switch (json.data.object.object) {
                         case 'source':
-                            stripeNotification.custom.stripeSourceId = json.data.object.id;
-                            stripeNotification.custom.siteId = json.data.object.metadata.site_id;
-                            stripeNotification.custom.orderId = json.data.object.metadata.order_id;
+                            stripeNotification.custom.stripeSourceId = (json.data.object.source && json.data.object.source.id)
+                                ? json.data.object.source.id : json.data.object.id;
+
+                            stripeNotification.custom.siteId = (json.data.object.metadata && json.data.object.metadata.site_id)
+                                ? json.data.object.metadata.site_id : '';
+
+                            stripeNotification.custom.orderId = (json.data.object.metadata && json.data.object.metadata.order_id)
+                                ? json.data.object.metadata.order_id : '';
                             break;
                         case 'charge':
-                            if (json.data.object.source) {
-                                stripeNotification.custom.stripeSourceId = json.data.object.source.id;
-                                stripeNotification.custom.siteId = json.data.object.source.metadata.site_id;
-                                stripeNotification.custom.orderId = json.data.object.source.metadata.order_id;
-                            } else {
-                                stripeNotification.custom.stripeSourceId = '';
-                            }
+                            stripeNotification.custom.stripeSourceId = (json.data.object.source && json.data.object.source.id)
+                                ? json.data.object.source.id : json.data.object.id;
+
+                            stripeNotification.custom.siteId = (json.data.object.metadata && json.data.object.metadata.site_id)
+                                ? json.data.object.metadata.site_id : '';
+
+                            stripeNotification.custom.orderId = (json.data.object.metadata && json.data.object.metadata.order_id)
+                                ? json.data.object.metadata.order_id : '';
+
+                            stripeNotification.custom.stripePaymentIntentID = json.data.object.payment_intent
+                                ? json.data.object.payment_intent : '';
                             break;
                         default:
                             stripeNotification.custom.stripeSourceId = '';
@@ -283,6 +308,7 @@ exports.processIncomingNotification = function () {
                         case 'charge.pending':
                         case 'review.opened':
                         case 'review.closed':
+                        case 'charge.refunded':
                             stripeNotification.custom.processingStatus = 'PROCESS';
                             break;
                         default:

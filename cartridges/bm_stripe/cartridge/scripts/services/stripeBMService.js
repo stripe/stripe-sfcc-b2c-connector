@@ -276,3 +276,28 @@ exports.account = {
         return callService(requestObject, apiKey);
     }
 };
+
+exports.refunds = {
+    createByPaymentItent: function (amount, paymentIntent, apiKey) {
+        var requestObject = {
+            endpoint: '/refunds',
+            httpMethod: 'POST',
+            payload: {
+                amount: amount,
+                payment_intent: paymentIntent
+            }
+        };
+        return callService(requestObject, apiKey);
+    },
+    createByCharge: function (amount, charge, apiKey) {
+        var requestObject = {
+            endpoint: '/refunds',
+            httpMethod: 'POST',
+            payload: {
+                amount: amount,
+                charge: charge
+            }
+        };
+        return callService(requestObject, apiKey);
+    }
+};

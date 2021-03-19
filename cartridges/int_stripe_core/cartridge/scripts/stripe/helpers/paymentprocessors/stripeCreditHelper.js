@@ -7,6 +7,7 @@ const Transaction = require('dw/system/Transaction');
 const PaymentInstrument = require('dw/order/PaymentInstrument');
 const PaymentMgr = require('dw/order/PaymentMgr');
 const Order = require('dw/order/Order');
+const PaymentTransaction = require('dw/order/PaymentTransaction');
 
 /**
 * Handle credit card payment
@@ -103,6 +104,7 @@ function Authorize(args) {
 
                 if (charge.balance_transaction) {
                     paymentInstrument.paymentTransaction.transactionID = charge.balance_transaction;
+                    paymentInstrument.paymentTransaction.type = PaymentTransaction.TYPE_CAPTURE;
                 }
 
                 paymentInstrument.paymentTransaction.paymentProcessor = paymentProcessor;

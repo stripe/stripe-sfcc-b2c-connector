@@ -190,11 +190,11 @@ function getOwnerDetails() {
     var addrCountry = document.querySelector('.billing-address select[name$="_country"]') ?
         document.querySelector('.billing-address select[name$="_country"]').value : document.querySelector('select[name$="_country"]').value;
 
-    var ownerEmail = document.querySelector('.billing-address input[name$="_email"]') ?
-        document.querySelector('.billing-address input[name$="_email"]').value : document.querySelector('input[name$="_email"]').value;
+    var ownerEmail = document.querySelector('#dwfrm_billing input[name$="_email"]') ?
+        document.querySelector('#dwfrm_billing input[name$="_email"]').value : document.querySelector('input[name$="_email"]').value;
 
-    var ownerPhone = document.querySelector('.billing-address input[name$="_phone"]') ?
-        document.querySelector('.billing-address input[name$="_phone"]').value : document.querySelector('input[name$="_phone"]').value;
+    var ownerPhone = document.querySelector('#dwfrm_billing input[name$="_phone"]') ?
+        document.querySelector('#dwfrm_billing input[name$="_phone"]').value : document.querySelector('input[name$="_phone"]').value;
 
     return {
         name: ownerNames,
@@ -429,8 +429,8 @@ function getCreateKlarnaSourcePayload() {
     var amountToPay = parseFloat(stripeOrderAmountInput.value);
     var currencyCode = stripeOrderCurrencyInput.value && stripeOrderCurrencyInput.value.toLowerCase();
 
-    var firstName = document.querySelector('input[name$="_firstName"]').value;
-    var lastName = document.querySelector('input[name$="_lastName"]').value;
+    var firstName = document.getElementById('billingFirstName').value ? document.getElementById('billingFirstName').value : document.querySelector('input[name$="_firstName"]').value;
+    var lastName = document.getElementById('billingLastName').value ? document.getElementById('billingLastName').value : document.querySelector('input[name$="_lastName"]').value;
 
     var stripeOrderShipping = JSON.parse(stripeOrderShippingInput.value);
 
@@ -648,6 +648,11 @@ document.querySelector('button.place-order').addEventListener('click', function 
     event.stopImmediatePropagation();
 
     if (window.localStorage.getItem('stripe_payment_method') === 'STRIPE_KLARNA') {
+        if (forceSubmit) return true;
+
+        forceSubmit = true;
+        $.spinner().start();
+
         var klarnaPaymentOption = window.localStorage.getItem('stripe_klarna_payment_option');
 
         window.Klarna.Payments.authorize({
@@ -663,8 +668,12 @@ document.querySelector('button.place-order').addEventListener('click', function 
                         csrf_token: $('[name="csrf_token"]').val()
                     }
                 }).done(function (json) {
+                    forceSubmit = false;
+                    $.spinner().stop();
                     handleServerResponse(json);
                 }).fail(function (msg) {
+                    forceSubmit = false;
+                    $.spinner().stop();
                     if (msg.responseJSON.redirectUrl) {
                         window.location.href = msg.responseJSON.redirectUrl;
                     } else {
@@ -674,10 +683,14 @@ document.querySelector('button.place-order').addEventListener('click', function 
             } else if (res.error) {
                 // Payment not authorized or an error has occurred
                 alert(res.error);
+                forceSubmit = false;
+                $.spinner().stop();
                 $('.payment-summary .edit-button').click();
             } else {
                 // handle other states
                 alert('Order not approved');
+                forceSubmit = false;
+                $.spinner().stop();
                 $('.payment-summary .edit-button').click();
             }
         });
@@ -989,6 +1002,31 @@ $('body').on('checkout:updateCheckoutView', function () {
         var stripeOrderItems = document.getElementById('stripe_order_items');
         if (stripeOrderItems) {
             stripeOrderItems.value = json.orderItems;
+        }
+
+        var stripeOrderCurrencyInput = document.getElementById('stripe_order_currency');
+        if (stripeOrderCurrencyInput) {
+            stripeOrderCurrencyInput.value = json.currency;
+        }
+
+        var stripeOrderPurchaseCoutry = document.getElementById('stripe_purchase_country');
+        if (stripeOrderPurchaseCoutry) {
+            stripeOrderPurchaseCoutry.value = json.purchase_country;
+        }
+
+        var stripeOrderShippingInput = document.getElementById('stripe_order_shipping');
+        if (stripeOrderShippingInput) {
+            stripeOrderShippingInput.value = json.order_shipping;
+        }
+
+        var stripeShippingFirstName = document.getElementById('stripe_shipping_first_name');
+        if (stripeShippingFirstName) {
+            stripeShippingFirstName.value = json.shipping_first_name;
+        }
+
+        var stripeShippingLastName = document.getElementById('stripe_shipping_last_name');
+        if (stripeShippingLastName) {
+            stripeShippingLastName.value = json.shipping_last_name;
         }
 
         refreshKlarnaWhenIsActive();
