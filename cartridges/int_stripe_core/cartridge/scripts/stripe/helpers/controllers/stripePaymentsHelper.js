@@ -50,6 +50,7 @@ function generateCardsPaymentResponse(intent) {
 function beforePaymentAuthorization() {
     var BasketMgr = require('dw/order/BasketMgr');
     var Transaction = require('dw/system/Transaction');
+    var PaymentTransaction = require('dw/order/PaymentTransaction');
     var responsePayload;
 
     try {
@@ -70,14 +71,16 @@ function beforePaymentAuthorization() {
 
                     Transaction.wrap(function () {
                         stripePaymentInstrument.paymentTransaction.setTransactionID(paymentIntent.id);
+                        stripePaymentInstrument.paymentTransaction.setType(PaymentTransaction.TYPE_AUTH);
                     });
                 }
 
-                if (paymentIntent.review) {
-                    Transaction.wrap(function () {
+                Transaction.wrap(function () {
+                    if (paymentIntent.review) {
                         basket.custom.stripeIsPaymentIntentInReview = true;
-                    });
-                }
+                    }
+                    basket.custom.stripePaymentIntentID = paymentIntent.id;
+                });
 
                 responsePayload = generateCardsPaymentResponse(paymentIntent);
             } else if (stripePaymentInstrument && stripePaymentInstrument.paymentMethod === 'STRIPE_ACH_DEBIT') {
@@ -93,6 +96,15 @@ function beforePaymentAuthorization() {
                     basket.custom.stripeCustomerID = stripeCustomerId;
                     basket.custom.stripeBankAccountToken = stripePaymentInstrument.custom.stripeBankAccountToken;
                     basket.custom.stripeIsPaymentIntentInReview = true;
+
+                    if (stripePaymentInstrument && stripePaymentInstrument.paymentTransaction && stripePaymentInstrument.custom.stripeSourceID) {
+                        stripePaymentInstrument.paymentTransaction.setTransactionID(stripePaymentInstrument.custom.stripeSourceID);
+                        stripePaymentInstrument.paymentTransaction.setType(PaymentTransaction.TYPE_AUTH);
+                    }
+
+                    if (stripePaymentInstrument && stripePaymentInstrument.custom.stripeSourceID) {
+                        basket.custom.stripePaymentSourceID = stripePaymentInstrument.custom.stripeSourceID;
+                    }
                 });
 
                 responsePayload = {
@@ -102,6 +114,15 @@ function beforePaymentAuthorization() {
                 Transaction.wrap(function () {
                     basket.custom.stripeWeChatQRCodeURL = stripePaymentInstrument.custom.stripeWeChatQRCodeURL;
                     basket.custom.stripeIsPaymentIntentInReview = true;
+
+                    if (stripePaymentInstrument && stripePaymentInstrument.paymentTransaction && stripePaymentInstrument.custom.stripeSourceID) {
+                        stripePaymentInstrument.paymentTransaction.setTransactionID(stripePaymentInstrument.custom.stripeSourceID);
+                        stripePaymentInstrument.paymentTransaction.setType(PaymentTransaction.TYPE_AUTH);
+                    }
+
+                    if (stripePaymentInstrument && stripePaymentInstrument.custom.stripeSourceID) {
+                        basket.custom.stripePaymentSourceID = stripePaymentInstrument.custom.stripeSourceID;
+                    }
                 });
 
                 responsePayload = {
@@ -110,12 +131,32 @@ function beforePaymentAuthorization() {
             } else if (stripePaymentInstrument && stripePaymentInstrument.paymentMethod === 'STRIPE_KLARNA') {
                 Transaction.wrap(function () {
                     basket.custom.stripeIsPaymentIntentInReview = true;
+
+                    if (stripePaymentInstrument && stripePaymentInstrument.paymentTransaction && stripePaymentInstrument.custom.stripeSourceID) {
+                        stripePaymentInstrument.paymentTransaction.setTransactionID(stripePaymentInstrument.custom.stripeSourceID);
+                        stripePaymentInstrument.paymentTransaction.setType(PaymentTransaction.TYPE_AUTH);
+                    }
+
+                    if (stripePaymentInstrument && stripePaymentInstrument.custom.stripeSourceID) {
+                        basket.custom.stripePaymentSourceID = stripePaymentInstrument.custom.stripeSourceID;
+                    }
                 });
 
                 responsePayload = {
                     success: true
                 };
             } else {
+                Transaction.wrap(function () {
+                    if (stripePaymentInstrument && stripePaymentInstrument.paymentTransaction && stripePaymentInstrument.custom.stripeSourceID) {
+                        stripePaymentInstrument.paymentTransaction.setTransactionID(stripePaymentInstrument.custom.stripeSourceID);
+                        stripePaymentInstrument.paymentTransaction.setType(PaymentTransaction.TYPE_AUTH);
+                    }
+
+                    if (stripePaymentInstrument && stripePaymentInstrument.custom.stripeSourceID) {
+                        basket.custom.stripePaymentSourceID = stripePaymentInstrument.custom.stripeSourceID;
+                    }
+                });
+
                 responsePayload = {
                     success: true
                 };

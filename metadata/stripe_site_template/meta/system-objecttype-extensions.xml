@@ -64,7 +64,7 @@
                 <min-length>0</min-length>
             </attribute-definition>
             <attribute-definition attribute-id="stripeCustomerID">
-                <display-name xml:lang="x-default">Stripe ACH Debit Customer ID</display-name>
+                <display-name xml:lang="x-default">Stripe Customer ID</display-name>
                 <type>string</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
@@ -287,6 +287,13 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <externally-managed-flag>false</externally-managed-flag>
                 <default-value>false</default-value>
             </attribute-definition>
+            <attribute-definition attribute-id="stripeUpdateInvoiceOnRefundWebhook">
+                <display-name xml:lang="x-default">Update SFCC Invoice on Stripe charge.refunded Webhook notification</display-name>
+                <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <default-value>false</default-value>
+            </attribute-definition>
         </custom-attribute-definitions>
         <group-definitions>
             <attribute-group group-id="Stripe Configs">
@@ -309,6 +316,7 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <attribute attribute-id="stripeEnabled"/>
                 <attribute attribute-id="stripeKlarnaApiURL"/>
                 <attribute attribute-id="stripeCustomCreditCardForm"/>
+                <attribute attribute-id="stripeUpdateInvoiceOnRefundWebhook"/>
             </attribute-group>
         </group-definitions>
     </type-extension>
@@ -409,6 +417,20 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
             </attribute-definition>
+            <attribute-definition attribute-id="stripePaymentSourceID">
+                <display-name xml:lang="x-default">Stripe Payment Source ID</display-name>
+                <description xml:lang="x-default">Stripe Payment Source ID</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripePaymentIntentID">
+                <display-name xml:lang="x-default">Stripe Payment Intent ID</display-name>
+                <description xml:lang="x-default">Stripe Payment Intent ID</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
         </custom-attribute-definitions>
     </type-extension>
 
@@ -430,7 +452,7 @@ See more here:  https://stripe.com/docs/sources&#13;
             </attribute-definition>
             <attribute-definition attribute-id="stripeCustomerID">
                 <display-name xml:lang="x-default">Stripe Customer ID</display-name>
-                <description xml:lang="x-default">Stripe ACH Debit Customer ID</description>
+                <description xml:lang="x-default">Stripe Customer ID</description>
                 <type>string</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
@@ -442,6 +464,21 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
             </attribute-definition>
+            <attribute-definition attribute-id="stripePaymentSourceID">
+                <display-name xml:lang="x-default">Stripe Payment Source ID</display-name>
+                <description xml:lang="x-default">Stripe Payment Source ID</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripePaymentIntentID">
+                <display-name xml:lang="x-default">Stripe Payment Intent ID</display-name>
+                <description xml:lang="x-default">Stripe Payment Intent ID</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+
         </custom-attribute-definitions>
         <group-definitions>
             <attribute-group group-id="Stripe Payment Intent">
@@ -450,6 +487,8 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <attribute attribute-id="stripeBankAccountToken"/>
                 <attribute attribute-id="stripeCustomerID"/>
                 <attribute attribute-id="stripeWeChatQRCodeURL"/>
+                <attribute attribute-id="stripePaymentSourceID"/>
+                <attribute attribute-id="stripePaymentIntentID"/>
             </attribute-group>
         </group-definitions>
     </type-extension>

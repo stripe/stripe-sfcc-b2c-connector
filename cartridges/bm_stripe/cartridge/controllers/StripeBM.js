@@ -15,6 +15,9 @@ var HTTPClient = require('dw/net/HTTPClient');
 var StringWriter = require('dw/io/StringWriter');
 var XMLStreamWriter = require('dw/io/XMLStreamWriter');
 
+const OrderMgr = require('dw/order/OrderMgr');
+const Resource = require('dw/web/Resource');
+
 /**
  * Get Site object by site ID
  *
@@ -105,7 +108,8 @@ server.post('HandleStripeQuickSetup', function (req, res, next) {
                 'charge.failed',
                 'source.canceled',
                 'source.failed',
-                'source.chargeable'];
+                'source.chargeable',
+                'charge.refunded'];
 
             var webHookCreateResult = stripeBMService.webhooks.create(webHookURL, enabledEvents, stripePrivateKey);
             var webHookSecretKey = webHookCreateResult.secret;
@@ -179,6 +183,104 @@ server.post('HandlePaymentsSetup', function (req, res, next) {
             error: false,
             message: '',
             content: stringWriter.toString()
+        });
+
+        return next();
+    } catch (e) {
+        res.json({
+            error: true,
+            message: e.message
+        });
+
+        return next();
+    }
+});
+
+server.get('PaymentsRefund', function (req, res, next) {
+    res.render('/stripebm/paymentsrefund');
+    next();
+});
+
+server.post('HandlePaymentsRefund', function (req, res, next) {
+    const orderNumber = req.form.stripe_order_number;
+    const amountToRefund = req.form.stripe_amount_to_refund;
+
+    const stripeBMService = require('*/cartridge/scripts/services/stripeBMService');
+    const stripeBmHelper = require('~/cartridge/scripts/helpers/stripeBmHelper');
+
+    const apiKey = stripeBmHelper.getApiKey();
+
+    try {
+        const order = OrderMgr.getOrder(orderNumber);
+        if (!order) {
+            res.json({
+                error: true,
+                message: Resource.msgf('paymentsrefund.ordernotfound', 'stripebm', null, orderNumber)
+            });
+            return next();
+        }
+
+        const amount = (amountToRefund * 100);
+
+        /*
+         * check if stripePaymentIntentID is Not empty then refund by payment_intent
+         */
+        if (order.custom.stripePaymentIntentID) {
+            var refundResult = stripeBMService.refunds.createByPaymentItent(amount, order.custom.stripePaymentIntentID, apiKey);
+
+            if (refundResult.status && refundResult.status === 'succeeded') {
+                res.json({
+                    error: false,
+                    message: Resource.msg('paymentsrefund.refundsucceeded', 'stripebm', null)
+                });
+            } else if (refundResult.status && refundResult.status === 'pending') {
+                res.json({
+                    error: false,
+                    message: Resource.msg('paymentsrefund.refundpending', 'stripebm', null)
+                });
+            } else {
+                res.json({
+                    error: true,
+                    message: JSON.stringify(refundResult)
+                });
+            }
+
+            return next();
+        }
+
+        /*
+         * search for stripeChargeID in Payment Instruments and try to refund with it
+         */
+        var paymentInstruments = order.getPaymentInstruments();
+        for (var i = 0; i < paymentInstruments.length; i++) {
+            var paymentInstrument = paymentInstruments[i];
+
+            if (paymentInstrument && paymentInstrument.custom.stripeChargeID) {
+                var refundChargeResult = stripeBMService.refunds.createByCharge(amount, paymentInstrument.custom.stripeChargeID, apiKey);
+
+                if (refundChargeResult.status && refundChargeResult.status === 'succeeded') {
+                    res.json({
+                        error: false,
+                        message: Resource.msg('paymentsrefund.refundsucceeded', 'stripebm', null)
+                    });
+                } else if (refundChargeResult.status && refundChargeResult.status === 'pending') {
+                    res.json({
+                        error: false,
+                        message: Resource.msg('paymentsrefund.refundpending', 'stripebm', null)
+                    });
+                } else {
+                    res.json({
+                        error: true,
+                        message: JSON.stringify(refundChargeResult)
+                    });
+                }
+                return next();
+            }
+        }
+
+        res.json({
+            error: true,
+            message: Resource.msg('paymentsrefund.cannotrefundorder', 'stripebm', null)
         });
 
         return next();

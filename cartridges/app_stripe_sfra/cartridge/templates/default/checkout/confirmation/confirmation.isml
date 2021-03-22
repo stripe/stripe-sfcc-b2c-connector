@@ -20,15 +20,22 @@
                     Stripe changes BEGIN
                 </iscomment>
                 <isset name="isWeChatPay" value="${false}" scope="page" />
+                <isset name="isKlarna" value="${false}" scope="page" />
                 <isloop items="${pdict.order.billing.payment.selectedPaymentInstruments}" var="payment">
 			        <isif condition="${payment.paymentMethod === 'STRIPE_WECHATPAY'}">
 			            <isset name="isWeChatPay" value="${true}" scope="page" />
-			            <isbreak>
+			        </isif>
+			        <isif condition="${payment.paymentMethod === 'STRIPE_KLARNA'}">
+			            <isset name="isKlarna" value="${true}" scope="page" />
 			        </isif>
 			    </isloop>
                 
                 <isif condition="${isWeChatPay}">
                 	<isinclude template="checkout/wechatqrcode" />
+                <iselseif condition="${isKlarna}">
+                	<isif condition="${pdict.order.orderStatus == dw.order.Order.ORDER_STATUS_CREATED}">
+                		<p class="order-thank-you-email-msg">${Resource.msg('stripe.confirmation.shippingnote', 'stripe', null)}</p>
+                	</isif>
                 <iselse/>
 	                <isif condition="${pdict.order.orderStatus == dw.order.Order.ORDER_STATUS_CREATED}">
 	                    <h2>${Resource.msg('stripe.confirmation.thankyou','stripe',null)}</h2>

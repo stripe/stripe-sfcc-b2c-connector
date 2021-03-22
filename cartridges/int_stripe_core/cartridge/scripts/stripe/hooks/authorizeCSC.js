@@ -6,6 +6,7 @@
 const Logger = require('dw/system/Logger').getLogger('Stripe', 'stripe');
 const Status = require('dw/system/Status');
 const Transaction = require('dw/system/Transaction');
+const PaymentTransaction = require('dw/order/PaymentTransaction');
 const Order = require('dw/order/Order');
 const Site = require('dw/system/Site');
 
@@ -92,6 +93,9 @@ exports.authorizeCreditCard = function (order, paymentInstrument, cvc) {
 
                 if (paymentIntent.status === 'succeeded') {
                     order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
+                    paymentInstrument.getPaymentTransaction().setType(PaymentTransaction.TYPE_CAPTURE);
+                } else {
+                    paymentInstrument.getPaymentTransaction().setType(PaymentTransaction.TYPE_AUTH);
                 }
             });
         } else {

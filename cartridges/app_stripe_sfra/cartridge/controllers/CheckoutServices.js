@@ -9,7 +9,7 @@ server.extend(page);
 
 server.prepend('PlaceOrder', server.middleware.https, function (req, res, next) {
     var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
-    if (stripeHelper.isStripeEnabled()) {
+    if (!stripeHelper.isStripeEnabled()) {
         return next();
     }
 

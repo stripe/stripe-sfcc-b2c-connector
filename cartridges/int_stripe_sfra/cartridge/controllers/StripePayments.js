@@ -38,7 +38,12 @@ server.get('GetStripeOrderItems', function (req, res, next) {
 
     res.json({
         amount: stripeOrderDetails ? stripeOrderDetails.amount : [],
-        orderItems: stripeOrderDetails ? stripeOrderDetails.order_items : []
+        orderItems: stripeOrderDetails ? stripeOrderDetails.order_items : [],
+        currency: stripeOrderDetails ? stripeOrderDetails.currency : null,
+        purchase_country: stripeOrderDetails ? stripeOrderDetails.purchase_country : null,
+        order_shipping: stripeOrderDetails ? stripeOrderDetails.order_shipping : [],
+        shipping_first_name: stripeOrderDetails ? stripeOrderDetails.shipping_first_name : null,
+        shipping_last_name: stripeOrderDetails ? stripeOrderDetails.shipping_last_name : null
     });
 
     next();

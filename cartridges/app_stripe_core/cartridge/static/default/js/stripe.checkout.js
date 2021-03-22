@@ -319,6 +319,7 @@ function getOwnerDetails() {
         name: document.querySelector('input[name$="_firstName"]').value + ' ' + document.querySelector('input[name$="_lastName"]').value,
         address: {
             line1: document.querySelector('input[name$="_address1"]').value,
+            line2: document.querySelector('input[name$="_address2"]').value,
             city: document.querySelector('input[name$="_city"]').value,
             postal_code: document.querySelector('input[name$="_postal"]').value,
             country: document.querySelector('select[name$="_country"]').value,
@@ -818,8 +819,17 @@ function processKlarnaCreateSourceResult(result) {
             }
 
             if (!paymentMethodSelected) {
-                document.getElementById('klarna_' + category).checked = true;
+                var klarnaCategory = document.getElementById('klarna_' + category);
+                if (klarnaCategory) {
+                    document.getElementById('klarna_' + category).checked = true;
+                }
                 paymentMethodSelected = true;
+            }
+
+            // create div for Klarna category when it doesn't exists (used when re-load Klarna widget in Order confirmation page)
+            var klarnaCategoryContainerDiv = document.getElementById('klarna_' + category + '_container');
+            if (!klarnaCategoryContainerDiv) {
+                $('<div id="' + 'klarna_' + category + '_container' + '" style="display:none;"></div>').appendTo('#primary');
             }
 
             window.Klarna.Payments.load({
@@ -844,6 +854,19 @@ function processKlarnaCreateSourceResult(result) {
 }
 
 function refreshKlarnaWhenIsActive() {
+    var isOrderConfirmation = $('.checkout-progress-indicator > div.active').hasClass('step-3');
+    if (isOrderConfirmation && window.localStorage.getItem('stripe_payment_method') === 'STRIPE_KLARNA') {
+        var klarnaSourceObj = window.localStorage.getItem('stripe_klarna_source');
+        if (klarnaSourceObj) {
+            var klarnaSource = JSON.parse(klarnaSourceObj);
+            if (klarnaSource) {
+                // create source and load Klarna widget
+                stripe.createSource(klarnaSource).then(processKlarnaCreateSourceResult);
+            }
+        }
+        return;
+    }
+
     // check if Klarna is active
     var activePaymentMethod = document.querySelector('.payment-method-options .field-wrapper > input[type=radio]:checked');
     if (!activePaymentMethod || !activePaymentMethod.value.includes('KLARNA')) {
@@ -861,6 +884,7 @@ function refreshKlarnaWhenIsActive() {
 
     // create source and load Klarna widget
     var createSourcePayload = getCreateKlarnaSourcePayload();
+    window.localStorage.setItem('stripe_klarna_source', JSON.stringify(createSourcePayload));
     stripe.createSource(createSourcePayload).then(processKlarnaCreateSourceResult);
 }
 
@@ -891,6 +915,7 @@ ready(() => {
 
             // create source and load Klarna widgets
             var createSourcePayload = getCreateKlarnaSourcePayload();
+            window.localStorage.setItem('stripe_klarna_source', JSON.stringify(createSourcePayload));
             stripe.createSource(createSourcePayload).then(processKlarnaCreateSourceResult);
         }
     });

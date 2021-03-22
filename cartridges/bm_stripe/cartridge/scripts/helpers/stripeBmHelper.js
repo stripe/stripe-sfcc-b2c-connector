@@ -6,6 +6,15 @@
 var PaymentMgr = require('dw/order/PaymentMgr');
 
 /**
+* Gets the Stripe secret API key from Site Preferences.
+*
+* @returns {string} Stripe secret API key.
+*/
+exports.getApiKey = function () {
+    return require('dw/system/Site').current.getCustomPreferenceValue('stripeApiKey');
+};
+
+/**
  * Get Stripe Payment Method Definitions
  *
  * @return {Array} array with Stripe payment methods definitions

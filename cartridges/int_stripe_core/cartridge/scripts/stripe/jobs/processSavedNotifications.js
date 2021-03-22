@@ -1,16 +1,19 @@
 /* eslint-env es6 */
 /* eslint-disable no-plusplus */
+/* global empty */
 
 'use strict';
 
 const CustomObjectMgr = require('dw/object/CustomObjectMgr');
 const Transaction = require('dw/system/Transaction');
+const PaymentTransaction = require('dw/order/PaymentTransaction');
 const OrderMgr = require('dw/order/OrderMgr');
 const Resource = require('dw/web/Resource');
 const Status = require('dw/system/Status');
 const Logger = require('dw/system/Logger');
 const Order = require('dw/order/Order');
 const Site = require('dw/system/Site');
+const Money = require('dw/value/Money');
 
 const stripeLogger = Logger.getLogger('stripe_payments_job', 'stripe');
 const logger = Logger.getLogger('Stripe', 'stripe');
@@ -23,6 +26,14 @@ const NOTIFICATIONS_CUSTOM_OBJECT_TYPE = 'StripeWebhookNotifications';
 */
 function isSFRA() {
     return Site.current.getCustomPreferenceValue('stripeIsSFRA');
+}
+
+/**
+* checks if Update SFCC Invoice on Stripe charge.refunded Webhook notification options is enabled from Site Prefs
+* @returns {bool} true if stripeUpdateInvoiceOnRefundWebhook is enabled
+*/
+function isStripeUpdateInvoiceOnRefundWebhookEnabled() {
+    return Site.current.getCustomPreferenceValue('stripeUpdateInvoiceOnRefundWebhook');
 }
 
 /**
@@ -79,6 +90,27 @@ function getStripeAPMPaymentInstrument(order) {
 }
 
 /**
+ * Retrieves the payment instrument using Stripe credit payment method for
+ * an order.
+ *
+ * @param {dw.order.Order} order - Order to get the payment isntrument for
+ * @return {paymentInstrument} - Stripe Credit payment instrument if found or null otherwise
+ */
+function getStripeCreditPaymentInstrument(order) {
+    for (let i = 0; i < order.paymentInstruments.length; i++) {
+        let paymentInstrument = order.paymentInstruments[i];
+        let paymentTransaction = paymentInstrument.paymentTransaction;
+        let paymentProcessor = paymentTransaction && paymentTransaction.paymentProcessor;
+
+        if (paymentProcessor && 'STRIPE_CREDIT'.equals(paymentProcessor.ID)) {
+            return paymentInstrument;
+        }
+    }
+
+    return null;
+}
+
+/**
  * Retrieves Stripe customer ID from customer profile associated with a given order.
  *
  * @param {dw.order.Order} order - Order to get Stripe customer ID from
@@ -126,23 +158,19 @@ function createCharge(stripeNotificationObject, order, stripePaymentInstrument) 
         const charge = stripeService.charges.create(createChargePayload);
         Transaction.wrap(function () {
             stripePaymentInstrument.custom.stripeChargeID = charge.id; // eslint-disable-line
-            stripeNotificationObject.custom.processingStatus = 'PENDING_CHARGE'; // eslint-disable-line
+            stripeNotificationObject.custom.processingStatus = 'PROCESSED'; // eslint-disable-line
 
-            if (order.status === Order.ORDER_STATUS_CREATED) {
+            if (order.status.value === Order.ORDER_STATUS_CREATED) {
                 OrderMgr.placeOrder(order);
             }
 
-            // Update in review and payment status for WeChat orders
-            if (stripePaymentInstrument.paymentMethod === 'STRIPE_WECHATPAY'
-                || stripePaymentInstrument.paymentMethod === 'STRIPE_KLARNA') {
-                order.custom.stripeIsPaymentIntentInReview = false; // eslint-disable-line no-param-reassign
-                order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
-
-                order.setExportStatus(Order.EXPORT_STATUS_READY);
-            } else if (stripePaymentInstrument.paymentMethod === 'STRIPE_MULTIBANCO') {
-                order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
-                order.setExportStatus(Order.EXPORT_STATUS_READY);
+            if (charge.balance_transaction && stripePaymentInstrument.paymentTransaction) {
+                stripePaymentInstrument.paymentTransaction.transactionID = charge.balance_transaction;  // eslint-disable-line
+                stripePaymentInstrument.paymentTransaction.type = PaymentTransaction.TYPE_CAPTURE;  // eslint-disable-line
             }
+
+            // Note: the Export ready and Paid status will be updated with further 'charge.succeeded' notification
+            order.custom.stripeIsPaymentIntentInReview = false; // eslint-disable-line no-param-reassign
         });
         stripeLogger.info('Charge was successfull for order {0}, CO event id {1}, source {2}', order.orderNo, stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId);
     } catch (e) {
@@ -199,6 +227,7 @@ function placeOrder(stripeNotificationObject, order, stripePaymentInstrument) {
     var chargeJSON = JSON.parse(stripeNotificationObject.custom.stripeWebhookData);
     Transaction.wrap(function () {
         stripePaymentInstrument.paymentTransaction.transactionID = chargeJSON.data.object.balance_transaction; // eslint-disable-line
+        stripePaymentInstrument.paymentTransaction.type = PaymentTransaction.TYPE_CAPTURE; // eslint-disable-line
         stripePaymentInstrument.custom.stripeChargeID = chargeJSON.data.object.id; // eslint-disable-line
         stripePaymentInstrument.paymentTransaction.custom.stripeChargeId = chargeJSON.data.object.id; // eslint-disable-line
         stripePaymentInstrument.paymentTransaction.custom.stripeChargeOutcomeData = JSON.stringify(chargeJSON.data.object.outcome ? chargeJSON.data.object.outcome : {}); // eslint-disable-line
@@ -227,6 +256,55 @@ function placeOrder(stripeNotificationObject, order, stripePaymentInstrument) {
 
 
     stripeLogger.info('Successfully proccesed CO with event id: {0}, source id: {1} , updated SFCC order status to "EXPORT_STATUS_READY". Set up CO processingStatus to {2}, email send - {3}', stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId, 'PROCESSED', statusMail.status === Status.OK ? 'true' : 'false');
+}
+
+/**
+ * Process Charge Refunded notification
+ *
+ * @param {dw.object.CustomObject} stripeNotificationObject - Notification CO
+ * @param {dw.order.Order} order - Order to place
+ * @param {dw.order.OrderPaymentInstrument} stripePaymentInstrument - Stripe payment instrument
+ */
+function processChargeRefunded(stripeNotificationObject, order, stripePaymentInstrument) {
+    var chargeRefundedJSON = JSON.parse(stripeNotificationObject.custom.stripeWebhookData);
+
+    Transaction.wrap(function () {
+        const amountRefunded = chargeRefundedJSON.data.object.amount_refunded;
+        const currency = stripeNotificationObject.custom.currency;
+        const moneyRefunded = new Money((amountRefunded / 100).toFixed(2), currency);
+
+        const noteTitle = Resource.msg('order.amountrefunded', 'stripe', null);
+        const noteMessage = Resource.msgf('order.amountrefundedmsg', 'stripe', null, moneyRefunded.toString(), order.getOrderNo());
+
+        order.addNote(noteTitle, noteMessage);
+
+        /*
+         * Note: SFCC Invoice can be updated only when Order post-processing APIs is enabled in SFCC
+         *
+         * Order post-processing APIs (gillian) are now inactive by default and will throw an exception if accessed.
+         * Activation needs preliminary approval by Product Management. Please contact support in this case.
+         */
+        if (isStripeUpdateInvoiceOnRefundWebhookEnabled()) {
+            try {
+                var invoices = order.getInvoices();
+                var invoice = null;
+
+                if (invoices === null || invoices === undefined || invoices.length === 0) {
+                    var invoiceNum = order.getInvoiceNo();
+                    var shippingOrderTab = order.createShippingOrder();
+                    invoice = shippingOrderTab.createInvoice(invoiceNum);
+                } else {
+                    invoice = invoices[0];
+                }
+
+                invoice.addRefundTransaction(stripePaymentInstrument, moneyRefunded);
+            } catch (e) {
+                logger.error('Error: {0}', e.message);
+            }
+        }
+
+        stripeNotificationObject.custom.processingStatus = 'PROCESSED'; // eslint-disable-line
+    });
 }
 
 /**
@@ -343,33 +421,51 @@ function processNotificationObject(stripeNotificationObject) {
     }
 
     // Ensure valid order
-    const orderNo = stripeNotificationObject.custom.orderId;
-    const order = OrderMgr.getOrder(orderNo);
+    var order = null;
+    var orderNo = '';
+
+    // try to get Order by Meta Data (if provided)
+    if (!empty(stripeNotificationObject.custom.orderId)) {
+        orderNo = stripeNotificationObject.custom.orderId;
+        order = OrderMgr.getOrder(orderNo);
+    } else if (!empty(stripeNotificationObject.custom.stripePaymentIntentID)) {
+        order = OrderMgr.searchOrder('custom.stripePaymentIntentID={0}', stripeNotificationObject.custom.stripePaymentIntentID);
+    } else if (!empty(stripeNotificationObject.custom.stripeSourceId)) {
+        order = OrderMgr.searchOrder('custom.stripePaymentSourceID={0}', stripeNotificationObject.custom.stripeSourceId);
+    }
+
     if (!order) {
         stripeLogger.info(
-            '\nSFCC order does not exist, order id: {0}, CO event id: {1}, source id: {2}',
+            '\nSFCC order does not exist, order id: {0}, CO event id: {1}, source id: {2}, paymentItentID: {3}, siteID: {4}',
             orderNo,
             stripeEventId,
-            coStripeSourceId
+            coStripeSourceId,
+            stripeNotificationObject.custom.stripePaymentIntentID,
+            Site.getCurrent().ID
         );
         return;
     }
 
     // Ensure Stripe APM order
-    const stripePaymentInstrument = getStripeAPMPaymentInstrument(order);
+    const stripeAPMPaymentInstrument = getStripeAPMPaymentInstrument(order);
+    const stripeCreditPaymentInstrument = getStripeCreditPaymentInstrument(order);
+    const stripePaymentInstrument = stripeAPMPaymentInstrument || stripeCreditPaymentInstrument;
+
     if (!stripePaymentInstrument) {
         stripeLogger.info(
-            '\nNo Stripe APM payment instrument found for order: {0}, CO event id: {1}, source id: {2}',
+            '\nNo Stripe payment instrument found for order: {0}, CO event id: {1}, source id: {2}, paymentItentID: {3}, siteID: {4}',
             orderNo,
             stripeEventId,
-            coStripeSourceId
+            coStripeSourceId,
+            stripeNotificationObject.custom.stripePaymentIntentID,
+            Site.getCurrent().ID
         );
         return;
     }
 
     // we do not store source Id for orders placed with WeChat
     // so we skip the following checks for WeChat orders
-    if (stripePaymentInstrument.paymentMethod !== 'STRIPE_WECHATPAY') {
+    if (stripeAPMPaymentInstrument && stripePaymentInstrument.paymentMethod !== 'STRIPE_WECHATPAY') {
         const piStripeSourceId = stripePaymentInstrument.custom.stripeSourceID;
         if (!piStripeSourceId) {
             stripeLogger.info('\nSource id does not exists in payment instrument or empty. SFCC order id: {0}', orderNo);
@@ -401,6 +497,9 @@ function processNotificationObject(stripeNotificationObject) {
         case 'charge.succeeded':
             placeOrder(stripeNotificationObject, order, stripePaymentInstrument);
             break;
+        case 'charge.refunded':
+            processChargeRefunded(stripeNotificationObject, order, stripePaymentInstrument);
+            break;
         default:
             break;
     }
@@ -413,6 +512,15 @@ function processNotificationObject(stripeNotificationObject) {
  * @return {boolean} - True if applicable, false otherwise.
  */
 function appliesToCurrentSite(stripeNotificationObject) {
+    /*
+     * metadata.site_id is not sent with all Stripe notification
+     * So if empty we proceed with process
+     * and if order is not found by payment intent id, we skip further processing
+     */
+    if (empty(stripeNotificationObject.custom.siteId)) {
+        return true;
+    }
+
     const coSiteId = stripeNotificationObject.custom.siteId;
 
     return !coSiteId || coSiteId === Site.getCurrent().getID();

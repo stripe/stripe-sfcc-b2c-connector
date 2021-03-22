@@ -120,6 +120,13 @@
                 <externally-managed-flag>false</externally-managed-flag>
                 <min-length>0</min-length>
             </attribute-definition>
+            <attribute-definition attribute-id="stripePaymentIntentID">
+                <display-name xml:lang="x-default">Stripe Payment Intent ID</display-name>
+                <description xml:lang="x-default">Stripe Payment Intent ID</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
             <attribute-definition attribute-id="stripeWebhookData">
                 <display-name xml:lang="x-default">The full payload of the JSON (for troubleshooting)</display-name>
                 <type>text</type>
@@ -145,6 +152,7 @@
                 <attribute attribute-id="lastModified" system="true"/>
                 <attribute attribute-id="stripeObjectType"/>
                 <attribute attribute-id="stripeObjectId"/>
+                <attribute attribute-id="stripePaymentIntentID"/>
                 <attribute attribute-id="stripeWebhookData"/>
             </attribute-group>
         </group-definitions>

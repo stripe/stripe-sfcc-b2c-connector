@@ -4,13 +4,15 @@
         <description/>
         <parameters/>
         <flow>
-            <context site-id="SiteGenesis"/>
+            <context site-id="RefArch"/>
             <step step-id="Delete Custom Objects" type="custom.StripeDeleteCustomObjects" enforce-restart="false">
                 <description/>
                 <parameters>
-                    <parameter name="UNKNOWN">false</parameter>
-                    <parameter name="PROCESSED">false</parameter>
-                    <parameter name="PROCESS">true</parameter>
+                    <parameter name="UNKNOWN">true</parameter>
+                    <parameter name="PROCESSED">true</parameter>
+                    <parameter name="PROCESS">false</parameter>
+                    <parameter name="FAIL_OR_CANCEL">true</parameter>
+                    <parameter name="PENDING_CHARGE">false</parameter>
                 </parameters>
             </step>
         </flow>
@@ -27,7 +29,7 @@
         <description/>
         <parameters/>
         <flow>
-            <context site-id="SiteGenesis"/>
+            <context site-id="RefArch"/>
             <step step-id="Process Webhook Notifications" type="custom.StripeProcessWebhookNotifications" enforce-restart="false">
                 <description/>
                 <parameters/>
