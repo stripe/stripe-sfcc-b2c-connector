@@ -149,6 +149,15 @@ function getStripePaymentMethodDefinitions() {
                 'PLN'
             ],
             payment_processor: 'STRIPE_APM'
+        },
+        {
+            id: 'STRIPE_PAYPAL',
+            name: 'Paypal',
+            currencies: [
+                'EUR',
+                'GBP'
+            ],
+            payment_processor: 'STRIPE_APM'
         }
     ];
 }

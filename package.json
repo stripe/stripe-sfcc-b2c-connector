@@ -1,12 +1,12 @@
 {
   "name": "int_stripe_sfra",
-  "version": "20.3.0",
+  "version": "21.2.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "lint": "sgmf-scripts --lint js",
     "upload": "sgmf-scripts --upload -- ",
-    "uploadCartridge": "sgmf-scripts --uploadCartridge int_stripe_core && sgmf-scripts --uploadCartridge int_stripe_sfra",
+    "uploadCartridge": "sgmf-scripts --uploadCartridge int_stripe_core && sgmf-scripts --uploadCartridge int_stripe_sfra && sgmf-scripts --uploadCartridge app_stripe_sfra",
     "compile:js": "sgmf-scripts --compile js",
     "compile:scss": "sgmf-scripts --compile css",
     "watch": "sgmf-scripts --watch",

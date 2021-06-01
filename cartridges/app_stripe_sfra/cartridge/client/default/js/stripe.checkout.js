@@ -7,10 +7,21 @@
 /* eslint-disable require-jsdoc */
 /* globals Stripe, $ */
 // vб1
-var idealBankElement;
-var sepaIbanElement;
+window.idealBankElement = null;
+window.sepaIbanElement = null;
 
-var stripe = Stripe(document.getElementById('stripePublicKey').value);
+var stripeOptions = [];
+var betas = document.getElementById('stripePaymentMethodsInBeta').value;
+if (betas) {
+    stripeOptions.betas = betas.split(',');
+}
+
+var stripeApiVersion = document.getElementById('stripeApiVersion').value;
+if (stripeApiVersion) {
+    stripeOptions.apiVersion = stripeApiVersion;
+}
+
+var stripe = Stripe(document.getElementById('stripePublicKey').value, stripeOptions);
 var elements = stripe.elements();
 
 function setCustomCardOutcome(result) {
@@ -99,6 +110,9 @@ var cardExpMonthInput = document.getElementById('stripe_card_expiration_month');
 var cardExpYearInput = document.getElementById('stripe_card_expiration_year');
 var prUsedInput = document.getElementById('stripe_pr_used');
 
+var newSepaCardFormContainer = document.getElementById('new-sepa-card-form-container');
+var savedSepaCardsFormContainer = document.getElementById('saved-sepa-cards-container');
+
 var idealPlaceholder = document.getElementById('ideal-bank-element');
 var sepaDebitPlaceholder = document.getElementById('sepa-iban-element');
 var prbPlaceholder = document.getElementById('payment-request-button');
@@ -128,6 +142,31 @@ if (savedCardsFormContainer) {
 
 function isSavedCard() {
     return newCardFormContainer && newCardFormContainer.style.display === 'none';
+}
+
+// Saved Sepa Direct Debit Card
+var switchToSavedSepaCardsLink = document.getElementById('switch-to-saved-sepa-cards');
+if (switchToSavedSepaCardsLink) {
+    switchToSavedSepaCardsLink.addEventListener('click', function () {
+        newSepaCardFormContainer.style.display = 'none';
+        savedSepaCardsFormContainer.style.display = 'block';
+    });
+}
+
+var switchToNewSepaCardLink = document.getElementById('switch-to-add-sepa-card');
+if (switchToNewSepaCardLink) {
+    switchToNewSepaCardLink.addEventListener('click', function () {
+        newSepaCardFormContainer.style.display = 'block';
+        savedSepaCardsFormContainer.style.display = 'none';
+    });
+}
+
+if (savedSepaCardsFormContainer) {
+    newSepaCardFormContainer.style.display = 'none';
+}
+
+function isSavedDirectDebitSepaCard() {
+    return newSepaCardFormContainer && newSepaCardFormContainer.style.display === 'none';
 }
 
 function capitalize(text) {
@@ -190,8 +229,27 @@ function getOwnerDetails() {
     var addrCountry = document.querySelector('.billing-address select[name$="_country"]') ?
         document.querySelector('.billing-address select[name$="_country"]').value : document.querySelector('select[name$="_country"]').value;
 
-    var ownerEmail = document.querySelector('#dwfrm_billing input[name$="_email"]') ?
-        document.querySelector('#dwfrm_billing input[name$="_email"]').value : document.querySelector('input[name$="_email"]').value;
+    var ownerEmail = '';
+    if ($('.customer-summary-email').length && $('.customer-summary-email').text()) {
+        ownerEmail = $('.customer-summary-email').text();
+    } else {
+        ownerEmail = document.querySelector('#dwfrm_billing input[name$="_email"]') ?
+            document.querySelector('#dwfrm_billing input[name$="_email"]').value
+            : document.querySelector('input[name$="_email"]').value;
+    }
+
+    // SFRA 6 issue with email not presented on checkout
+    if (!ownerEmail || ownerEmail === 'null') {
+        $.ajax({
+            url: document.getElementById('getCustomerEmailURL').value,
+            method: 'GET',
+            dataType: 'json',
+            async: false
+        }).done(function (json) {
+            ownerEmail = json.email;
+            $('.customer-summary-email').text(json.email);
+        });
+    }
 
     var ownerPhone = document.querySelector('#dwfrm_billing input[name$="_phone"]') ?
         document.querySelector('#dwfrm_billing input[name$="_phone"]').value : document.querySelector('input[name$="_phone"]').value;
@@ -215,13 +273,10 @@ function getSourceType(selectedPaymentMethod) {
     return {
         STRIPE_ACH_DEBIT: 'ach_debit',
         STRIPE_ALIPAY: 'alipay',
-        STRIPE_BANCONTACT: 'bancontact',
         STRIPE_EPS: 'eps',
         STRIPE_GIROPAY: 'giropay',
-        STRIPE_IDEAL: 'ideal',
         STRIPE_MULTIBANCO: 'multibanco',
         STRIPE_P24: 'p24',
-        STRIPE_SEPA_DEBIT: 'sepa_debit',
         STRIPE_SOFORT: 'sofort',
         STRIPE_WECHATPAY: 'wechat',
         STRIPE_KLARNA: 'klarna'
@@ -487,7 +542,7 @@ function getCreateKlarnaSourcePayload() {
             shipping_last_name: stripeShippingLastName,
             locale: stripeSiteLocale
         },
-        order: {
+        source_order: {
             items: stripeOrderItems,
             shipping: stripeOrderShipping
         },
@@ -716,6 +771,230 @@ document.querySelector('button.place-order').addEventListener('click', function 
     }
 });
 
+function handleIdealPaymentSubmit() {
+    var idealOwnerNameInput = document.getElementById('ideal-name');
+    if (!idealOwnerNameInput.value) {
+        idealOwnerNameInput.focus();
+        return;
+    }
+
+    var stripeReturnURLInput = document.getElementById('stripe_return_url');
+
+    $.ajax({
+        url: document.getElementById('beforePaymentSubmitURL').value,
+        method: 'POST',
+        dataType: 'json',
+        data: {
+            csrf_token: $('[name="csrf_token"]').val(),
+            type: 'ideal'
+        }
+    }).done(function (json) {
+        if (json && json.error && json.error.message) {
+            alert(json.error.message);
+        }
+        // success client Secret generation
+        if (json.clientSecret) {
+            // eslint-disable-next-line no-unused-vars
+            $('body').on('checkout:updateCheckoutView', function (e, data) {
+                stripe.confirmIdealPayment(
+                    json.clientSecret,
+                    {
+                        payment_method: {
+                            ideal: window.idealBankElement,
+                            billing_details: {
+                                name: idealOwnerNameInput.value
+                            }
+                        },
+                        return_url: stripeReturnURLInput.value
+                    }
+                );
+            });
+
+            $('.submit-payment').click();
+            $.spinner().start();
+        }
+    }).fail(function (msg) {
+        if (msg.responseJSON.redirectUrl) {
+            window.location.href = msg.responseJSON.redirectUrl;
+        } else {
+            alert(msg);
+        }
+    });
+}
+
+function handleSepaDebitPaymentSubmit() {
+    var isSavedSepaCard = isSavedDirectDebitSepaCard();
+    var sepaNameInput = document.getElementById('sepa-name');
+
+    // validate sepa card form if not saved card selected
+    if (!isSavedSepaCard && !sepaNameInput.value) {
+        sepaNameInput.focus();
+        return;
+    }
+
+    var owner = getOwnerDetails();
+    var sepaBillingName = (sepaNameInput.value) ? sepaNameInput.value : owner.name;
+
+    var stripeReturnURLInput = document.getElementById('stripe_return_url');
+
+    var beforePaymentSubmitData = {
+        csrf_token: $('[name="csrf_token"]').val(),
+        type: 'sepa_debit'
+    };
+
+    var savedSepaDebitCardId = isSavedSepaCard ? document.querySelector('input[name="saved_sepa_card_id"]:checked').value : '';
+    if (isSavedSepaCard && !savedSepaDebitCardId) {
+        return;
+    }
+
+    if (isSavedSepaCard) {
+        beforePaymentSubmitData.savedSepaDebitCardId = savedSepaDebitCardId;
+    }
+
+    var stripeSaveSepaCardInput = document.getElementById('stripe_save_sepa_card');
+    if (stripeSaveSepaCardInput && stripeSaveSepaCardInput.checked) {
+        beforePaymentSubmitData.saveSepaCard = true;
+    }
+
+    $.ajax({
+        url: document.getElementById('beforePaymentSubmitURL').value,
+        method: 'POST',
+        dataType: 'json',
+        data: beforePaymentSubmitData
+    }).done(function (json) {
+        if (json && json.error && json.error.message) {
+            alert(json.error.message);
+        }
+        // success client Secret generation
+        if (json.clientSecret) {
+            // eslint-disable-next-line no-unused-vars
+            $('body').on('checkout:updateCheckoutView', function (e, data) {
+                var paymentMethod = [];
+                if (savedSepaDebitCardId) {
+                    paymentMethod = savedSepaDebitCardId;
+                } else {
+                    paymentMethod = {
+                        sepa_debit: window.sepaIbanElement,
+                        billing_details: {
+                            name: sepaBillingName,
+                            email: owner.email
+                        }
+                    };
+                }
+
+                stripe.confirmSepaDebitPayment(
+                    json.clientSecret,
+                    {
+                        payment_method: paymentMethod
+                    }
+                ).then(function (result) {
+                    if (!result.error) {
+                        window.location.replace(stripeReturnURLInput.value);
+                    } else {
+                        $.spinner().stop();
+                        $('.payment-summary .edit-button').click();
+                    }
+                });
+            });
+
+            $('.submit-payment').click();
+            $.spinner().start();
+        }
+    }).fail(function (msg) {
+        if (msg.responseJSON.redirectUrl) {
+            window.location.href = msg.responseJSON.redirectUrl;
+        } else {
+            $.spinner().stop();
+            $('.payment-summary .edit-button').click();
+        }
+    });
+}
+
+function handleBancontactPaymentSubmit() {
+    var owner = getOwnerDetails();
+
+    var stripeReturnURLInput = document.getElementById('stripe_return_url');
+
+    $.ajax({
+        url: document.getElementById('beforePaymentSubmitURL').value,
+        method: 'POST',
+        dataType: 'json',
+        data: {
+            csrf_token: $('[name="csrf_token"]').val(),
+            type: 'bancontact'
+        }
+    }).done(function (json) {
+        if (json && json.error && json.error.message) {
+            alert(json.error.message);
+        }
+        // success client Secret generation
+        if (json.clientSecret) {
+            // eslint-disable-next-line no-unused-vars
+            $('body').on('checkout:updateCheckoutView', function (e, data) {
+                stripe.confirmBancontactPayment(
+                    json.clientSecret,
+                    {
+                        payment_method: {
+                            billing_details: {
+                                name: owner.name
+                            }
+                        },
+                        return_url: stripeReturnURLInput.value
+                    }
+                );
+            });
+
+            $('.submit-payment').click();
+            $.spinner().start();
+        }
+    }).fail(function (msg) {
+        if (msg.responseJSON.redirectUrl) {
+            window.location.href = msg.responseJSON.redirectUrl;
+        } else {
+            alert(msg);
+        }
+    });
+}
+
+function handlePaypalPaymentSubmit() {
+    var stripeReturnURLInput = document.getElementById('stripe_return_url');
+
+    $.ajax({
+        url: document.getElementById('beforePaymentSubmitURL').value,
+        method: 'POST',
+        dataType: 'json',
+        data: {
+            csrf_token: $('[name="csrf_token"]').val(),
+            type: 'paypal'
+        }
+    }).done(function (json) {
+        if (json && json.error && json.error.message) {
+            alert(json.error.message);
+        }
+        // success client Secret generation
+        if (json.clientSecret) {
+            // eslint-disable-next-line no-unused-vars
+            $('body').on('checkout:updateCheckoutView', function (e, data) {
+                stripe.confirmPayPalPayment(
+                    json.clientSecret,
+                    {
+                        return_url: stripeReturnURLInput.value
+                    }
+                );
+            });
+
+            $('.submit-payment').click();
+            $.spinner().start();
+        }
+    }).fail(function (msg) {
+        if (msg.responseJSON.redirectUrl) {
+            window.location.href = msg.responseJSON.redirectUrl;
+        } else {
+            alert(JSON.stringify(msg));
+        }
+    });
+}
+
 document.querySelector('button.submit-payment').addEventListener('click', function (event) {
     let billingForm = document.getElementById('dwfrm_billing');
     $(billingForm).find('.form-control.is-invalid').removeClass('is-invalid');
@@ -795,7 +1074,6 @@ document.querySelector('button.submit-payment').addEventListener('click', functi
             $.spinner().start();
             break;
         case 'STRIPE_ALIPAY':
-        case 'STRIPE_BANCONTACT':
         case 'STRIPE_EPS':
         case 'STRIPE_GIROPAY':
         case 'STRIPE_MULTIBANCO':
@@ -806,14 +1084,10 @@ document.querySelector('button.submit-payment').addEventListener('click', functi
             break;
 
         case 'STRIPE_IDEAL':
-
-            var idealOwnerNameInput = document.getElementById('ideal-name');
-            var idealPayload = getCreateSourcePayload(selectedPaymentMethod);
-
-            idealPayload.owner = idealPayload.owner || {};
-            idealPayload.owner.name = idealOwnerNameInput.value;
-
-            stripe.createSource(idealBankElement, idealPayload).then(processCreateSourceResult);
+            handleIdealPaymentSubmit();
+            break;
+        case 'STRIPE_BANCONTACT':
+            handleBancontactPaymentSubmit();
             break;
         case 'STRIPE_SOFORT':
 
@@ -829,21 +1103,10 @@ document.querySelector('button.submit-payment').addEventListener('click', functi
             stripe.createSource(sofortPayload).then(processCreateSourceResult);
             break;
         case 'STRIPE_SEPA_DEBIT':
-
-            var sepaNameInput = document.getElementById('sepa-name');
-
-            var sepaPayload = getCreateSourcePayload(selectedPaymentMethod);
-            sepaPayload.type = 'sepa_debit';
-            sepaPayload.owner = sepaPayload.owner || {};
-            sepaPayload.owner.name = sepaNameInput.value;
-
-            sepaPayload.mandate = {
-                // Automatically send a mandate notification email to your customer
-                // once the source is charged.
-                notification_method: 'email'
-            };
-
-            stripe.createSource(sepaIbanElement, sepaPayload).then(processCreateSourceResult);
+            handleSepaDebitPaymentSubmit();
+            break;
+        case 'STRIPE_PAYPAL':
+            handlePaypalPaymentSubmit();
             break;
         default:
             break;
@@ -851,23 +1114,23 @@ document.querySelector('button.submit-payment').addEventListener('click', functi
 });
 
 function initIdeal() {
-    idealBankElement = elements.create('idealBank', { style: JSON.parse(document.getElementById('stripeIdealElementStyle').value) });
-    idealBankElement.mount('#ideal-bank-element');
+    window.idealBankElement = elements.create('idealBank', { style: JSON.parse(document.getElementById('stripeIdealElementStyle').value) });
+    window.idealBankElement.mount('#ideal-bank-element');
 }
 
 function initSepaDebit() {
-    sepaIbanElement = elements.create('iban', {
+    window.sepaIbanElement = elements.create('iban', {
         style: JSON.parse(document.getElementById('stripeSepaDebitStyle').value),
         supportedCountries: ['SEPA']
     });
 
     // Add an instance of the iban Element into the `iban-element` <div>.
-    sepaIbanElement.mount('#sepa-iban-element');
+    window.sepaIbanElement.mount('#sepa-iban-element');
 
     var errorMessage = document.getElementById('sepa-error-message');
     var bankName = document.getElementById('sepa-bank-name');
 
-    sepaIbanElement.on('change', function (event) {
+    window.sepaIbanElement.on('change', function (event) {
         // Handle real-time validation errors from the iban Element.
         if (event.error) {
             errorMessage.textContent = event.error.message;
@@ -1089,7 +1352,6 @@ ready(() => {
                 || !document.querySelector('input[name$="_city"]').value
                 || !document.querySelector('input[name$="_postalCode"]').value
                 || !document.querySelector('select[name$="_country"]').value
-                || !document.querySelector('input[name$="_email"]').value
                 || !document.querySelector('input[name$="_phone"]').value) {
                 alert(document.getElementById('klarna-widget-wrapper').dataset.errormsg);
 

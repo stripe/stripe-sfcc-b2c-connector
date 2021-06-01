@@ -413,10 +413,11 @@ function processNotificationObject(stripeNotificationObject) {
 
     const stripeEventId = stripeNotificationObject.custom.stripeEventId;
 
-    // Ensure Stripe source ID in custom object
+    // Ensure Payment Intent ID or Source ID existing in Custom Object
+    const coStripePaymentIntentId = stripeNotificationObject.custom.stripePaymentIntentID;
     const coStripeSourceId = stripeNotificationObject.custom.stripeSourceId;
-    if (!coStripeSourceId) {
-        stripeLogger.info('\nSource id is empty, event id: {0}', stripeEventId);
+    if (!coStripeSourceId && !coStripePaymentIntentId) {
+        stripeLogger.info('\nBoth Payment Intent Id and Source id are empty, event id: {0}', stripeEventId);
         return;
     }
 
@@ -428,10 +429,10 @@ function processNotificationObject(stripeNotificationObject) {
     if (!empty(stripeNotificationObject.custom.orderId)) {
         orderNo = stripeNotificationObject.custom.orderId;
         order = OrderMgr.getOrder(orderNo);
-    } else if (!empty(stripeNotificationObject.custom.stripePaymentIntentID)) {
-        order = OrderMgr.searchOrder('custom.stripePaymentIntentID={0}', stripeNotificationObject.custom.stripePaymentIntentID);
-    } else if (!empty(stripeNotificationObject.custom.stripeSourceId)) {
-        order = OrderMgr.searchOrder('custom.stripePaymentSourceID={0}', stripeNotificationObject.custom.stripeSourceId);
+    } else if (!empty(coStripePaymentIntentId)) {
+        order = OrderMgr.searchOrder('custom.stripePaymentIntentID={0}', coStripePaymentIntentId);
+    } else if (!empty(coStripeSourceId)) {
+        order = OrderMgr.searchOrder('custom.stripePaymentSourceID={0}', coStripeSourceId);
     }
 
     if (!order) {
@@ -440,7 +441,7 @@ function processNotificationObject(stripeNotificationObject) {
             orderNo,
             stripeEventId,
             coStripeSourceId,
-            stripeNotificationObject.custom.stripePaymentIntentID,
+            coStripePaymentIntentId,
             Site.getCurrent().ID
         );
         return;
@@ -457,7 +458,7 @@ function processNotificationObject(stripeNotificationObject) {
             orderNo,
             stripeEventId,
             coStripeSourceId,
-            stripeNotificationObject.custom.stripePaymentIntentID,
+            coStripePaymentIntentId,
             Site.getCurrent().ID
         );
         return;
@@ -465,12 +466,8 @@ function processNotificationObject(stripeNotificationObject) {
 
     // we do not store source Id for orders placed with WeChat
     // so we skip the following checks for WeChat orders
-    if (stripeAPMPaymentInstrument && stripePaymentInstrument.paymentMethod !== 'STRIPE_WECHATPAY') {
+    if (stripeAPMPaymentInstrument && stripePaymentInstrument.custom.stripeSourceID && stripePaymentInstrument.paymentMethod !== 'STRIPE_WECHATPAY') {
         const piStripeSourceId = stripePaymentInstrument.custom.stripeSourceID;
-        if (!piStripeSourceId) {
-            stripeLogger.info('\nSource id does not exists in payment instrument or empty. SFCC order id: {0}', orderNo);
-            return;
-        }
 
         if (coStripeSourceId !== piStripeSourceId) {
             stripeLogger.info(

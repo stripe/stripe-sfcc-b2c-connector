@@ -1,3 +1,9 @@
+<isif condition="${pdict.CurrentHttpParameterMap.apm_return_error && pdict.CurrentHttpParameterMap.apm_return_error.stringValue}">
+    <div class="alert alert-danger stripe-error-message" role="alert">
+        <p class="error-message-text">${Resource.msg('apm.error.fail','stripe',null)}</p>
+    </div>
+</isif>
+
 <div class="form-nav billing-nav payment-information"
      data-payment-method-id="CREDIT_CARD"
      data-is-new-payment="${pdict.customer.registeredUser && pdict.customer.customerPaymentInstruments.length ? false : true}"

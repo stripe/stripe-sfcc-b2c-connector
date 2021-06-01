@@ -4,6 +4,7 @@
 <isset name="isSFRA" value="${stripeHelper.isSFRA()}" scope="page" />
 <isset name="stripeScriptURL" value="${stripeHelper.getStripeScriptUrl()}" scope="page" />
 <isset name="stripePublicKey" value="${stripeHelper.getPublicApiKey()}" scope="page" />
+<isset name="stripeApiVersion" value="${stripeHelper.getStripeApiVersion()}" scope="page" />
 <isset name="stripeKlarnaScriptURL" value="${stripeHelper.getStripeKlarnaScriptUrl()}" scope="page" />
 
 <isif condition="${stripeEnabled}">
@@ -11,6 +12,7 @@
 	<script src="${stripeKlarnaScriptURL}"></script>
 	<isif condition="${stripePublicKey}">
 		<input type="hidden" id="stripePublicKey" value="${stripePublicKey}" />
+		<input type="hidden" id="stripeApiVersion" value="${stripeApiVersion}" />
 		<isif condition="${pageContext.ns === 'checkout'}">
 			<input type="hidden" id="stripeCardFormStyle" value="${JSON.stringify(stripeHelper.getStripeCardFormStyle())}" />
 			<input type="hidden" id="stripeIdealElementStyle" value="${JSON.stringify(stripeHelper.getStripeIdealElementStyle())}" />
@@ -19,6 +21,8 @@
 			<input type="hidden" id="stripeAccountCountry" value="${stripeCheckoutHelper.getPRCountry()}" />
 			<input type="hidden" id="beforePaymentAuthURL" value="${URLUtils.https('StripePayments-BeforePaymentAuthorization')}" />
 			<input type="hidden" id="billingPageUrl" value="${isSFRA ? URLUtils.url('Checkout-Begin', 'stage', 'payment') : URLUtils.url('COShipping-Start')}" />
+			<input type="hidden" id="beforePaymentSubmitURL" value="${URLUtils.https('StripePayments-BeforePaymentSubmit')}" />
+			<input type="hidden" id="stripePaymentMethodsInBeta" value="${stripeHelper.getPaymentMethodsInBeta()}" />
 			<script src="${URLUtils.staticURL('/js/stripe.checkout.js')}" ></script>
 		</isif>
 		<isif condition="${pageContext.ns === 'cart'}">

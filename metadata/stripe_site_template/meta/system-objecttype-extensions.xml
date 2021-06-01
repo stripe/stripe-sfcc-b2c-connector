@@ -294,6 +294,21 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <externally-managed-flag>false</externally-managed-flag>
                 <default-value>false</default-value>
             </attribute-definition>
+            <attribute-definition attribute-id="stripePaymentMethodsInBeta">
+                <display-name xml:lang="x-default">Stripe Payment Methods in Beta</display-name>
+                <description xml:lang="x-default">Stripe Payment Methods which are still in early release</description>
+                <type>set-of-string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeApiVersion">
+                <display-name xml:lang="x-default">Stripe API Version</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+                <default-value>2020-08-27</default-value>
+            </attribute-definition>
         </custom-attribute-definitions>
         <group-definitions>
             <attribute-group group-id="Stripe Configs">
@@ -317,6 +332,8 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <attribute attribute-id="stripeKlarnaApiURL"/>
                 <attribute attribute-id="stripeCustomCreditCardForm"/>
                 <attribute attribute-id="stripeUpdateInvoiceOnRefundWebhook"/>
+                <attribute attribute-id="stripePaymentMethodsInBeta"/>
+                <attribute attribute-id="stripeApiVersion"/>
             </attribute-group>
         </group-definitions>
     </type-extension>

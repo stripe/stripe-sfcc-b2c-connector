@@ -1,5 +1,5 @@
 /* eslint-disable new-cap */
-/* global response */
+/* global response, request */
 // v1
 
 'use strict';
@@ -44,3 +44,35 @@ function handleAPM() {
 
 exports.HandleAPM = handleAPM;
 exports.HandleAPM.public = true;
+
+
+/**
+ * Entry point for creating payment intent for APMs.
+ */
+function beforePaymentSubmit() {
+    var responsePayload;
+    if (!CSRFProtection.validateRequest()) {
+        app.getModel('Customer').logout();
+        responsePayload = {
+            redirectUrl: URLUtils.url('Home-Show').toString()
+        };
+        response.setStatus(500);
+    } else {
+        var type = request.httpParameterMap.type.stringValue;
+        var params = {};
+        if (request.httpParameterMap.saveSepaCard && request.httpParameterMap.saveSepaCard.value) {
+            params.saveSepaCard = true;
+        }
+        if (request.httpParameterMap.savedSepaDebitCardId && request.httpParameterMap.savedSepaDebitCardId.value) {
+            params.savedSepaDebitCardId = request.httpParameterMap.savedSepaDebitCardId.value;
+        }
+        responsePayload = stripePaymentsHelper.BeforePaymentSubmit(type, params);
+    }
+
+    var jsonResponse = JSON.stringify(responsePayload);
+    response.setContentType('application/json');
+    response.writer.print(jsonResponse);
+}
+
+exports.BeforePaymentSubmit = beforePaymentSubmit;
+exports.BeforePaymentSubmit.public = true;

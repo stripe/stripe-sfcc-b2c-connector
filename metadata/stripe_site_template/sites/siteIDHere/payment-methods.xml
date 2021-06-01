@@ -146,4 +146,14 @@
         </currencies>
     </payment-method>
 
+    <payment-method method-id="STRIPE_PAYPAL">
+        <name xml:lang="x-default">Paypal</name>
+        <enabled-flag>true</enabled-flag>
+        <processor-id>STRIPE_APM</processor-id>
+        <currencies>
+            <currency>EUR</currency>
+            <currency>GBP</currency>
+        </currencies>
+    </payment-method>
+
 </payment-settings>

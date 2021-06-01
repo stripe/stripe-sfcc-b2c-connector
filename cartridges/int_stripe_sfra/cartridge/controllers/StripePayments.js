@@ -49,4 +49,41 @@ server.get('GetStripeOrderItems', function (req, res, next) {
     next();
 });
 
+/**
+ * Entry point for handling payment intent creation for APMs.
+ */
+server.post('BeforePaymentSubmit', csrfProtection.validateAjaxRequest, function (req, res, next) {
+    var type = req.form.type;
+
+    var params = {};
+    if (req.form.saveSepaCard) {
+        params.saveSepaCard = req.form.saveSepaCard;
+    }
+
+    if (req.form.savedSepaDebitCardId) {
+        params.savedSepaDebitCardId = req.form.savedSepaDebitCardId;
+    }
+
+    var responsePayload = stripePaymentsHelper.BeforePaymentSubmit(type, params);
+    res.json(responsePayload);
+
+    next();
+});
+
+/**
+ * Get Customer Email
+ */
+server.get('GetCustomerEmail', function (req, res, next) {
+    var BasketMgr = require('dw/order/BasketMgr');
+    var basket = BasketMgr.getCurrentBasket();
+
+    var email = basket ? basket.getCustomerEmail() : '';
+
+    res.json({
+        email: email
+    });
+
+    next();
+});
+
 module.exports = server.exports();

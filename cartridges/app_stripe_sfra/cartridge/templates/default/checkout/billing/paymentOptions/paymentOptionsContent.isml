@@ -16,6 +16,9 @@
 <input type="hidden" id="beforePaymentAuthURL" value="${URLUtils.https('StripePayments-BeforePaymentAuthorization')}" />
 <input type="hidden" id="getStripeOrderItemsURL" value="${URLUtils.https('StripePayments-GetStripeOrderItems')}" />
 <input type="hidden" id="billingPageUrl" value="${URLUtils.url('Checkout-Begin', 'stage', 'payment')}" />
+<input type="hidden" id="getCustomerEmailURL" value="${URLUtils.https('StripePayments-GetCustomerEmail')}" />
+
+<input type="hidden" id="beforePaymentSubmitURL" value="${URLUtils.https('StripePayments-BeforePaymentSubmit')}" />
 
 <input type="hidden" name="stripe_source_client_secret" id="stripe_source_client_secret">
 <input type="hidden" name="stripe_redirect_url" id="stripe_redirect_url">

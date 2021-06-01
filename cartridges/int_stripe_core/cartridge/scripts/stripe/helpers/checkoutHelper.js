@@ -174,7 +174,7 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
     if (customer.authenticated) {
         let stripeCustomerId = customer.profile.custom.stripeCustomerID;
 
-        if (params.saveCard) {
+        if (params.saveCard || params.saveSepaCard) {
             if (!stripeCustomerId) {
                 const newStripeCustomer = stripeService.customers.create({
                     email: customer.profile.email,

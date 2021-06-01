@@ -61,6 +61,15 @@ exports.getPublicApiKey = function () {
 };
 
 /**
+* Gets the Stripe API version from Site Preferences.
+*
+* @returns {string} Stripe API version
+*/
+exports.getStripeApiVersion = function () {
+    return require('dw/system/Site').current.getCustomPreferenceValue('stripeApiVersion');
+};
+
+/**
  * Gets Stripe payment request button style from Site Preferences.
  *
  * @return {Object} - Stripe payment request button style or default if not configured.
@@ -249,4 +258,15 @@ exports.getStripeKlarnaScriptUrl = function () {
 exports.isCustomCardForm = function () {
     var Site = require('dw/system/Site');
     return Site.current.getCustomPreferenceValue('stripeCustomCreditCardForm');
+};
+
+/**
+* Gets the Stripe Payment Methods in Beta from Site Preferences.
+*
+* @returns {string} Stripe payment methods in beta
+*/
+exports.getPaymentMethodsInBeta = function () {
+    const paymentMethodsInBeta = require('dw/system/Site').getCurrent().getCustomPreferenceValue('stripePaymentMethodsInBeta');
+
+    return (paymentMethodsInBeta && paymentMethodsInBeta.length) ? paymentMethodsInBeta.join(',') : '';
 };

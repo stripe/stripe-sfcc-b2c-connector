@@ -2,6 +2,13 @@
 <iscomment> TEMPLATENAME: paymentmethods.isml </iscomment>
 <isinclude template="util/modules"/>
 <isset name="stripeEnabled" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper').isStripeEnabled()}" scope="page" />
+
+<isif condition="${pdict.CurrentHttpParameterMap.apm_return_error && pdict.CurrentHttpParameterMap.apm_return_error.stringValue}">
+    <div class="error-form"" role="alert">
+        <p class="error-message-text">${Resource.msg('apm.error.fail','stripe',null)}</p>
+    </div>
+</isif>
+
 <isif condition="${pdict.OrderTotal > 0}">
 	<fieldset>
 

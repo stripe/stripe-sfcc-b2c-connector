@@ -20,7 +20,8 @@ function Handle(args) {
         sourceId: paramsMap.stripe_source_id.stringValue,
         bankAccountTokenId: paramsMap.stripe_bank_account_token_id.stringValue,
         bankAccountToken: paramsMap.stripe_bank_account_token.stringValue,
-        stripeWeChatQRCodeURL: paramsMap.stripe_wechat_qrcode_url.stringValue
+        stripeWeChatQRCodeURL: paramsMap.stripe_wechat_qrcode_url.stringValue,
+        saveSepaCard: paramsMap.stripe_save_sepa_card.value
     };
 
     try {
