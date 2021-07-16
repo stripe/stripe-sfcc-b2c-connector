@@ -1,0 +1,31 @@
+<div class="tab-pane ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">
+    <fieldset class="payment-form-fields">
+        <input type="hidden" class="form-control" name="${pdict.forms.billingForm.paymentMethod.htmlName}"
+            value="${paymentOption.ID}">
+        <input type="hidden" name="stripe_source_id" id="stripe_source_id">
+        <div class="row">
+            <div class="col-12">
+                <div class="form-group required">
+                    <label for="p24-name" class="form-control-label">
+                        ${Resource.msg('method.name.label', 'stripe',null)}
+                    </label>
+                    <input id="p24-name" type="text" class="form-control">
+                </div>
+                <div class="form-group required">
+                    <label for="p24-email" class="form-control-label">
+                        ${Resource.msg('method.email.label', 'stripe',null)}
+                    </label>
+                    <input id="p24-email" type="email" class="form-control">
+                </div>
+                <div class="form-group required">
+                    <label for="p24-bank-element" class="form-control-label">
+                        ${Resource.msg('p24.bank.element.label', 'stripe', null)}
+                    </label>
+                    <div id="p24-bank-element" class="form-control payment-elements-select">
+                        <!-- A Stripe Element will be inserted here. -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </fieldset>
+</div>
