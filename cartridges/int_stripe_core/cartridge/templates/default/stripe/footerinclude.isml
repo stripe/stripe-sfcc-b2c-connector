@@ -23,6 +23,8 @@
 			<input type="hidden" id="billingPageUrl" value="${isSFRA ? URLUtils.url('Checkout-Begin', 'stage', 'payment') : URLUtils.url('COShipping-Start')}" />
 			<input type="hidden" id="beforePaymentSubmitURL" value="${URLUtils.https('StripePayments-BeforePaymentSubmit')}" />
 			<input type="hidden" id="stripePaymentMethodsInBeta" value="${stripeHelper.getPaymentMethodsInBeta()}" />
+			<input type="hidden" id="stripeEpsElementStyle" value="${JSON.stringify(stripeHelper.getStripeEpsElementStyle())}" />
+			<input type="hidden" id="stripeP24ElementStyle" value="${JSON.stringify(stripeHelper.getStripeP24ElementStyle())}" />
 			<script src="${URLUtils.staticURL('/js/stripe.checkout.js')}" ></script>
 		</isif>
 		<isif condition="${pageContext.ns === 'cart'}">

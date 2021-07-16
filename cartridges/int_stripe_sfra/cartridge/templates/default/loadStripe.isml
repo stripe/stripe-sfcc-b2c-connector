@@ -10,6 +10,7 @@
 <isset name="stripeSepaDebitStyle" value="${stripeHelper.getStripeSepaDebitStyle()}" scope="page" />
 <isset name="stripePaymentButtonStyle" value="${stripeHelper.getPaymentRequestButtonStyle()}" scope="page" />
 <isset name="stripeKlarnaScriptURL" value="${stripeHelper.getStripeKlarnaScriptUrl()}" scope="page" />
+<isset name="stripeEpsElementStyle" value="${stripeHelper.getStripeEpsElementStyle()}" scope="page" />
 
 <isif condition="${stripeEnabled}">
 	<script type="text/javascript" src="${stripeScriptURL}"></script>

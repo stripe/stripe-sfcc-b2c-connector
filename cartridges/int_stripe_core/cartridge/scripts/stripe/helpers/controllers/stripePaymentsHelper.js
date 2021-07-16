@@ -336,36 +336,6 @@ function beforePaymentSubmit(type, params) {
                     integration_check: 'sepa_debit_accept_a_payment'
                 }
             };
-
-            if (customer.authenticated && customer.profile) {
-                /*
-                 * Check if registered customer has an associated Stripe customer ID
-                 * if not, make a call to Stripe to create such id and save it as customer profile custom attribute
-                 */
-                if (!customer.profile.custom.stripeCustomerID) {
-                    const newStripeCustomer = stripeService.customers.create({
-                        email: customer.profile.email,
-                        name: customer.profile.firstName + ' ' + customer.profile.lastName
-                    });
-
-                    Transaction.wrap(function () {
-                        customer.profile.custom.stripeCustomerID = newStripeCustomer.id;
-                    });
-                }
-
-                createPaymentIntentPayload.customer = customer.profile.custom.stripeCustomerID;
-
-                /*
-                 * Save the SEPA Direct Debit account for reuse by setting the setup_future_usage parameter to off_session
-                 */
-                if (params.saveSepaCard) {
-                    createPaymentIntentPayload.setup_future_usage = 'off_session';
-                }
-
-                if (params.savedSepaDebitCardId) {
-                    createPaymentIntentPayload.payment_method = params.savedSepaDebitCardId;
-                }
-            }
         } else if (type === 'bancontact') {
             createPaymentIntentPayload = {
                 payment_method_types: [type],
@@ -378,6 +348,12 @@ function beforePaymentSubmit(type, params) {
                 createPaymentIntentPayload.payment_method_options.bancontact = {};
                 createPaymentIntentPayload.payment_method_options.bancontact.preferred_language = lang;
             }
+        } else if (type === 'giropay') {
+            createPaymentIntentPayload = {
+                payment_method_types: [type],
+                amount: amount,
+                currency: basketCurrencyCode
+            };
         } else if (type === 'paypal') {
             createPaymentIntentPayload = {
                 amount: amount,
@@ -410,12 +386,66 @@ function beforePaymentSubmit(type, params) {
                 createPaymentIntentPayload.shipping.address.country = shippingAddress.getCountryCode() ? shippingAddress.getCountryCode().value.toUpperCase() : '';
                 createPaymentIntentPayload.shipping.address.postal_code = shippingAddress.getPostalCode();
             }
+        } else if (type === 'sofort') {
+            createPaymentIntentPayload = {
+                payment_method_types: [type],
+                amount: amount,
+                currency: basketCurrencyCode
+            };
+
+            if (['de', 'en', 'es', 'it', 'fr', 'nl', 'pl'].indexOf(lang) !== -1) {
+                createPaymentIntentPayload.payment_method_options = {};
+                createPaymentIntentPayload.payment_method_options.sofort = {};
+                createPaymentIntentPayload.payment_method_options.sofort.preferred_language = lang;
+            }
+        } else if (type === 'eps') {
+            createPaymentIntentPayload = {
+                payment_method_types: [type],
+                amount: amount,
+                currency: basketCurrencyCode
+            };
+        } else if (type === 'p24') {
+            createPaymentIntentPayload = {
+                payment_method_types: [type],
+                amount: amount,
+                currency: basketCurrencyCode
+            };
         } else {
             createPaymentIntentPayload = {
                 payment_method_types: [type],
                 amount: amount,
                 currency: basketCurrencyCode
             };
+        }
+
+        if (customer.authenticated && customer.profile) {
+            /*
+             * Check if registered customer has an associated Stripe customer ID
+             * if not, make a call to Stripe to create such id and save it as customer profile custom attribute
+             */
+            if (!customer.profile.custom.stripeCustomerID) {
+                const newStripeCustomer = stripeService.customers.create({
+                    email: customer.profile.email,
+                    name: customer.profile.firstName + ' ' + customer.profile.lastName
+                });
+
+                Transaction.wrap(function () {
+                    customer.profile.custom.stripeCustomerID = newStripeCustomer.id;
+                });
+            }
+
+            createPaymentIntentPayload.customer = customer.profile.custom.stripeCustomerID;
+
+            /*
+             * Save the SEPA Direct Debit account for reuse by setting the setup_future_usage parameter to off_session
+             */
+            if (type === 'sepa_debit' && params.saveSepaCard) {
+                createPaymentIntentPayload.setup_future_usage = 'off_session';
+            }
+
+            if (params.savedSepaDebitCardId) {
+                createPaymentIntentPayload.payment_method = params.savedSepaDebitCardId;
+            }
         }
 
         const paymentIntent = stripeService.paymentIntents.create(createPaymentIntentPayload);

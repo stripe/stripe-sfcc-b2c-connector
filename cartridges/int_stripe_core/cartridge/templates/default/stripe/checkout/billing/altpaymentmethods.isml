@@ -104,7 +104,22 @@
     -------------------
 </iscomment>
 <div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_EPS'}">payment-method-expanded</isif>" data-method="STRIPE_EPS">
-
+    <div class="form-row required">
+        <label class="label" for="eps-name">${Resource.msg('method.name.label','stripe',null)}</label>
+        <div class="field-wrapper">
+            <input id="eps-name" type="text" class="input-text required">
+        </div>
+    </div>
+    <div class="form-row">
+        <label class="label" for="eps-bank-element">
+            ${Resource.msg('eps.bank.element.label','stripe',null)}
+        </label>
+        <div class="field-wrapper">
+            <div class="payment-elements-select" id="eps-bank-element">
+                <!-- A Stripe Element will be inserted here. -->
+            </div>
+        </div>
+    </div>
 </div>
 
 <iscomment>
@@ -143,7 +158,28 @@
     -------------------
 </iscomment>
 <div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_P24'}">payment-method-expanded</isif>" data-method="STRIPE_P24">
-
+    <div class="form-row required">
+        <label class="label" for="p24-name">${Resource.msg('method.name.label','stripe',null)}</label>
+        <div class="field-wrapper">
+            <input id="p24-name" type="text" class="input-text required">
+        </div>
+    </div>
+    <div class="form-row required">
+        <label class="label" for="p24-email">${Resource.msg('method.email.label','stripe',null)}</label>
+        <div class="field-wrapper">
+            <input id="p24-email" type="text" class="input-text required">
+        </div>
+    </div>
+    <div class="form-row">
+        <label class="label" for="p24-bank-element">
+            ${Resource.msg('p24.bank.element.label','stripe',null)}
+        </label>
+        <div class="field-wrapper">
+            <div class="payment-elements-select" id="p24-bank-element">
+                <!-- A Stripe Element will be inserted here. -->
+            </div>
+        </div>
+    </div>
 </div>
 
 

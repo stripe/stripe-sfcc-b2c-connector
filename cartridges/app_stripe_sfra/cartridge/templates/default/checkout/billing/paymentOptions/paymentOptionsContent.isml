@@ -17,6 +17,8 @@
 <input type="hidden" id="getStripeOrderItemsURL" value="${URLUtils.https('StripePayments-GetStripeOrderItems')}" />
 <input type="hidden" id="billingPageUrl" value="${URLUtils.url('Checkout-Begin', 'stage', 'payment')}" />
 <input type="hidden" id="getCustomerEmailURL" value="${URLUtils.https('StripePayments-GetCustomerEmail')}" />
+<input type="hidden" id="stripeEpsElementStyle" value="${JSON.stringify(stripeHelper.getStripeEpsElementStyle())}" />
+<input type="hidden" id="stripeP24ElementStyle" value="${JSON.stringify(stripeHelper.getStripeP24ElementStyle())}" />
 
 <input type="hidden" id="beforePaymentSubmitURL" value="${URLUtils.https('StripePayments-BeforePaymentSubmit')}" />
 
@@ -73,6 +75,10 @@
         <isinclude template="checkout/billing/paymentOptions/sofortContent" />
     <iselseif condition="${paymentOption.ID === 'STRIPE_SEPA_DEBIT'}"/>
         <isinclude template="checkout/billing/paymentOptions/sepaDebitContent" />
+    <iselseif condition="${paymentOption.ID === 'STRIPE_EPS'}"/>
+        <isinclude template="checkout/billing/paymentOptions/epsContent" />
+    <iselseif condition="${paymentOption.ID === 'STRIPE_P24'}"/>
+        <isinclude template="checkout/billing/paymentOptions/p24Content" />
     <iselse/>
 
         <div class="tab-pane ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">

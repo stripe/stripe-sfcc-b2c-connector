@@ -1,6 +1,6 @@
 {
   "name": "int_stripe_sfra",
-  "version": "21.2.0",
+  "version": "21.3.0",
   "description": "",
   "main": "index.js",
   "scripts": {

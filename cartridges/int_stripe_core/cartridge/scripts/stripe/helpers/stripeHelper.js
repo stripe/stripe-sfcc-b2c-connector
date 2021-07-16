@@ -270,3 +270,61 @@ exports.getPaymentMethodsInBeta = function () {
 
     return (paymentMethodsInBeta && paymentMethodsInBeta.length) ? paymentMethodsInBeta.join(',') : '';
 };
+
+/**
+ * Gets Stripe Eps form style from Site Preferences.
+ *
+ * @return {Object} - Stripe Eps form style or default if not configured.
+ */
+exports.getStripeEpsElementStyle = function () {
+    const epsEmelentStyle = require('dw/system/Site').current.getCustomPreferenceValue('stripeEpsElementCSSStyle');
+
+    try {
+        if (epsEmelentStyle) {
+            return JSON.parse(epsEmelentStyle);
+        }
+    } catch (e) {
+        const Logger = require('dw/system/Logger');
+        Logger.error('Failed to parse stripeEpsElementCSSStyle site preference value as JSON');
+    }
+
+    return {
+        base: {
+            padding: '10px 12px',
+            color: '#32325d',
+            fontSize: '16px',
+            '::placeholder': {
+                color: '#aab7c4'
+            }
+        }
+    };
+};
+
+/**
+ * Gets Stripe P24 form style from Site Preferences.
+ *
+ * @return {Object} - Stripe P24 form style or default if not configured.
+ */
+exports.getStripeP24ElementStyle = function () {
+    const p24EmelentStyle = require('dw/system/Site').current.getCustomPreferenceValue('stripeP24ElementCSSStyle');
+
+    try {
+        if (p24EmelentStyle) {
+            return JSON.parse(p24EmelentStyle);
+        }
+    } catch (e) {
+        const Logger = require('dw/system/Logger');
+        Logger.error('Failed to parse stripeEpsElementCSSStyle site preference value as JSON');
+    }
+
+    return {
+        base: {
+            padding: '10px 12px',
+            color: '#32325d',
+            fontSize: '16px',
+            '::placeholder': {
+                color: '#aab7c4'
+            }
+        }
+    };
+};

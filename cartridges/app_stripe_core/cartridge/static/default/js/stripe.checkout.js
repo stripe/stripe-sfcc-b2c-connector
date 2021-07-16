@@ -6,6 +6,8 @@ var cardElement = null;
 var cardNumberElement = null;
 window.idealBankElement = null;
 window.sepaIbanElement = null;
+window.epsBankElement= null;
+window.p24BankElement= null;
 
 var stripeOptions = [];
 var betas = document.getElementById('stripePaymentMethodsInBeta').value;
@@ -26,6 +28,8 @@ var idealPlaceholder = document.getElementById('ideal-bank-element');
 var sepaDebitPlaceholder = document.getElementById('sepa-iban-element');
 var sepaDebitInput = document.getElementById('is-STRIPE_SEPA_DEBIT');
 var prbPlaceholder = document.getElementById('payment-request-button');
+var epsPlaceholder = document.getElementById('eps-bank-element');
+var p24Placeholder = document.getElementById('p24-bank-element');
 
 var newSepaCardFormContainer = document.getElementById('new-sepa-card-form-container');
 var savedSepaCardsFormContainer = document.getElementById('saved-sepa-cards-container');
@@ -222,6 +226,16 @@ function initSepaDebit() {
     });
 }
 
+function initEps() {
+    window.epsBankElement = elements.create('epsBank', { style: JSON.parse(document.getElementById('stripeEpsElementStyle').value) });
+    window.epsBankElement.mount('#eps-bank-element');
+}
+
+function initP24() {
+    window.p24BankElement = elements.create('p24Bank', { style: JSON.parse(document.getElementById('stripeP24ElementStyle').value) });
+    window.p24BankElement.mount('#p24-bank-element');
+}
+
 // Saved Sepa Direct Debit Card
 var switchToSavedSepaCardsLink = document.getElementById('switch-to-saved-sepa-cards');
 if (switchToSavedSepaCardsLink) {
@@ -371,11 +385,7 @@ function getSourceType(selectedPaymentMethod) {
     return {
         STRIPE_ACH_DEBIT: 'ach_debit',
         STRIPE_ALIPAY: 'alipay',
-        STRIPE_EPS: 'eps',
-        STRIPE_GIROPAY: 'giropay',
         STRIPE_MULTIBANCO: 'multibanco',
-        STRIPE_P24: 'p24',
-        STRIPE_SOFORT: 'sofort',
         STRIPE_WECHATPAY: 'wechat',
         STRIPE_KLARNA: 'klarna'
     }[selectedPaymentMethod];
@@ -648,6 +658,229 @@ function handlePaypalPaymentSubmit() {
     });
 }
 
+function handleGiropayPaymentSubmit() {
+    var owner = getOwnerDetails();
+
+    var stripeReturnURLInput = document.getElementById('stripe_return_url');
+
+    $.ajax({
+        url: document.getElementById('beforePaymentSubmitURL').value,
+        method: 'POST',
+        dataType: 'json',
+        data: {
+            csrf_token: $('[name="csrf_token"]').val(),
+            type: 'giropay'
+        }
+    }).done(function (json) {
+        if (json && json.error && json.error.message) {
+            alert(json.error.message);
+        }
+        // success client Secret generation
+        if (json.clientSecret) {
+            $.ajax({
+                type: 'POST',
+                url: $("#dwfrm_billing").attr("action"),
+                data: $("#dwfrm_billing").serialize(), 
+
+                success: function(response) {
+                    // eslint-disable-next-line no-unused-vars
+                    stripe.confirmGiropayPayment(
+                        json.clientSecret,
+                        {
+                            payment_method: {
+                                billing_details: {
+                                    name: owner.name
+                                }
+                            },
+                            return_url: stripeReturnURLInput.value
+                        }
+                    );
+                }
+            });
+        }
+    }).fail(function (msg) {
+        if (msg.responseJSON.redirectUrl) {
+            window.location.href = msg.responseJSON.redirectUrl;
+        } else {
+            alert(msg);
+        }
+    });
+}
+
+function handleSofortPaymentSubmit() {
+    var sofortCountryCodeSelect = document.getElementById('sofort_country_code');
+    var sofortCountryCode = sofortCountryCodeSelect && sofortCountryCodeSelect.selectedOptions && sofortCountryCodeSelect.selectedOptions.length && sofortCountryCodeSelect.selectedOptions[0] && sofortCountryCodeSelect.selectedOptions[0].value;
+
+    if (!sofortCountryCode) {
+        return;
+    }
+
+    var stripeReturnURLInput = document.getElementById('stripe_return_url');
+
+    $.ajax({
+        url: document.getElementById('beforePaymentSubmitURL').value,
+        method: 'POST',
+        dataType: 'json',
+        data: {
+            csrf_token: $('[name="csrf_token"]').val(),
+            type: 'sofort'
+        }
+    }).done(function (json) {
+        if (json && json.error && json.error.message) {
+            alert(json.error.message);
+        }
+        // success client Secret generation
+        if (json.clientSecret) {
+            $.ajax({
+                type: 'POST',
+                url: $("#dwfrm_billing").attr("action"),
+                data: $("#dwfrm_billing").serialize(), 
+
+                success: function(response) {
+                    // eslint-disable-next-line no-unused-vars
+                    stripe.confirmSofortPayment(
+                        json.clientSecret,
+                        {
+                            payment_method: {
+                                sofort: {
+                                    country: sofortCountryCode
+                                }
+                            },
+                            return_url: stripeReturnURLInput.value
+                        }
+                    );
+                }
+            });
+        }
+    }).fail(function (msg) {
+        if (msg.responseJSON.redirectUrl) {
+            window.location.href = msg.responseJSON.redirectUrl;
+        } else {
+            alert(msg);
+        }
+    });
+}
+
+function handleEpsPaymentSubmit() {
+    var epsOwnerNameInput = document.getElementById('eps-name');
+    if (!epsOwnerNameInput.value) {
+        epsOwnerNameInput.focus();
+        return;
+    }
+
+    var stripeReturnURLInput = document.getElementById('stripe_return_url');
+
+    $.ajax({
+        url: document.getElementById('beforePaymentSubmitURL').value,
+        method: 'POST',
+        dataType: 'json',
+        data: {
+            csrf_token: $('[name="csrf_token"]').val(),
+            type: 'eps'
+        }
+    }).done(function (json) {
+        if (json && json.error && json.error.message) {
+            alert(json.error.message);
+        }
+        // success client Secret generation
+        if (json.clientSecret) {
+            $.ajax({
+                type: 'POST',
+                url: $("#dwfrm_billing").attr("action"),
+                data: $("#dwfrm_billing").serialize(), 
+
+                success: function(response) {
+                    // eslint-disable-next-line no-unused-vars
+                    stripe.confirmEpsPayment(
+                        json.clientSecret,
+                        {
+                            payment_method: {
+                                eps: window.epsBankElement,
+                                billing_details: {
+                                    name: epsOwnerNameInput.value
+                                }
+                            },
+                            return_url: stripeReturnURLInput.value
+                        }
+                    );
+                }
+            });
+        }
+    }).fail(function (msg) {
+        if (msg.responseJSON.redirectUrl) {
+            window.location.href = msg.responseJSON.redirectUrl;
+        } else {
+            alert(msg);
+        }
+    });
+}
+
+function handleP24PaymentSubmit() {
+    var p24OwnerNameInput = document.getElementById('p24-name');
+    if (!p24OwnerNameInput.value) {
+        p24OwnerNameInput.focus();
+        return;
+    }
+
+    var p24OwnerEmailInput = document.getElementById('p24-email');
+    if (!p24OwnerEmailInput.value) {
+        p24OwnerEmailInput.focus();
+        return;
+    }
+
+    var stripeReturnURLInput = document.getElementById('stripe_return_url');
+
+    $.ajax({
+        url: document.getElementById('beforePaymentSubmitURL').value,
+        method: 'POST',
+        dataType: 'json',
+        data: {
+            csrf_token: $('[name="csrf_token"]').val(),
+            type: 'p24'
+        }
+    }).done(function (json) {
+        if (json && json.error && json.error.message) {
+            alert(json.error.message);
+        }
+        // success client Secret generation
+        if (json.clientSecret) {
+            $.ajax({
+                type: 'POST',
+                url: $("#dwfrm_billing").attr("action"),
+                data: $("#dwfrm_billing").serialize(), 
+
+                success: function(response) {
+                    // eslint-disable-next-line no-unused-vars
+                    stripe.confirmP24Payment(
+                        json.clientSecret,
+                        {
+                            payment_method: {
+                                p24: window.p24BankElement,
+                                billing_details: {
+                                    name: p24OwnerNameInput.value,
+                                    email: p24OwnerEmailInput.value
+                                }
+                            },
+                            payment_method_options: {
+                                p24: {
+                                    tos_shown_and_accepted: true
+                                }
+                            },
+                            return_url: stripeReturnURLInput.value
+                        }
+                    );
+                }
+            });
+        }
+    }).fail(function (msg) {
+        if (msg.responseJSON.redirectUrl) {
+            window.location.href = msg.responseJSON.redirectUrl;
+        } else {
+            alert(msg);
+        }
+    });
+}
+
 function onSubmitButtonClicked(event) {
     var selectedPaymentMethod = getSelectedPaymentMethod();
     var createSourcePayload;
@@ -707,11 +940,20 @@ function onSubmitButtonClicked(event) {
 
             document.getElementById('dwfrm_billing').submit();
             break;
-        case 'STRIPE_ALIPAY':
-        case 'STRIPE_EPS':
         case 'STRIPE_GIROPAY':
-        case 'STRIPE_MULTIBANCO':
+            event.preventDefault();
+            handleGiropayPaymentSubmit();
+            break;
+        case 'STRIPE_EPS':
+            event.preventDefault();
+            handleEpsPaymentSubmit();
+            break;
         case 'STRIPE_P24':
+            event.preventDefault();
+            handleP24PaymentSubmit();
+            break;
+        case 'STRIPE_ALIPAY':
+        case 'STRIPE_MULTIBANCO':
             event.preventDefault();
 
             createSourcePayload = getCreateSourcePayload(selectedPaymentMethod);
@@ -728,17 +970,7 @@ function onSubmitButtonClicked(event) {
             break;
         case 'STRIPE_SOFORT':
             event.preventDefault();
-
-            var sofortCountryCodeSelect = document.getElementById('sofort_country_code');
-            var sofortCountryCode = sofortCountryCodeSelect && sofortCountryCodeSelect.selectedOptions && sofortCountryCodeSelect.selectedOptions.length && sofortCountryCodeSelect.selectedOptions[0] && sofortCountryCodeSelect.selectedOptions[0].value;
-
-            var sofortPayload = getCreateSourcePayload(selectedPaymentMethod);
-            sofortPayload.type = 'sofort';
-            sofortPayload.sofort = {
-                country: sofortCountryCode
-            };
-
-            stripe.createSource(sofortPayload).then(processCreateSourceResult);
+            handleSofortPaymentSubmit();
             break;
         case 'STRIPE_SEPA_DEBIT':
             event.preventDefault();
@@ -775,6 +1007,14 @@ function init() {
 
     if (prbPlaceholder) {
         initPRB();
+    }
+
+    if (epsPlaceholder) {
+        initEps();	
+    }
+    
+    if (p24Placeholder) {
+        initP24();	
     }
 
     document.addEventListener('DOMContentLoaded', function () {
