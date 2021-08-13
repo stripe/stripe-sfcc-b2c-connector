@@ -49,4 +49,3 @@ function MakeDefault() {
 
 module.exports.MakeDefault = MakeDefault;
 module.exports.MakeDefault.public = true;
-

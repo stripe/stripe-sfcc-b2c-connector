@@ -1,3 +1,5 @@
+/* eslint-disable no-shadow */
+
 'use strict';
 
 /**
@@ -28,10 +30,11 @@ var guard = require('*/cartridge/scripts/guard');
  * This function can be called by any checkout step to prepare shipments.
  *
  * @transactional
- * @return {Boolean} true if shipments are successfully prepared, false if they are not.
+ * @return {boolean} true if shipments are successfully prepared, false if they are not.
  */
 function prepareShipments() {
-    var cart, homeDeliveries;
+    var cart; var
+        homeDeliveries;
     cart = app.getModel('Cart').get();
 
     homeDeliveries = Transaction.wrap(function () {
@@ -64,7 +67,8 @@ function prepareShipments() {
  */
 function start() {
     var cart = app.getModel('Cart').get();
-    var physicalShipments, pageMeta, homeDeliveries;
+    var physicalShipments; var pageMeta; var
+        homeDeliveries;
 
     if (!cart) {
         app.getController('Cart').Show();
@@ -100,9 +104,9 @@ function start() {
 
     // Go to billing step, if we have no product line items, but only gift certificates in the basket, shipping is not required.
     if (cart.getProductLineItems().size() === 0) {
-        //Stripe changes BEGIN
+        // Stripe changes BEGIN
         require('./COBilling').Start();
-        //Stripe changes END
+        // Stripe changes END
     } else {
         pageMeta = require('*/cartridge/scripts/meta');
         pageMeta.update({
@@ -126,7 +130,8 @@ function start() {
  */
 function handleShippingSettings(cart) {
     Transaction.wrap(function () {
-        var defaultShipment, shippingAddress;
+        var defaultShipment; var
+            shippingAddress;
         defaultShipment = cart.getDefaultShipment();
         shippingAddress = cart.createShipmentShippingAddress(defaultShipment.getID());
 
@@ -156,8 +161,9 @@ function handleShippingSettings(cart) {
  * @transactional
  */
 function updateAddressDetails() {
-    var addressID, segments, lookupCustomer, lookupID, address, profile;
-    //Gets an empty cart object from the CartModel.
+    var addressID; var segments; var lookupCustomer; var lookupID; var address; var
+        profile;
+    // Gets an empty cart object from the CartModel.
     var cart = app.getModel('Cart').get();
 
     if (!cart) {
@@ -238,9 +244,9 @@ function singleShipping() {
             // Mark step as fulfilled.
             session.forms.singleshipping.fulfilled.value = true;
             // @FIXME redirect
-            //Stripe changes BEGIN
+            // Stripe changes BEGIN
             require('./COBilling').Start();
-            //Stripe changes END
+            // Stripe changes END
         },
         selectAddress: function () {
             updateAddressDetails(app.getModel('Cart').get());
@@ -269,7 +275,8 @@ function singleShipping() {
 function selectShippingMethod() {
     var cart = app.getModel('Cart').get();
     var TransientAddress = app.getModel('TransientAddress');
-    var address, applicableShippingMethods;
+    var address; var
+        applicableShippingMethods;
 
     if (!cart) {
         app.getView.render('checkout/shipping/selectshippingmethodjson');
@@ -309,7 +316,8 @@ function selectShippingMethod() {
  * @transaction
  */
 function updateShippingMethodList() {
-    var i, address, applicableShippingMethods, shippingCosts, currentShippingMethod, method;
+    var i; var address; var applicableShippingMethods; var shippingCosts; var currentShippingMethod; var
+        method;
     var cart = app.getModel('Cart').get();
     var TransientAddress = app.getModel('TransientAddress');
 
@@ -365,7 +373,8 @@ function updateShippingMethodList() {
 function getApplicableShippingMethodsJSON() {
     var cart = app.getModel('Cart').get();
     var TransientAddress = app.getModel('TransientAddress');
-    var address, applicableShippingMethods;
+    var address; var
+        applicableShippingMethods;
 
     address = new TransientAddress();
     address.countryCode = request.httpParameterMap.countryCode.stringValue;

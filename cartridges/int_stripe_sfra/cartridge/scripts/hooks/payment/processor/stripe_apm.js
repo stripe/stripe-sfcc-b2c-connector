@@ -65,7 +65,6 @@ exports.Handle = Handle;
 exports.Authorize = Authorize;
 exports.createToken = createToken;
 
-
 /**
  * Verifies the required information for billing form is provided.
  * @param {Object} req - The request object
@@ -99,4 +98,3 @@ function savePaymentInformation(req, basket, billingData) {
 
 exports.processForm = processForm;
 exports.savePaymentInformation = savePaymentInformation;
-

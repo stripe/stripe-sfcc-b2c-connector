@@ -32,7 +32,6 @@ function beforePaymentAuthorization() {
 exports.BeforePaymentAuthorization = beforePaymentAuthorization;
 exports.BeforePaymentAuthorization.public = true;
 
-
 /**
  * An entry point to handle returns from alternative payment methods.
  */
@@ -44,7 +43,6 @@ function handleAPM() {
 
 exports.HandleAPM = handleAPM;
 exports.HandleAPM.public = true;
-
 
 /**
  * Entry point for creating payment intent for APMs.

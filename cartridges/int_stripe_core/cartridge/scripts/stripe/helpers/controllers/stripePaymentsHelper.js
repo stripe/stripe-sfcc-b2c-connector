@@ -19,8 +19,8 @@ function generateCardsPaymentResponse(intent) {
             success: true
         };
     } else if (
-        (intent.status === 'requires_action' || intent.status === 'requires_source_action') &&
-        intent.next_action.type === 'use_stripe_sdk'
+        (intent.status === 'requires_action' || intent.status === 'requires_source_action')
+        && intent.next_action.type === 'use_stripe_sdk'
     ) {
         // Tell the client to handle the action
         responsePayload = {
@@ -60,10 +60,23 @@ function beforePaymentAuthorization() {
 
             var stripePaymentInstrument = checkoutHelper.getStripePaymentInstrument(basket);
 
+            /*
+             * Check if we have a zero order i.e. after full gift certificate redemption
+             */
+            if (stripePaymentInstrument && stripePaymentInstrument.paymentTransaction
+                && stripePaymentInstrument.paymentTransaction.amount
+                && stripePaymentInstrument.paymentTransaction.amount.value === 0) {
+                responsePayload = {
+                    success: true
+                };
+
+                return responsePayload;
+            }
+
             if (stripePaymentInstrument && stripePaymentInstrument.paymentMethod === 'CREDIT_CARD') {
                 var paymentIntent;
-                var paymentIntentId = (stripePaymentInstrument.paymentTransaction) ?
-                    stripePaymentInstrument.paymentTransaction.getTransactionID() : null;
+                var paymentIntentId = (stripePaymentInstrument.paymentTransaction)
+                    ? stripePaymentInstrument.paymentTransaction.getTransactionID() : null;
                 if (paymentIntentId) {
                     paymentIntent = checkoutHelper.confirmPaymentIntent(paymentIntentId);
                 } else {
@@ -288,6 +301,7 @@ function beforePaymentSubmit(type, params) {
     const BasketMgr = require('dw/order/BasketMgr');
     const Transaction = require('dw/system/Transaction');
     const Locale = require('dw/util/Locale');
+    const Money = require('dw/value/Money');
     const basket = BasketMgr.getCurrentBasket();
     const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
@@ -303,12 +317,25 @@ function beforePaymentSubmit(type, params) {
 
     try {
         const basketCurrencyCode = basket.getCurrencyCode();
-        const basketTotal = basket.getAdjustedMerchandizeTotalPrice(true);
+        const basketTotal = basket.getTotalGrossPrice();
 
         var basketCurency = dw.util.Currency.getCurrency(basketCurrencyCode);
         var multiplier = Math.pow(10, basketCurency.getDefaultFractionDigits());
 
-        const amount = Math.round(basketTotal.getValue() * multiplier);
+        // Iterates over the list of gift certificate payment instruments
+        // and updates the total redemption amount.
+        var gcPaymentInstrs = basket.getGiftCertificatePaymentInstruments().iterator();
+        var orderPI = null;
+        var giftCertTotal = new Money(0.0, basket.getCurrencyCode());
+
+        while (gcPaymentInstrs.hasNext()) {
+            orderPI = gcPaymentInstrs.next();
+            giftCertTotal = giftCertTotal.add(orderPI.getPaymentTransaction().getAmount());
+        }
+
+        var totalAmount = basketTotal.subtract(giftCertTotal);
+
+        const amount = Math.round(totalAmount.getValue() * multiplier);
 
         const locale = Locale.getLocale(request.getLocale());
         const lang = locale.getLanguage();
@@ -482,4 +509,3 @@ function beforePaymentSubmit(type, params) {
 
 exports.BeforePaymentSubmit = beforePaymentSubmit;
 exports.BeforePaymentSubmit.public = true;
-

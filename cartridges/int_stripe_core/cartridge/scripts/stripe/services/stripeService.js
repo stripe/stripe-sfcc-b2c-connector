@@ -183,7 +183,6 @@ function getStripeServiceDefinition() {
             return mockResponsesHelper.getMockedResponse(svc);
         },
 
-
         /**
          * A callback that allows filtering communication URL, request, and response
          * log messages. Must be implemented to have messages logged on Production.
@@ -244,7 +243,6 @@ function callService(requestObject) {
 }
 
 exports.call = callService;
-
 
 // https://stripe.com/docs/api/customers
 exports.customers = {
@@ -312,7 +310,6 @@ exports.customers = {
     }
 };
 
-
 // https://stripe.com/docs/api/payment_methods
 exports.paymentMethods = {
     create: function (createPaymentMethodPayload) {
@@ -373,7 +370,6 @@ exports.paymentMethods = {
         return callService(requestObject);
     }
 };
-
 
 // https://stripe.com/docs/api/payment_intents
 exports.paymentIntents = {
@@ -443,7 +439,6 @@ exports.paymentIntents = {
     }
 };
 
-
 // https://stripe.com/docs/api/sources
 exports.sources = {
     create: function (createSourcePayload) {
@@ -493,7 +488,6 @@ exports.sources = {
     }
 };
 
-
 // https://stripe.com/docs/api/charges
 exports.charges = {
     create: function (createChargePayload) {
@@ -532,7 +526,6 @@ exports.charges = {
         return callService(requestObject);
     }
 };
-
 
 // https://stripe.com/docs/api/refunds
 exports.refunds = {

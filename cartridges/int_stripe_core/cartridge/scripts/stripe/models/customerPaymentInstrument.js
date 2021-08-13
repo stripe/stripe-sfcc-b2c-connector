@@ -2,7 +2,6 @@
 
 'use strict';
 
-
 /**
  * An adapter for Stripe payment instrument data objects, to make then
  * compatible (have the same properties) as dw.order.PaymentInstrumnent.

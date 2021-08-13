@@ -15,7 +15,6 @@ exports.getNotificationsCustomObjectType = function () {
     return NOTIFICATIONS_CUSTOM_OBJECT_TYPE;
 };
 
-
 // /* global request, response */
 
 const Mac = require('dw/crypto/Mac');
@@ -48,14 +47,14 @@ function isWebHookStatusValid(status) {
 */
 function isSourceHasValidType(json) {
     // charge event, but we should check source id and type for this charge to ignore card events
-    if (json.data.object.object === 'charge' &&
-        json.data.object.source !== null &&
-        (json.data.object.source.id.indexOf('card_') !== -1 ||
-        json.data.object.source.type === 'card')) {
+    if (json.data.object.object === 'charge'
+        && json.data.object.source !== null
+        && (json.data.object.source.id.indexOf('card_') !== -1
+        || json.data.object.source.type === 'card')) {
         return false;
-    } else if (json.data.object.object === 'source' &&
-        (json.data.object.type === 'card' ||
-        json.data.object.id.indexOf('card_') !== -1)) {
+    } if (json.data.object.object === 'source'
+        && (json.data.object.type === 'card'
+        || json.data.object.id.indexOf('card_') !== -1)) {
         return false;
     }
     return true;

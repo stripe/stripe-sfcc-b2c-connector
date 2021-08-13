@@ -33,7 +33,6 @@ function getSearchQueryString(jobParams) {
         : null;
 }
 
-
 exports.execute = function (jobParams) {
     const Status = require('dw/system/Status');
     const Logger = require('dw/system/Logger');

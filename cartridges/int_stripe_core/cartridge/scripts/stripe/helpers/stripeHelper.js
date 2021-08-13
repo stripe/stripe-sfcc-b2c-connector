@@ -30,7 +30,6 @@ exports.isStripeEnabled = function () {
     return Site.getCurrent().getCustomPreferenceValue('stripeEnabled');
 };
 
-
 /**
 * Gets the Stripe secret API key from Site Preferences.
 *
@@ -40,7 +39,6 @@ exports.getApiKey = function () {
     return require('dw/system/Site').current.getCustomPreferenceValue('stripeApiKey');
 };
 
-
 /**
 * Gets the URL from where Stripe.js can be loaded.
 *
@@ -49,7 +47,6 @@ exports.getApiKey = function () {
 exports.getStripeScriptUrl = function () {
     return require('dw/system/Site').current.getCustomPreferenceValue('stripeApiURL');
 };
-
 
 /**
 * Gets the Stripe publishable API key from Site Preferences.

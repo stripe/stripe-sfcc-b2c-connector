@@ -16,7 +16,6 @@ server.post('BeforePaymentAuthorization', csrfProtection.validateAjaxRequest, fu
     next();
 });
 
-
 /**
  * An entry point to handle returns from alternative payment methods.
  */

@@ -59,7 +59,6 @@ exports.authorizeCreditCard = function (order, paymentInstrument, cvc) {
             billingDetails.phone = address.phone;
         }
 
-
         const paymentMethod = stripe.paymentMethods.create({
             type: 'card',
             card: {
@@ -84,8 +83,8 @@ exports.authorizeCreditCard = function (order, paymentInstrument, cvc) {
             payment_method_options: { card: { moto: true } }
         });
 
-        if (paymentIntent.status === 'succeeded' ||
-         (paymentIntent.status === 'requires_capture' && !stripeChargeCapture)) {
+        if (paymentIntent.status === 'succeeded'
+         || (paymentIntent.status === 'requires_capture' && !stripeChargeCapture)) {
             Transaction.wrap(function () {
                 if (paymentIntent.id) {
                     paymentInstrument.getPaymentTransaction().setTransactionID(paymentIntent.id); // eslint-disable-line

@@ -254,7 +254,6 @@ function placeOrder(stripeNotificationObject, order, stripePaymentInstrument) {
         statusMail = sendMail(order, 'mail/orderconfirmation', Resource.msg('order.orderconfirmation-email.001', 'order', null));
     }
 
-
     stripeLogger.info('Successfully proccesed CO with event id: {0}, source id: {1} , updated SFCC order status to "EXPORT_STATUS_READY". Set up CO processingStatus to {2}, email send - {3}', stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId, 'PROCESSED', statusMail.status === Status.OK ? 'true' : 'false');
 }
 
@@ -522,7 +521,6 @@ function appliesToCurrentSite(stripeNotificationObject) {
 
     return !coSiteId || coSiteId === Site.getCurrent().getID();
 }
-
 
 exports.execute = function () {
     const queryString = "custom.processingStatus='PROCESS'";

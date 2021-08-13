@@ -2,6 +2,9 @@
 /* eslint-disable no-plusplus */
 /* eslint-disable require-jsdoc */
 /* globals Stripe, $ */
+
+'use strict';
+
 // v1
 var $form = $('.payment-form');
 var stripe = Stripe(document.getElementById('stripePublicKey').value);

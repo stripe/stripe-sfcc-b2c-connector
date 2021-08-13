@@ -32,7 +32,6 @@ exports.isStripeCardsPaymentMethodEnabled = function () {
     return false;
 };
 
-
 exports.areStripeAlernativePaymentMethodsEnabled = function () {
     const PaymentMgr = require('dw/order/PaymentMgr');
 
@@ -49,7 +48,6 @@ exports.areStripeAlernativePaymentMethodsEnabled = function () {
 
     return false;
 };
-
 
 exports.isAnyStripePaymentMethodEnabled = function () {
     return this.isStripeCardsPaymentMethodEnabled() || this.areStripeAlernativePaymentMethodsEnabled();
@@ -340,7 +338,6 @@ exports.getNonGiftCertificateAmount = function (lineItemCtnr) {
     // Returns the open amount to be paid.
     return amountOpen;
 };
-
 
 /**
  * Attempts to create an order from the current basket

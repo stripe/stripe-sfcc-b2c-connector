@@ -18,7 +18,6 @@ server.post('AddNewCard', csrfProtection.validateAjaxRequest, function (req, res
     next();
 });
 
-
 /**
  * Makes a card default.
  */

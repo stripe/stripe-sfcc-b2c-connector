@@ -6,6 +6,9 @@
 /* eslint-disable no-plusplus */
 /* eslint-disable require-jsdoc */
 /* globals Stripe, $ */
+
+'use strict';
+
 // vб1
 window.idealBankElement = null;
 window.sepaIbanElement = null;
@@ -218,27 +221,27 @@ function getOwnerDetails() {
         ? document.querySelector('.billing-address input[name$="_firstName"]').value + ' ' + document.querySelector('.billing-address input[name$="_lastName"]').value
         : document.querySelector('input[name$="_firstName"]').value + ' ' + document.querySelector('input[name$="_lastName"]').value;
 
-    var addrLine1 = document.querySelector('.billing-address input[name$="_address1"]') ?
-        document.querySelector('.billing-address input[name$="_address1"]').value : document.querySelector('input[name$="_address1"]').value;
+    var addrLine1 = document.querySelector('.billing-address input[name$="_address1"]')
+        ? document.querySelector('.billing-address input[name$="_address1"]').value : document.querySelector('input[name$="_address1"]').value;
 
-    var addrLine2 = document.querySelector('.billing-address input[name$="_address2"]') ?
-        document.querySelector('.billing-address input[name$="_address2"]').value : document.querySelector('input[name$="_address2"]').value;
+    var addrLine2 = document.querySelector('.billing-address input[name$="_address2"]')
+        ? document.querySelector('.billing-address input[name$="_address2"]').value : document.querySelector('input[name$="_address2"]').value;
 
-    var addrCity = document.querySelector('.billing-address input[name$="_city"]') ?
-        document.querySelector('.billing-address input[name$="_city"]').value : document.querySelector('input[name$="_city"]').value;
+    var addrCity = document.querySelector('.billing-address input[name$="_city"]')
+        ? document.querySelector('.billing-address input[name$="_city"]').value : document.querySelector('input[name$="_city"]').value;
 
-    var addrPostalCode = document.querySelector('.billing-address input[name$="_postalCode"]') ?
-        document.querySelector('.billing-address input[name$="_postalCode"]').value : document.querySelector('input[name$="_postalCode"]').value;
+    var addrPostalCode = document.querySelector('.billing-address input[name$="_postalCode"]')
+        ? document.querySelector('.billing-address input[name$="_postalCode"]').value : document.querySelector('input[name$="_postalCode"]').value;
 
-    var addrCountry = document.querySelector('.billing-address select[name$="_country"]') ?
-        document.querySelector('.billing-address select[name$="_country"]').value : document.querySelector('select[name$="_country"]').value;
+    var addrCountry = document.querySelector('.billing-address select[name$="_country"]')
+        ? document.querySelector('.billing-address select[name$="_country"]').value : document.querySelector('select[name$="_country"]').value;
 
     var ownerEmail = '';
     if ($('.customer-summary-email').length && $('.customer-summary-email').text()) {
         ownerEmail = $('.customer-summary-email').text();
     } else {
-        ownerEmail = document.querySelector('#dwfrm_billing input[name$="_email"]') ?
-            document.querySelector('#dwfrm_billing input[name$="_email"]').value
+        ownerEmail = document.querySelector('#dwfrm_billing input[name$="_email"]')
+            ? document.querySelector('#dwfrm_billing input[name$="_email"]').value
             : document.querySelector('input[name$="_email"]').value;
     }
 
@@ -255,8 +258,8 @@ function getOwnerDetails() {
         });
     }
 
-    var ownerPhone = document.querySelector('#dwfrm_billing input[name$="_phone"]') ?
-        document.querySelector('#dwfrm_billing input[name$="_phone"]').value : document.querySelector('input[name$="_phone"]').value;
+    var ownerPhone = document.querySelector('#dwfrm_billing input[name$="_phone"]')
+        ? document.querySelector('#dwfrm_billing input[name$="_phone"]').value : document.querySelector('input[name$="_phone"]').value;
 
     return {
         name: ownerNames,
@@ -476,9 +479,9 @@ function getCreateKlarnaSourcePayload() {
 
     var stripeSiteLocale = document.getElementById('stripe_site_locale').value;
 
-    var stripeOrderPurchaseCoutry = document.getElementById('stripe_purchase_country').value ?
-        document.getElementById('stripe_purchase_country').value :
-        document.getElementById('billingCountry').value;
+    var stripeOrderPurchaseCoutry = document.getElementById('stripe_purchase_country').value
+        ? document.getElementById('stripe_purchase_country').value
+        : document.getElementById('billingCountry').value;
     var stripeOrderItems = JSON.parse(stripeOrderItemsInput.value);
 
     var amountToPay = parseFloat(stripeOrderAmountInput.value);

@@ -68,6 +68,20 @@ function Authorize(args) {
     const paymentIntentId = paymentInstrument.paymentTransaction.getTransactionID();
     const stripeChargeCapture = Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
 
+    /**
+     * Handle Authorize for zero orders i.e. after full gift cert redeem
+     */
+    if (paymentInstrument && paymentInstrument.paymentTransaction
+        && paymentInstrument.paymentTransaction.amount
+        && paymentInstrument.paymentTransaction.amount.value === 0) {
+        responsePayload = {
+            authorized: true,
+            error: false
+        };
+
+        return responsePayload;
+    }
+
     if (!paymentIntentId) {
         responsePayload = {
             authorized: false,

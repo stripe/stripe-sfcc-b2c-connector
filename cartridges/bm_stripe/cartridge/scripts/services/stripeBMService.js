@@ -179,7 +179,6 @@ function getStripeServiceDefinition(apiKey) {
             return mockResponsesHelper.getMockedResponse(svc);
         },
 
-
         /**
          * A callback that allows filtering communication URL, request, and response
          * log messages. Must be implemented to have messages logged on Production.

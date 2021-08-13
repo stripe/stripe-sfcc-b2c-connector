@@ -1,5 +1,7 @@
 /* global stripe, stripeAccountCountry, stripeShippingOptions, elements, serviceUrl, $ */
 
+'use strict';
+
 /**
  * Init Payment Request Button
  */
