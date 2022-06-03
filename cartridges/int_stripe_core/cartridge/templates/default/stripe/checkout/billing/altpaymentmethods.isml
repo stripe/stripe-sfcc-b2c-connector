@@ -292,6 +292,15 @@
 </div>
 
 <iscomment>
+    Stripe Payment Elements
+    -------------------
+</iscomment>
+<div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_PAYMENT_ELEMENT'}">payment-method-expanded</isif>" data-method="STRIPE_PAYMENT_ELEMENT">
+    <div id="payment-element" style="width:100%">
+    </div>
+</div>
+
+<iscomment>
     Klarna 
     -------------------
 </iscomment>

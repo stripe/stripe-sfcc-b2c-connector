@@ -13,13 +13,13 @@
 
     <payment-method method-id="STRIPE_PAYMENT_REQUEST_BTN">
         <name xml:lang="x-default">STRIPE_PAYMENT_REQUEST_BTN</name>
-        <enabled-flag>true</enabled-flag>
+        <enabled-flag>false</enabled-flag>
         <processor-id>STRIPE_CREDIT</processor-id>
     </payment-method>
 
     <payment-method method-id="STRIPE_IDEAL">
         <name xml:lang="x-default">iDeal</name>
-        <enabled-flag>true</enabled-flag>
+        <enabled-flag>false</enabled-flag>
         <processor-id>STRIPE_APM</processor-id>
         <currencies>
             <currency>EUR</currency>
@@ -28,7 +28,7 @@
 
     <payment-method method-id="STRIPE_SOFORT">
         <name xml:lang="x-default">Sofort</name>
-        <enabled-flag>true</enabled-flag>
+        <enabled-flag>false</enabled-flag>
         <processor-id>STRIPE_APM</processor-id>
         <currencies>
             <currency>EUR</currency>
@@ -37,7 +37,7 @@
 
     <payment-method method-id="STRIPE_SEPA_DEBIT">
         <name xml:lang="x-default">SEPA Direct Debit</name>
-        <enabled-flag>true</enabled-flag>
+        <enabled-flag>false</enabled-flag>
         <processor-id>STRIPE_APM</processor-id>
         <currencies>
             <currency>EUR</currency>
@@ -46,7 +46,7 @@
 
     <payment-method method-id="STRIPE_ALIPAY">
         <name xml:lang="x-default">Alipay</name>
-        <enabled-flag>true</enabled-flag>
+        <enabled-flag>false</enabled-flag>
         <processor-id>STRIPE_APM</processor-id>
         <currencies>
             <currency>AUD</currency>
@@ -63,7 +63,7 @@
 
     <payment-method method-id="STRIPE_BANCONTACT">
         <name xml:lang="x-default">Bancontact</name>
-        <enabled-flag>true</enabled-flag>
+        <enabled-flag>false</enabled-flag>
         <processor-id>STRIPE_APM</processor-id>
         <currencies>
             <currency>EUR</currency>
@@ -72,7 +72,7 @@
 
     <payment-method method-id="STRIPE_EPS">
         <name xml:lang="x-default">EPS</name>
-        <enabled-flag>true</enabled-flag>
+        <enabled-flag>false</enabled-flag>
         <processor-id>STRIPE_APM</processor-id>
         <currencies>
             <currency>EUR</currency>
@@ -81,7 +81,7 @@
 
     <payment-method method-id="STRIPE_ACH_DEBIT">
         <name xml:lang="x-default">ACH Debit</name>
-        <enabled-flag>true</enabled-flag>
+        <enabled-flag>false</enabled-flag>
         <processor-id>STRIPE_APM</processor-id>
         <currencies>
             <currency>USD</currency>
@@ -90,7 +90,7 @@
 
     <payment-method method-id="STRIPE_WECHATPAY">
         <name xml:lang="x-default">WeChat Pay</name>
-        <enabled-flag>true</enabled-flag>
+        <enabled-flag>false</enabled-flag>
         <processor-id>STRIPE_APM</processor-id>
         <currencies>
             <currency>AUD</currency>
@@ -106,7 +106,7 @@
 
     <payment-method method-id="STRIPE_KLARNA">
         <name xml:lang="x-default">Klarna</name>
-        <enabled-flag>true</enabled-flag>
+        <enabled-flag>false</enabled-flag>
         <processor-id>STRIPE_APM</processor-id>
         <currencies>
             <currency>USD</currency>
@@ -120,7 +120,7 @@
 
     <payment-method method-id="STRIPE_GIROPAY">
         <name xml:lang="x-default">Giropay</name>
-        <enabled-flag>true</enabled-flag>
+        <enabled-flag>false</enabled-flag>
         <processor-id>STRIPE_APM</processor-id>
         <currencies>
             <currency>EUR</currency>
@@ -129,7 +129,7 @@
 
     <payment-method method-id="STRIPE_MULTIBANCO">
         <name xml:lang="x-default">Multibanco</name>
-        <enabled-flag>true</enabled-flag>
+        <enabled-flag>false</enabled-flag>
         <processor-id>STRIPE_APM</processor-id>
         <currencies>
             <currency>EUR</currency>
@@ -138,7 +138,7 @@
 
     <payment-method method-id="STRIPE_P24">
         <name xml:lang="x-default">Przelewy24</name>
-        <enabled-flag>true</enabled-flag>
+        <enabled-flag>false</enabled-flag>
         <processor-id>STRIPE_APM</processor-id>
         <currencies>
             <currency>EUR</currency>
@@ -148,12 +148,18 @@
 
     <payment-method method-id="STRIPE_PAYPAL">
         <name xml:lang="x-default">Paypal</name>
-        <enabled-flag>true</enabled-flag>
+        <enabled-flag>false</enabled-flag>
         <processor-id>STRIPE_APM</processor-id>
         <currencies>
             <currency>EUR</currency>
             <currency>GBP</currency>
         </currencies>
+    </payment-method>
+
+    <payment-method method-id="STRIPE_PAYMENT_ELEMENT">
+        <name xml:lang="x-default">New Payment Method</name>
+        <enabled-flag>true</enabled-flag>
+        <processor-id>STRIPE_APM</processor-id>
     </payment-method>
 
 </payment-settings>

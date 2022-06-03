@@ -308,6 +308,8 @@ exports.processIncomingNotification = function () {
                         case 'review.opened':
                         case 'review.closed':
                         case 'charge.refunded':
+                        case 'payment_intent.succeeded':
+                        case 'payment_intent.payment_failed':
                             stripeNotification.custom.processingStatus = 'PROCESS';
                             break;
                         default:

@@ -133,11 +133,11 @@ function getStripeServiceDefinition() {
             const apiVersion = Site.current.getCustomPreferenceValue('stripeApiVersion');
 
             var stripeHeader = {
-                application: {
-                    name: 'Stripe SFCCB2C',
+                X_STRIPE_CLIENT_USER_AGENT: {
+                    AppName: 'Stripe SFCCB2C',
                     partner_id: 'pp_partner_Fs71dOwRYXhmze',
-                    url: 'https://stripe.com/docs/plugins/salesforce-commerce-cloud',
-                    version: '21.3.0'
+                    url: '[https://stripe.com/docs/plugins/salesforce-commerce-cloud]',
+                    version: '22.1.0'
                 }
             };
 

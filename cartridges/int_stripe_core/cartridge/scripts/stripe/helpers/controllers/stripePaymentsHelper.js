@@ -281,14 +281,14 @@ exports.HandleAPM = handleAPM;
 exports.HandleAPM.public = true;
 
 /**
- * Entry point for handling payment intent creation for APMs.
+ * Entry point for handling payment intent creation for APMs and Stripe Payment Element
  * @param {string} type - stripe payment method type
  * @param {Object} params - additional parameters
  * @return {Object} responsePayload.
  */
 function beforePaymentSubmit(type, params) {
     const supportedTypes = ['alipay', 'au_becs_debit', 'bancontact', 'card', 'card_present',
-        'eps', 'giropay', 'ideal', 'interac_present', 'p24', 'sepa_debit', 'sofort', 'paypal'];
+        'eps', 'giropay', 'ideal', 'interac_present', 'p24', 'sepa_debit', 'sofort', 'paypal', 'paymentelement'];
 
     if (supportedTypes.indexOf(type) === -1) {
         return {
@@ -437,6 +437,14 @@ function beforePaymentSubmit(type, params) {
                 amount: amount,
                 currency: basketCurrencyCode
             };
+        } else if (type === 'paymentelement') {
+            createPaymentIntentPayload = {
+                amount: amount,
+                currency: basketCurrencyCode,
+                automatic_payment_methods: {
+                    enabled: true
+                }
+            };
         } else {
             createPaymentIntentPayload = {
                 payment_method_types: [type],
@@ -467,6 +475,14 @@ function beforePaymentSubmit(type, params) {
              * Save the SEPA Direct Debit account for reuse by setting the setup_future_usage parameter to off_session
              */
             if (type === 'sepa_debit' && params.saveSepaCard) {
+                createPaymentIntentPayload.setup_future_usage = 'off_session';
+            }
+
+            /*
+             * Save the Stripe Payment Element for reuse by setting the setup_future_usage parameter to off_session
+             */
+            var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
+            if (type === 'paymentelement' && stripeHelper.isStripePaymentElementsSavePaymentsEnabled()) {
                 createPaymentIntentPayload.setup_future_usage = 'off_session';
             }
 

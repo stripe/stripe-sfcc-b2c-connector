@@ -109,7 +109,9 @@ server.post('HandleStripeQuickSetup', function (req, res, next) {
                 'source.canceled',
                 'source.failed',
                 'source.chargeable',
-                'charge.refunded'];
+                'charge.refunded',
+                'payment_intent.succeeded',
+                'payment_intent.payment_failed'];
 
             var webHookCreateResult = stripeBMService.webhooks.create(webHookURL, enabledEvents, stripePrivateKey);
             var webHookSecretKey = webHookCreateResult.secret;

@@ -164,8 +164,19 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
         }
     }
 
+    const paymentTransaction = paymentInstrument.paymentTransaction;
+    var stripeAccountId = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeAccountId');
+    var stripeAccountType = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeAccountType');
+
+    if (!empty(stripeAccountId)) {
+        paymentTransaction.custom.stripeAccountId = stripeAccountId;
+    }
+
+    if (!empty(stripeAccountType) && 'value' in stripeAccountType && !empty(stripeAccountType.value)) {
+        paymentTransaction.custom.stripeAccountType = stripeAccountType.value;
+    }
+
     if (session.privacy.stripeOrderNumber) {
-        const paymentTransaction = paymentInstrument.paymentTransaction;
         paymentTransaction.custom.stripeOrderNumber = session.privacy.stripeOrderNumber;
     }
 
@@ -462,17 +473,20 @@ exports.getStripeOrderDetails = function (basket) {
 
         if (productLineItem.price.available) {
             var product = productLineItem.getProduct();
-            var productID = (product) ? product.getID() : '';
             var productName = (product) ? product.getName() : '';
 
             var productItem = {
                 type: 'sku',
-                parent: productID,
                 description: productName,
                 quantity: productLineItem.quantity.value,
                 currency: productLineItem.price.currencyCode,
                 amount: Math.round(productLineItem.getAdjustedPrice().getValue() * multiplier)
             };
+            var productID = (product) ? product.getID() : '';
+            if (productID) {
+                productItem.parent = productID;
+            }
+
             orderItems.push(productItem);
 
             subTotal = subTotal.add(productLineItem.getAdjustedPrice());

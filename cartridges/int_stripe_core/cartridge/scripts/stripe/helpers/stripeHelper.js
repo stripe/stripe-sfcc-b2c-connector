@@ -298,6 +298,34 @@ exports.getStripeEpsElementStyle = function () {
 };
 
 /**
+ * Get stripe payment element style from Site Preferences.
+ * @returns {Object} - Stripe payment element style or default value if not configured.
+ */
+exports.getStripePaymentElementStyle = function () {
+    const paymentElementStyle = require('dw/system/Site').current.getCustomPreferenceValue('stripePaymentElementStyle');
+    try {
+        if (paymentElementStyle) {
+            return JSON.parse(paymentElementStyle);
+        }
+    } catch (error) {
+        const Logger = require('dw/system/Logger');
+        Logger.error('Failed to parse stripePaymentElementStyle from site preference value as JSON');
+    }
+
+    return {
+        variables: {
+            colorPrimary: '#0570de',
+            colorBackground: '#ffffff',
+            colorText: '#30313d',
+            colorDanger: '#df1b41',
+            fontFamily: 'Ideal Sans, system-ui, sans-serif',
+            spacingUnit: '2px',
+            borderRadius: '4px'
+        }
+    };
+};
+
+/**
  * Gets Stripe P24 form style from Site Preferences.
  *
  * @return {Object} - Stripe P24 form style or default if not configured.
@@ -324,4 +352,36 @@ exports.getStripeP24ElementStyle = function () {
             }
         }
     };
+};
+
+/**
+ * Checks if Stripe Payment Element: Enable Save Payment Method for Future Purchases is enabled.
+ *
+ * @return {boolean} - True if stripePaymentElementsSavePayments is set to true.
+ */
+exports.isStripePaymentElementsSavePaymentsEnabled = function () {
+    var Site = require('dw/system/Site');
+    return Site.getCurrent().getCustomPreferenceValue('stripePaymentElementsSavePayments');
+};
+
+/**
+ * Checks if Stripe Payment Element is enabled.
+ *
+ * @return {boolean} - True if Stripe Payment Element Payment Method is enabled
+ */
+exports.isStripePaymentElementEnabled = function () {
+    var PaymentMgr = require('dw/order/PaymentMgr');
+
+    return !empty(PaymentMgr.getPaymentMethod('STRIPE_PAYMENT_ELEMENT'));
+};
+
+/**
+ * Checks if Credit Card is enabled.
+ *
+ * @return {boolean} - True if Credit Card is enabled
+ */
+exports.isCreditCardEnabled = function () {
+    var PaymentMgr = require('dw/order/PaymentMgr');
+
+    return !empty(PaymentMgr.getPaymentMethod('CREDIT_CARD'));
 };

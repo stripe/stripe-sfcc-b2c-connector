@@ -1,3 +1,11 @@
+<isset name="stripeHelper" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper')}" scope="page" />
+<isset name="isStripePaymentElementEnabled" value="${stripeHelper.isStripePaymentElementEnabled()}" scope="page" />
+<isset name="isCreditCardEnabled" value="${stripeHelper.isCreditCardEnabled()}" scope="page" />
+
+<isset name="wallet" value="${stripeHelper.getStripeWallet(customer)}" scope="page" />
+<isset name="savedCards" value="${wallet.getPaymentInstruments()}" scope="page" />
+<isset name="hasSavedCards" value="${!empty(savedCards)}" scope="page" />
+
 <isif condition="${pdict.CurrentHttpParameterMap.apm_return_error && pdict.CurrentHttpParameterMap.apm_return_error.stringValue}">
     <div class="alert alert-danger stripe-error-message" role="alert">
         <p class="error-message-text">${Resource.msg('apm.error.fail','stripe',null)}</p>
@@ -8,13 +16,26 @@
      data-payment-method-id="CREDIT_CARD"
      data-is-new-payment="${pdict.customer.registeredUser && pdict.customer.customerPaymentInstruments.length ? false : true}"
 >
-	
+	<isif condition="${!isCreditCardEnabled || !hasSavedCards}">
+		<input type="hidden" name="cardNumber" value="" class="cardNumber" id="cardNumber">
+		<div style="display:none;" id="new-card-form-container">
+		</div>
+	</isif>
+
 	<isloop items="${pdict.order.billing.payment.applicablePaymentMethods}" var="paymentOption">
 		<isif condition="${paymentOption.ID.equals('STRIPE_PAYMENT_REQUEST_BTN')}">
 			<div id="payment-request-button"><!-- A Stripe Element will be inserted here. --></div>
 			<isbreak/>
 		</isif>
 	</isloop>
+AAAAAAAAAAAAAAAAA[${isStripePaymentElementEnabled}][${pdict.order.billing.payment.applicablePaymentMethods.length}]
+
+<isloop items="${pdict.order.billing.payment.applicablePaymentMethods}" var="paymentOption">
+[${paymentOption.name}]
+</isloop>
+
+
+
 
     <ul class="nav nav-tabs nav-fill payment-options" role="tablist">
         <isinclude template="checkout/billing/paymentOptions/paymentOptionsTabs" />

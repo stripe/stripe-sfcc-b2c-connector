@@ -705,7 +705,13 @@ function processBankAccountRequestResult(result) {
 document.querySelector('button.place-order').addEventListener('click', function (event) {
     event.stopImmediatePropagation();
 
-    if (window.localStorage.getItem('stripe_payment_method') === 'STRIPE_KLARNA') {
+    // eslint-disable-next-line no-empty
+    if (window.localStorage.getItem('stripe_payment_method') === 'STRIPE_PAYMENT_ELEMENT') {
+        if (forceSubmit) return true;
+
+        forceSubmit = true;
+        $('button.place-order').click();
+    } else if (window.localStorage.getItem('stripe_payment_method') === 'STRIPE_KLARNA') {
         if (forceSubmit) return true;
 
         forceSubmit = true;
@@ -1209,7 +1215,54 @@ function handleP24Submit() {
     });
 }
 
+function updateBillingAddressAjax(billingAddress) {
+    var url = $('#updateBillingAddress').val();
+    $.ajax({
+        type: 'post',
+        url: url,
+        data: JSON.stringify(billingAddress),
+        contentType: 'application/json; charset=utf-8',
+        traditional: true,
+        success: function (data) {
+            if (data.success) {
+                console.log('User billing address updated successfully.');
+            } else {
+                console.log('billing address update failed.');
+            }
+        }
+    });
+}
+
+function updateUserProfileBillingAddress() {
+    if ($('#billingAddressSelector').length) {
+        var selectedBillingAddress = $('#billingAddressSelector').find(':selected');
+        if (selectedBillingAddress.hasClass('isBillingAddress')) {
+            var billingAddress = {};
+            billingAddress.addressId = selectedBillingAddress.val();
+            billingAddress.firstName = $('#billingFirstName').val();
+            billingAddress.lastName = $('#billingLastName').val();
+            billingAddress.address1 = $('#billingAddressOne').val();
+            billingAddress.address2 = $('#billingAddressTwo').val();
+            billingAddress.city = $('#billingAddressCity').val();
+            billingAddress.states = {};
+            billingAddress.states.stateCode = $('#billingState').val();
+            billingAddress.postalCode = $('#billingZipCode').val();
+            billingAddress.countryCode = $('#billingCountry').val();
+            billingAddress.phone = $('#phoneNumber').val();
+
+            updateBillingAddressAjax(billingAddress);
+        }
+    }
+}
+
 document.querySelector('button.submit-payment').addEventListener('click', function (event) {
+    // skip event handler for Stripe Payment Elements
+    // eslint-disable-next-line
+    if ($('#dwfrm_billing .' + $('.tab-pane.active').attr('id') + ' .payment-form-fields input.form-control').val() == 'STRIPE_PAYMENT_ELEMENT') {
+        window.localStorage.setItem('stripe_payment_method', 'STRIPE_PAYMENT_ELEMENT');
+        return;
+    }
+
     let billingForm = document.getElementById('dwfrm_billing');
     $(billingForm).find('.form-control.is-invalid').removeClass('is-invalid');
     if (!billingForm.reportValidity()) {
@@ -1219,7 +1272,7 @@ document.querySelector('button.submit-payment').addEventListener('click', functi
     }
 
     event.stopImmediatePropagation();
-
+    updateUserProfileBillingAddress();
     var activeTabId = $('.tab-pane.active').attr('id');
     var paymentInfoSelector = '#dwfrm_billing .' + activeTabId + ' .payment-form-fields input.form-control';
     var selectedPaymentMethod = $(paymentInfoSelector).val();
@@ -1642,4 +1695,81 @@ ready(() => {
     }
 
     refreshKlarnaWhenIsActive();
+});
+
+// eslint-disable-next-line
+function handleStripePaymentElementSubmit(event) {
+    // skip event handler for Stripe Payment Elements
+    // eslint-disable-next-line
+    if ($('#dwfrm_billing .' + $('.tab-pane.active').attr('id') + ' .payment-form-fields input.form-control').val() !== 'STRIPE_PAYMENT_ELEMENT') {
+        return;
+    }
+
+    let billingForm = document.getElementById('dwfrm_billing');
+    $(billingForm).find('.form-control.is-invalid').removeClass('is-invalid');
+    if (!billingForm.reportValidity()) {
+        billingForm.focus();
+        billingForm.scrollIntoView();
+        return;
+    }
+
+    event.stopImmediatePropagation();
+    updateUserProfileBillingAddress();
+
+    var stripeReturnURLInput = document.getElementById('stripe_return_url').value;
+    var returnURL = stripeReturnURLInput;
+
+    $.spinner().start();
+    // eslint-disable-next-line
+    stripe.confirmPayment({
+        elements: window.stripePaymentElements,
+        confirmParams: {
+            // Make sure to change this to your payment completion page
+            return_url: returnURL
+        }
+    }).then(function () {
+        window.location.replace(document.getElementById('billingPageUrl').value);
+    });
+
+    $('.submit-payment').click();
+}
+
+function initNewStripePaymentIntent() {
+    $.ajax({
+        url: document.getElementById('beforePaymentSubmitURL').value,
+        method: 'POST',
+        dataType: 'json',
+        data: {
+            csrf_token: $('[name="csrf_token"]').val(),
+            type: 'paymentelement'
+        }
+    }).done(function (json) {
+        if (json && json.error && json.error.message) {
+            alert(json.error.message);
+        }
+        // success client Secret generation
+        if (json.clientSecret) {
+            const clientSecret = json.clientSecret;
+            const stripePaymentElementStyleObject = JSON.parse(document.getElementById('stripePaymentElementStyle').value);
+            const appearance = {
+                theme: 'stripe'
+            };
+
+            appearance.variables = stripePaymentElementStyleObject.variables;
+
+            window.stripePaymentElements = stripe.elements({ appearance, clientSecret });
+
+            const paymentElement = window.stripePaymentElements.create('payment');
+            paymentElement.mount('#payment-element');
+        }
+    });
+}
+
+/* Stripe Payment Element */
+ready(() => {
+    if ($('#payment-element').length && !$('.payment-summary').is(':visible')) {
+        initNewStripePaymentIntent();
+
+        document.querySelector('button.submit-payment').addEventListener('click', handleStripePaymentElementSubmit);
+    }
 });

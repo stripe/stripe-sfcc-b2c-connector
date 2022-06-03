@@ -124,6 +124,29 @@
                 <min-length>0</min-length>
                 <default-value>US</default-value>
             </attribute-definition>
+            <attribute-definition attribute-id="stripeAccountId">
+                <display-name xml:lang="x-default">stripeAccountId</display-name>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeAccountType">
+                <display-name xml:lang="x-default">stripeAccountType</display-name>
+                <type>enum-of-string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <value-definitions>
+                    <value-definition default="true">
+                        <display xml:lang="x-default">STRIPE_TEST</display>
+                        <value>STRIPE_TEST</value>
+                    </value-definition>
+                    <value-definition>
+                        <display xml:lang="x-default">STRIPE_LIVE</display>
+                        <value>STRIPE_LIVE</value>
+                    </value-definition>
+                </value-definitions>
+            </attribute-definition>
             <attribute-definition attribute-id="stripeAllowedWebHookStatuses">
                 <display-name xml:lang="x-default">Stripe Allowed WebHook Statuses</display-name>
                 <description xml:lang="x-default">If webhook status match status that in this configuration, webhook data will be stored in Custom Object.</description>
@@ -203,6 +226,14 @@
             <attribute-definition attribute-id="stripeEpsElementCSSStyle">
                 <display-name xml:lang="x-default">stripeEpsElementCSSStyle</display-name>
                 <description xml:lang="x-default">Style Configuration for Stripe EPS Elements</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripePaymentElementStyle">
+                <display-name xml:lang="x-default">Stripe Payment Element Style</display-name>
+                <description xml:lang="x-default">Style Configuration for Stripe Payment Elements</description>
                 <type>string</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
@@ -325,6 +356,14 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <min-length>0</min-length>
                 <default-value>2020-08-27</default-value>
             </attribute-definition>
+            <attribute-definition attribute-id="stripePaymentElementsSavePayments">
+                <display-name xml:lang="x-default">Stripe Payment Element: Enable Save Payment Method for Future Purchases</display-name>
+                <description xml:lang="x-default">Stripe Payment Element: Enable Save Payment Method for Future Purchases</description>
+                <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <default-value>true</default-value>
+            </attribute-definition>
         </custom-attribute-definitions>
         <group-definitions>
             <attribute-group group-id="Stripe Configs">
@@ -352,12 +391,32 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <attribute attribute-id="stripeUpdateInvoiceOnRefundWebhook"/>
                 <attribute attribute-id="stripePaymentMethodsInBeta"/>
                 <attribute attribute-id="stripeApiVersion"/>
+                <attribute attribute-id="stripeAccountId"/>
+                <attribute attribute-id="stripeAccountType"/>
+                <attribute attribute-id="stripePaymentElementStyle"/>
+                <attribute attribute-id="stripePaymentElementsSavePayments"/>
             </attribute-group>
         </group-definitions>
     </type-extension>
 
     <type-extension type-id="PaymentTransaction">
         <custom-attribute-definitions>
+            <attribute-definition attribute-id="stripeAccountId">
+                <display-name xml:lang="x-default">Stripe Account Id</display-name>
+                <description xml:lang="x-default">ID of the account to which the transactionId refers</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeAccountType">
+                <display-name xml:lang="x-default">Stripe Account Type</display-name>
+                <description xml:lang="x-default">Type of account to which the transactionId refers</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
             <attribute-definition attribute-id="stripeChargeId">
                 <display-name xml:lang="x-default">Stripe charge id</display-name>
                 <type>string</type>
@@ -511,7 +570,7 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <description xml:lang="x-default">Stripe Payment Intent ID</description>
                 <type>string</type>
                 <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
+                <externally-managed-flag>true</externally-managed-flag>
             </attribute-definition>
 
         </custom-attribute-definitions>

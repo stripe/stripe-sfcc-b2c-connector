@@ -13,7 +13,10 @@ server.append('List', function (req, res, next) {
     if (stripeHelper.isStripeEnabled()) {
         var wallet = stripeHelper.getStripeWallet(customer);
         var paymentInstruments = wallet.getPaymentInstruments();
-        res.setViewData({ paymentInstruments: paymentInstruments });
+        res.setViewData({
+            paymentInstruments: paymentInstruments,
+            noSavedPayments: paymentInstruments.length === 0
+        });
     }
     next();
 });

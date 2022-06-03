@@ -19,6 +19,7 @@
 <input type="hidden" id="getCustomerEmailURL" value="${URLUtils.https('StripePayments-GetCustomerEmail')}" />
 <input type="hidden" id="stripeEpsElementStyle" value="${JSON.stringify(stripeHelper.getStripeEpsElementStyle())}" />
 <input type="hidden" id="stripeP24ElementStyle" value="${JSON.stringify(stripeHelper.getStripeP24ElementStyle())}" />
+<input type="hidden" id="stripePaymentElementStyle" value="${JSON.stringify(stripeHelper.getStripePaymentElementStyle())}" />
 
 <input type="hidden" id="beforePaymentSubmitURL" value="${URLUtils.https('StripePayments-BeforePaymentSubmit')}" />
 
@@ -37,15 +38,19 @@
 <input type="hidden" id="stripe_order_items" value="${stripeOrder.order_items}">
 <input type="hidden" id="stripe_order_shipping" value="${stripeOrder.order_shipping}">
 <input type="hidden" id="stripe_shipping_first_name" value="${stripeOrder.shipping_first_name}">
+
 <input type="hidden" id="stripe_shipping_last_name" value="${stripeOrder.shipping_last_name}">
 
 <input type="hidden" id="stripe_site_locale" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getSiteLocale()}">
 
 
 <isloop items="${pdict.order.billing.payment.applicablePaymentMethods}" var="paymentOption">
-
     <isif condition="${paymentOption.ID === 'CREDIT_CARD'}">
         <isif condition="${stripeEnabled}">
+        	<isif condition="${isStripePaymentElementEnabled && !hasSavedCards}">
+        		<iscontinue/>
+        	</isif>
+
             <div class="tab-pane active ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">
                 <fieldset class="payment-form-fields">
 
@@ -62,7 +67,7 @@
         <iselse/>
             <isinclude template="checkout/billing/paymentOptions/creditCardContent" />
         </isif>
-    
+
     <iselseif condition="${paymentOption.ID === 'STRIPE_ACH_DEBIT'}"/>
         <isinclude template="checkout/billing/paymentOptions/achDebitContent" />
 	<iselseif condition="${paymentOption.ID === 'STRIPE_WECHATPAY'}"/>
@@ -79,6 +84,22 @@
         <isinclude template="checkout/billing/paymentOptions/epsContent" />
     <iselseif condition="${paymentOption.ID === 'STRIPE_P24'}"/>
         <isinclude template="checkout/billing/paymentOptions/p24Content" />
+   	<iselseif condition="${paymentOption.ID === 'STRIPE_PAYMENT_ELEMENT'}"/>
+   		<isif condition=${pdict.order.billing.payment.applicablePaymentMethods.length == 1 || !hasSavedCards}>
+   			<div class="tab-pane ${paymentOption.ID}-content active" id="${paymentOption.ID}-content" role="tabpanel">
+    			<fieldset class="payment-form-fields">
+   					<input type="hidden" class="form-control" name="${pdict.forms.billingForm.paymentMethod.htmlName}"
+            			value="${paymentOption.ID}">
+        			<input type="hidden" name="stripe_source_id" id="stripe_source_id">
+        			<div class="row">
+            			<div id="payment-element" style="width:100%">
+            			</div>
+        			</div>
+        		</fieldset>
+        	</div>
+   		<iselse>
+        	<isinclude template="checkout/billing/paymentOptions/stripePaymentElementContent" />
+        </isif>
     <iselse/>
 
         <div class="tab-pane ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">

@@ -1,7 +1,4 @@
 <isset name="stripeHelper" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper')}" scope="page" />
-<isset name="wallet" value="${stripeHelper.getStripeWallet(customer)}" scope="page" />
-<isset name="savedCards" value="${wallet.getPaymentInstruments()}" scope="page" />
-<isset name="hasSavedCards" value="${!empty(savedCards)}" scope="page" />
 <isset name="canSaveCard" value="${customer.authenticated}" scope="page" />
 
 <input type="hidden" name="stripe_card_number" id="stripe_card_number">
@@ -12,6 +9,8 @@
 <input type="hidden" name="stripe_card_expiration_month" id="stripe_card_expiration_month">
 <input type="hidden" name="stripe_card_expiration_year" id="stripe_card_expiration_year">
 <input type="hidden" name="stripe_pr_used" id="stripe_pr_used">
+
+<input type="hidden" id="updateBillingAddress" value="${URLUtils.https('Account-UpdateBillingAddress')}">
 
 <div id="new-card-form-container">
 	<div class="form-group">
@@ -65,7 +64,11 @@
 			</div>
 		</isloop>
 		<div class="switch-to-add-card">
-			<a id="switch-to-add-card" href="javascript:void(0)">${Resource.msg('creditcard.add.card','stripe',null)}</a>
+			<isif condition="${isStripePaymentElementEnabled}">
+				<a id="switch-to-payment-element" href="javascript:void(0)" onclick="document.getElementById('STRIPE_PAYMENT_ELEMENT-tab').click();">${Resource.msg('creditcard.add.card','stripe',null)}</a>
+			<iselse/>
+				<a id="switch-to-add-card" href="javascript:void(0)">${Resource.msg('creditcard.add.card','stripe',null)}</a>
+			</isif>
 		</div>
 	</div>
 </isif>

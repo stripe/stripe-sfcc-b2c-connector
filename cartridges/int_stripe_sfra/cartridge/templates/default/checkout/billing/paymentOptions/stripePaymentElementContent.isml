@@ -1,0 +1,11 @@
+<div class="tab-pane ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">
+    <fieldset class="payment-form-fields">
+        <input type="hidden" class="form-control" name="${pdict.forms.billingForm.paymentMethod.htmlName}"
+            value="${paymentOption.ID}">
+        <input type="hidden" name="stripe_source_id" id="stripe_source_id">
+        <div class="row">
+            <div id="payment-element" style="width:100%">
+            </div>
+        </div>
+  </fieldset>
+</div>

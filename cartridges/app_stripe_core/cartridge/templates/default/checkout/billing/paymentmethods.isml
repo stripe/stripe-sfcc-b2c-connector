@@ -3,6 +3,15 @@
 <isinclude template="util/modules"/>
 <isset name="stripeEnabled" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper').isStripeEnabled()}" scope="page" />
 
+<isset name="stripeHelper" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper')}" scope="page" />
+
+<isset name="isStripePaymentElementEnabled" value="${stripeHelper.isStripePaymentElementEnabled()}" scope="page" />
+
+<isset name="wallet" value="${stripeHelper.getStripeWallet(customer)}" scope="page" />
+<isset name="savedCards" value="${wallet.getPaymentInstruments()}" scope="page" />
+<isset name="hasSavedCards" value="${!empty(savedCards)}" scope="page" />
+<isset name="canSaveCard" value="${customer.authenticated}" scope="page" />
+
 <isif condition="${pdict.CurrentHttpParameterMap.apm_return_error && pdict.CurrentHttpParameterMap.apm_return_error.stringValue}">
     <div class="error-form"" role="alert">
         <p class="error-message-text">${Resource.msg('apm.error.fail','stripe',null)}</p>
@@ -46,12 +55,20 @@
 					Stripe changes END
 				</iscomment>
 
+				<isif condition="${paymentMethodType.value === 'CREDIT_CARD' && isStripePaymentElementEnabled && !hasSavedCards}"><iscontinue/></isif>
+				
 				<div class="form-row label-inline">
 					<isset name="radioID" value="${paymentMethodType.value}" scope="page"/>
 					<div class="field-wrapper">
-						<input id="is-${radioID}" type="radio" class="input-radio" name="${pdict.CurrentForms.billing.paymentMethods.selectedPaymentMethodID.htmlName}" value="${paymentMethodType.htmlValue}" <isif condition="${paymentMethodType.value == pdict.CurrentForms.billing.paymentMethods.selectedPaymentMethodID.htmlValue}">checked="checked"</isif> />
+						<input id="is-${radioID}" type="radio" class="input-radio" name="${pdict.CurrentForms.billing.paymentMethods.selectedPaymentMethodID.htmlName}" value="${paymentMethodType.htmlValue}" <isif condition="${(paymentMethodType.value == pdict.CurrentForms.billing.paymentMethods.selectedPaymentMethodID.htmlValue) || (paymentMethodType.value === 'STRIPE_PAYMENT_ELEMENT' && !hasSavedCards)}">checked="checked"</isif> />
 					</div>
-					<label for="is-${radioID}"><isprint value="${Resource.msg(paymentMethodType.label,'forms',null)}"/></label>
+					<label for="is-${radioID}">
+						<isif condition="${paymentMethodType.value === 'CREDIT_CARD' && isStripePaymentElementEnabled}">
+							<isprint value="${Resource.msg('paymentelement.savedmethod', 'stripe', null)}"/>
+						<iselse/>
+							<isprint value="${Resource.msg(paymentMethodType.label,'forms',null)}"/>
+						</isif>
+					</label>
 				</div>
 
 			</isloop>
@@ -70,7 +87,8 @@
 			--------------------------------------------------------------
 		</iscomment>
 
-		<div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='CREDIT_CARD'}">payment-method-expanded</isif>" data-method="CREDIT_CARD">
+		<div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='CREDIT_CARD'}">payment-method-expanded</isif>" data-method="CREDIT_CARD"
+			<isif condition="${isStripePaymentElementEnabled && !hasSavedCards}">style="display:none;"</isif>>
 			<iscomment>
 				Stripe changes BEGIN
 			</iscomment>

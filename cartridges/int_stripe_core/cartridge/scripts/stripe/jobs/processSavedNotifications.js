@@ -488,9 +488,11 @@ function processNotificationObject(stripeNotificationObject) {
         case 'source.canceled':
         case 'source.failed':
         case 'charge.failed':
+        case 'payment_intent.payment_failed':
             failOrder(stripeNotificationObject, order, stripePaymentInstrument);
             break;
         case 'charge.succeeded':
+        case 'payment_intent.succeeded':
             placeOrder(stripeNotificationObject, order, stripePaymentInstrument);
             break;
         case 'charge.refunded':
