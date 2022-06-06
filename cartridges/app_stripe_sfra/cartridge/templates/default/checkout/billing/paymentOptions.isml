@@ -28,13 +28,6 @@
 			<isbreak/>
 		</isif>
 	</isloop>
-AAAAAAAAAAAAAAAAA[${isStripePaymentElementEnabled}][${pdict.order.billing.payment.applicablePaymentMethods.length}]
-
-<isloop items="${pdict.order.billing.payment.applicablePaymentMethods}" var="paymentOption">
-[${paymentOption.name}]
-</isloop>
-
-
 
 
     <ul class="nav nav-tabs nav-fill payment-options" role="tablist">
