@@ -12,19 +12,7 @@
     "watch": "sgmf-scripts --watch",
     "watch:static": "sgmf-scripts --watch static",
     "test": "mocha tests/unit/**/*.js",
-    "test:integration": "babel-node node_modules/protractor/bin/protractor protractor-conf.js",
-    "test:unit": "node bin/test.js",
-    "test:application": "wdio test/application/webdriver/wdio.conf.js",
-    "test:application:docker": "sh bin/test-application-docker.sh",
-    "css": "node bin/css.js",
-    "js": "node bin/js.js",
-    "jQueryToDoc": "node ./cartridges/app_storefront_core/cartridge/js/jQueryToDoc.js",
-    "jQueryToStatic": "node ./cartridges/app_storefront_core/cartridge/js/jQueryToStatic.js",
-    "build": "npm run js && npm run css && npm run jQueryToDoc && npm run jQueryToStatic",
-    "build:watch": "npm run js -- -w & npm run css -- -w",
-    "preversion": "version > old_version",
-    "version": "node bin/version.js && rm old_version && git add .",
-    "doc": "sh bin/doc.sh"
+    "test:integration": "babel-node node_modules/protractor/bin/protractor protractor-conf.js"
   },
   "keywords": [],
   "author": "",
@@ -67,13 +55,6 @@
   },
   "packageName": "app_stripe_sfra",
   "paths": {
-    "base": "./cartridges/app_storefront_base/"
-  },
-  "dependencies": {
-    "browserify": "^17.0.0",
-    "cleave": "^1.0.2",
-    "cleave.js": "^1.6.0",
-    "exorcist": "^2.0.0",
-    "watchify": "^4.0.0"
+    "base": "../storefront-reference-architecture/cartridges/app_storefront_base/"
   }
 }

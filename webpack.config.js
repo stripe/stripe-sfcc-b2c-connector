@@ -7,7 +7,7 @@ module.exports = [{
     name: 'js',
     entry: sgmfScripts.createJsPath(),
     output: {
-        path: path.resolve('./cartridges/app_storefront_base/cartridge/client/default/js'),
+        path: path.resolve('./cartridges/app_stripe_sfra/cartridge/static/'),
         filename: '[name].js'
     }
 },
@@ -16,7 +16,7 @@ module.exports = [{
     name: 'scss',
     entry: sgmfScripts.createScssPath(),
     output: {
-        path: path.resolve('./cartridges/app_storefront_base/cartridge/client/default/scss'),
+        path: path.resolve('./cartridges/app_stripe_sfra/cartridge/static/'),
         filename: '[name].css'
     },
     module: {
@@ -53,7 +53,7 @@ module.exports = [{
     },
     resolve: {
         alias: {
-            base: path.resolve(__dirname, './cartridges/app_storefront_base/cartridge/client/default/scss')
+            base: path.resolve(__dirname, '../storefront-reference-architecture/cartridges/app_storefront_base/cartridge/client/default/scss')
         }
     },
     plugins: [
