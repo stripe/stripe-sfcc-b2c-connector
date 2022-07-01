@@ -364,6 +364,15 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <externally-managed-flag>false</externally-managed-flag>
                 <default-value>true</default-value>
             </attribute-definition>
+
+            <attribute-definition attribute-id="stripeDisplayRiskScoreData">
+                <display-name xml:lang="x-default">Display Risk Score Data</display-name>
+                <description xml:lang="x-default">Display Risk Score Data</description>
+                <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <default-value>true</default-value>
+            </attribute-definition>
         </custom-attribute-definitions>
         <group-definitions>
             <attribute-group group-id="Stripe Configs">
@@ -395,6 +404,7 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <attribute attribute-id="stripeAccountType"/>
                 <attribute attribute-id="stripePaymentElementStyle"/>
                 <attribute attribute-id="stripePaymentElementsSavePayments"/>
+                <attribute attribute-id="stripeDisplayRiskScoreData"/>
             </attribute-group>
         </group-definitions>
     </type-extension>
@@ -525,6 +535,20 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
             </attribute-definition>
+            <attribute-definition attribute-id="stripeRiskLevel">
+                <display-name xml:lang="x-default">Stripe Risk Level</display-name>
+                <description xml:lang="x-default">Stripe Risk Level</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeRiskScore">
+                <display-name xml:lang="x-default">Stripe Risk Score</display-name>
+                <description xml:lang="x-default">Stripe Risk Score</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
         </custom-attribute-definitions>
     </type-extension>
 
@@ -572,7 +596,20 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>true</externally-managed-flag>
             </attribute-definition>
-
+            <attribute-definition attribute-id="stripeRiskLevel">
+                <display-name xml:lang="x-default">Stripe Risk Level</display-name>
+                <description xml:lang="x-default">Stripe Risk Level</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>true</externally-managed-flag>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeRiskScore">
+                <display-name xml:lang="x-default">Stripe Risk Score</display-name>
+                <description xml:lang="x-default">Stripe Risk Score</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>true</externally-managed-flag>
+            </attribute-definition>
         </custom-attribute-definitions>
         <group-definitions>
             <attribute-group group-id="Stripe Payment Intent">
@@ -583,6 +620,8 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <attribute attribute-id="stripeWeChatQRCodeURL"/>
                 <attribute attribute-id="stripePaymentSourceID"/>
                 <attribute attribute-id="stripePaymentIntentID"/>
+                <attribute attribute-id="stripeRiskLevel"/>
+                <attribute attribute-id="stripeRiskScore"/>
             </attribute-group>
         </group-definitions>
     </type-extension>

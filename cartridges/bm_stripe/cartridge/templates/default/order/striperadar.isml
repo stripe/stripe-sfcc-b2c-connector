@@ -1,0 +1,64 @@
+<!--- TEMPLATENAME: paymentInstrumentInfo_STIPE_AMP.isml --->
+
+<iscontent type="text/html" charset="UTF-8" compact="true">
+
+<isscript>
+	var order = pdict.Order;
+	var riskScore = order.custom.stripeRiskScore ? parseInt(order.custom.stripeRiskScore) : -1;
+</isscript>
+
+<style>
+	.stripe-radar-box {
+		padding:10px;
+		border:1px solid #555;
+		margin:10px 0;
+	}
+	
+	.stripe-radar-hdr {
+		font-weight:bold;
+		margin-bottom:20px;
+	}
+	
+	.stripe-score-text {
+		color:#624752;
+		text-transform:capitalize;
+	}
+	
+	.stripe-score-box {
+		display:inline-block;
+		border-radius:50%;
+		padding:5px;
+	}
+	
+	.stripe-score-high {
+		background-color:#ffe7f2;
+		color:#b4063d;
+	}
+	
+	.stripe-score-elevated {
+		background-color:#fef9da;
+		color:#ed6804;
+	}
+	
+	.stripe-score-normal {
+		background-color:#d7f7c2;
+		color:#07690e;
+	}
+	
+</style>
+	
+<div class="stripe-radar-box">
+		<h3 class="stripe-radar-hdr">${Resource.msg('riskscore.radarinsights','stripebm', null)}</h3>
+		<p style="color:#6a7386;">
+			${Resource.msg('riskscore.riskevaluation','stripebm', null)}
+		</p>
+	<isif condition="${riskScore >= 92}">
+        <span class="stripe-score-box stripe-score-high">${riskScore.toFixed(0)}</span> <span class="stripe-score-text">${order.custom.stripeRiskLevel}</span>
+    <iselseif condition="${riskScore >= 56}">
+        <span class="stripe-score-box stripe-score-elevated">${riskScore.toFixed(0)}</span> <span class="stripe-score-text">${order.custom.stripeRiskLevel}</span>
+    <iselseif condition="${riskScore >= 1}">
+        <span class="stripe-score-box stripe-score-normal">${riskScore.toFixed(0)}</span> <span class="stripe-score-text">${order.custom.stripeRiskLevel}</span>
+    <iselse>
+    	${Resource.msg('riskscore.unknownrisk','stripebm', null)}
+    </isif>
+</div>

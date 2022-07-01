@@ -78,7 +78,7 @@ function beforePaymentAuthorization() {
                 var paymentIntentId = (stripePaymentInstrument.paymentTransaction)
                     ? stripePaymentInstrument.paymentTransaction.getTransactionID() : null;
                 if (paymentIntentId) {
-                    paymentIntent = checkoutHelper.confirmPaymentIntent(paymentIntentId);
+                    paymentIntent = checkoutHelper.confirmPaymentIntent(paymentIntentId, stripePaymentInstrument);
                 } else {
                     paymentIntent = checkoutHelper.createPaymentIntent(stripePaymentInstrument);
 
@@ -94,6 +94,11 @@ function beforePaymentAuthorization() {
                     }
                     basket.custom.stripePaymentIntentID = paymentIntent.id;
                     basket.custom.stripePaymentSourceID = '';
+
+                    if (paymentIntent.charges && paymentIntent.charges.data && paymentIntent.charges.data.length > 0 && paymentIntent.charges.data[0].outcome) {
+                        basket.custom.stripeRiskLevel = paymentIntent.charges.data[0].outcome.risk_level;
+                        basket.custom.stripeRiskScore = paymentIntent.charges.data[0].outcome.risk_score;
+                    }
                 });
 
                 responsePayload = generateCardsPaymentResponse(paymentIntent);
@@ -496,6 +501,11 @@ function beforePaymentSubmit(type, params) {
         Transaction.wrap(function () {
             basket.custom.stripePaymentIntentID = paymentIntent.id;
             basket.custom.stripePaymentSourceID = '';
+
+            if (paymentIntent.charges && paymentIntent.charges.data && paymentIntent.charges.data.length > 0 && paymentIntent.charges.data[0].outcome) {
+                basket.custom.stripeRiskLevel = paymentIntent.charges.data[0].outcome.risk_level;
+                basket.custom.stripeRiskScore = paymentIntent.charges.data[0].outcome.risk_score;
+            }
         });
 
         responsePayload = {

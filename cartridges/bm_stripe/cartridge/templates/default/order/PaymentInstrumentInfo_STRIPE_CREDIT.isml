@@ -1,0 +1,9 @@
+<!--- TEMPLATENAME: paymentInstrumentInfo_STIPE_CREDIT.isml --->
+
+<iscontent type="text/html" charset="UTF-8" compact="true">
+
+<isif condition="${dw.system.Site.current.getCustomPreferenceValue('stripeDisplayRiskScoreData')}">
+	
+	<isinclude template="order/striperadar" />
+
+</isif>

@@ -221,6 +221,11 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
         }
     }
 
+    if (lineItemCtnr.custom.stripePaymentIntentID) {
+        paymentTransaction.setTransactionID(lineItemCtnr.custom.stripePaymentIntentID);
+        paymentTransaction.setType(dw.order.PaymentTransaction.TYPE_AUTH);
+    }
+
     if (paymentInstrument) {
         delete lineItemCtnr.custom.stripeIsPaymentIntentInReview; // eslint-disable-line
     }
@@ -264,10 +269,17 @@ exports.createPaymentIntent = function (paymentInstrument) {
     return paymentIntent;
 };
 
-exports.confirmPaymentIntent = function (paymentIntentId) {
+exports.confirmPaymentIntent = function (paymentIntentId, paymentInstrument) {
     const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
-    const paymentIntent = stripeService.paymentIntents.confirm(paymentIntentId);
+    const paymentMethod = paymentInstrument.custom.stripeSourceID;
+
+    const paymentIntentPayload = {
+        payment_method: paymentMethod,
+        return_url: dw.web.URLUtils.https('StripePayments-HandleAPM').toString()
+    };
+
+    const paymentIntent = stripeService.paymentIntents.confirm(paymentIntentId, paymentIntentPayload);
 
     return paymentIntent;
 };
@@ -368,6 +380,10 @@ exports.createOrder = function (currentBasket) {
                 newOrder = OrderMgr.createOrder(currentBasket, stripeOrderNumber);
             } else {
                 newOrder = OrderMgr.createOrder(currentBasket);
+            }
+
+            if (newOrder.status.value === dw.order.Order.ORDER_STATUS_CREATED) {
+                OrderMgr.placeOrder(newOrder);
             }
 
             return newOrder;
