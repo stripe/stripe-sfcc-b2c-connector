@@ -23,6 +23,8 @@
 
 <input type="hidden" id="beforePaymentSubmitURL" value="${URLUtils.https('StripePayments-BeforePaymentSubmit')}" />
 
+<input type="hidden" id="logStripeErrorMessageURL" value="${URLUtils.https('StripePayments-LogStripeErrorMessage')}" />
+
 <input type="hidden" name="stripe_source_client_secret" id="stripe_source_client_secret">
 <input type="hidden" name="stripe_redirect_url" id="stripe_redirect_url">
 
@@ -43,15 +45,17 @@
 
 <input type="hidden" id="stripe_site_locale" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getSiteLocale()}">
 
-
 <isloop items="${pdict.order.billing.payment.applicablePaymentMethods}" var="paymentOption">
     <isif condition="${paymentOption.ID === 'CREDIT_CARD'}">
         <isif condition="${stripeEnabled}">
+            <iscomment>
+				When Stripe Payment Element is Enabled we hide CREDIT_CARD form when there are No saved cards because credit card template is used to display saved cards only in that case
+			</iscomment>
         	<isif condition="${isStripePaymentElementEnabled && !hasSavedCards}">
         		<iscontinue/>
         	</isif>
 
-            <div class="tab-pane active ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">
+            <div class="tab-pane ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">
                 <fieldset class="payment-form-fields">
 
                     <!--- payment method is credit card --->
@@ -85,21 +89,7 @@
     <iselseif condition="${paymentOption.ID === 'STRIPE_P24'}"/>
         <isinclude template="checkout/billing/paymentOptions/p24Content" />
    	<iselseif condition="${paymentOption.ID === 'STRIPE_PAYMENT_ELEMENT'}"/>
-   		<isif condition=${pdict.order.billing.payment.applicablePaymentMethods.length == 1 || !hasSavedCards}>
-   			<div class="tab-pane ${paymentOption.ID}-content active" id="${paymentOption.ID}-content" role="tabpanel">
-    			<fieldset class="payment-form-fields">
-   					<input type="hidden" class="form-control" name="${pdict.forms.billingForm.paymentMethod.htmlName}"
-            			value="${paymentOption.ID}">
-        			<input type="hidden" name="stripe_source_id" id="stripe_source_id">
-        			<div class="row">
-            			<div id="payment-element" style="width:100%">
-            			</div>
-        			</div>
-        		</fieldset>
-        	</div>
-   		<iselse>
-        	<isinclude template="checkout/billing/paymentOptions/stripePaymentElementContent" />
-        </isif>
+   		<isinclude template="checkout/billing/paymentOptions/stripePaymentElementContent" />
     <iselse/>
 
         <div class="tab-pane ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">

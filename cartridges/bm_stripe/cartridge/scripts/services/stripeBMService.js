@@ -130,17 +130,17 @@ function getStripeServiceDefinition(apiKey) {
          */
         createRequest: function (svc, requestObject) {
             var stripeHeader = {
-                X_STRIPE_CLIENT_USER_AGENT: {
-                    AppName: 'Stripe SFCCB2C',
+                application: {
+                    name: 'Stripe SFCCB2C',
                     partner_id: 'pp_partner_Fs71dOwRYXhmze',
                     url: '[https://stripe.com/docs/plugins/salesforce-commerce-cloud]',
-                    version: '22.2.0'
+                    version: '22.3.0'
                 }
             };
 
             svc.addHeader('apiKey', apiKey);
             svc.addHeader('Authorization', 'Bearer ' + apiKey);
-            svc.addHeader('User-Agent', JSON.stringify(stripeHeader));
+            svc.addHeader('X-Stripe-Client-User-Agent', JSON.stringify(stripeHeader));
 
             var URL = svc.configuration.credential.URL;
             URL += requestObject.endpoint;

@@ -74,3 +74,26 @@ function beforePaymentSubmit() {
 
 exports.BeforePaymentSubmit = beforePaymentSubmit;
 exports.BeforePaymentSubmit.public = true;
+
+/**
+ * Entry point for writing errors to Stripe Logger
+ */
+function logStripeErrorMessage() {
+    if (!CSRFProtection.validateRequest()) {
+        app.getModel('Customer').logout();
+        response.setStatus(500);
+    } else {
+        var msg = request.httpParameterMap.msg.stringValue;
+
+        stripePaymentsHelper.LogStripeErrorMessage(msg);
+    }
+
+    var jsonResponse = JSON.stringify({
+        success: true
+    });
+    response.setContentType('application/json');
+    response.writer.print(jsonResponse);
+}
+
+exports.LogStripeErrorMessage = logStripeErrorMessage;
+exports.LogStripeErrorMessage.public = true;

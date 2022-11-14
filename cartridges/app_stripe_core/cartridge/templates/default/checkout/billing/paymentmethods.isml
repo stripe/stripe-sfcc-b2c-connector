@@ -55,8 +55,6 @@
 					Stripe changes END
 				</iscomment>
 
-				<isif condition="${paymentMethodType.value === 'CREDIT_CARD' && isStripePaymentElementEnabled && !hasSavedCards}"><iscontinue/></isif>
-				
 				<div class="form-row label-inline">
 					<isset name="radioID" value="${paymentMethodType.value}" scope="page"/>
 					<div class="field-wrapper">

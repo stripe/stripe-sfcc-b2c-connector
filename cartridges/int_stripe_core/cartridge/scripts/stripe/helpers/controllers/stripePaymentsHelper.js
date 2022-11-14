@@ -1,7 +1,24 @@
 /* eslint-env es6 */
-/* global request, dw, empty, customer */
+/* global request, response, dw, empty, customer */
 
 'use strict';
+
+/**
+ * Entry point for writing errors to Stripe Logger
+ * @param {string} msg - error message to be logged
+ */
+function logStripeErrorMessage(msg) {
+    if (empty(msg)) {
+        return;
+    }
+
+    const Logger = require('dw/system/Logger').getLogger('Stripe', 'stripe');
+
+    Logger.error('Error: {0}', msg);
+}
+
+exports.LogStripeErrorMessage = logStripeErrorMessage;
+exports.LogStripeErrorMessage.public = true;
 
 /**
  * Created a response payload for beforePaymentAuthorization based on the status
@@ -264,6 +281,19 @@ function handleAPM(sfra) {
             if (['requires_source', 'requires_payment_method'].indexOf(paymentIntent.status) >= 0) {
                 throw new Error('Payment intent failed.');
             }
+
+            // Set a cookie to authenticate customers for Link
+            if ((paymentIntent.status === 'succeeded' || paymentIntent.status === 'processing' || paymentIntent.status === 'requires_capture') && paymentIntent.payment_method) {
+                const paymentMethod = stripeService.paymentMethods.retrieve(paymentIntent.payment_method);
+                if (paymentMethod && paymentMethod.link && paymentMethod.link.persistent_token) {
+                    var stripeCookie = new dw.web.Cookie('stripe.link.persistent_token', paymentMethod.link.persistent_token);
+                    stripeCookie.setSecure(true);
+                    stripeCookie.setHttpOnly(true);
+                    stripeCookie.setMaxAge(90 * 24 * 3600);
+
+                    response.addHttpCookie(stripeCookie);
+                }
+            }
         }
 
         if (sfra) {
@@ -272,6 +302,8 @@ function handleAPM(sfra) {
             redirectUrl = URLUtils.url('COSummary-Start');
         }
     } catch (e) {
+        logStripeErrorMessage('handleAPM: ' + e.message);
+
         if (sfra) {
             redirectUrl = URLUtils.url('Checkout-Begin', 'stage', 'payment', 'apm_return_error', e.message);
         } else {
@@ -309,6 +341,7 @@ function beforePaymentSubmit(type, params) {
     const Money = require('dw/value/Money');
     const basket = BasketMgr.getCurrentBasket();
     const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
+    var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
 
     if (!basket) {
         return {
@@ -443,13 +476,23 @@ function beforePaymentSubmit(type, params) {
                 currency: basketCurrencyCode
             };
         } else if (type === 'paymentelement') {
+            const stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
             createPaymentIntentPayload = {
                 amount: amount,
                 currency: basketCurrencyCode,
                 automatic_payment_methods: {
                     enabled: true
-                }
+                },
+                capture_method: stripeChargeCapture ? 'automatic' : 'manual'
             };
+
+            if (request.httpCookies['stripe.link.persistent_token'] && request.httpCookies['stripe.link.persistent_token'].value) {
+                createPaymentIntentPayload.payment_method_options = {
+                    link: {
+                        persistent_token: request.httpCookies['stripe.link.persistent_token'].value
+                    }
+                };
+            }
         } else {
             createPaymentIntentPayload = {
                 payment_method_types: [type],
@@ -486,7 +529,6 @@ function beforePaymentSubmit(type, params) {
             /*
              * Save the Stripe Payment Element for reuse by setting the setup_future_usage parameter to off_session
              */
-            var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
             if (type === 'paymentelement' && stripeHelper.isStripePaymentElementsSavePaymentsEnabled()) {
                 createPaymentIntentPayload.setup_future_usage = 'off_session';
             }

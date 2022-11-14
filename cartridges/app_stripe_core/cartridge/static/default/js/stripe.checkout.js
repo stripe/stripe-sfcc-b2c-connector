@@ -1465,19 +1465,68 @@ function onSubmitStripePaymentElement(event) {
 
         success: function(response) {
             // eslint-disable-next-line no-unused-vars
-            stripe.confirmPayment({
+            var error = stripe.confirmPayment({
 		        elements: window.stripePaymentElements,
 		        confirmParams: {
 		            // Make sure to change this to your payment completion page
 		            return_url: returnURL
 		        }
 		    }).then(function (result) {
-		        if (result.error) {
-		            alert(result.error.message);
+		    	if (result.error) {
+		            let billingForm = document.getElementById('dwfrm_billing');
+					billingForm.focus();
+			        billingForm.scrollIntoView();
+
+		            $.ajax({
+		                url: document.getElementById('logStripeErrorMessageURL').value,
+		                method: 'POST',
+		                dataType: 'json',
+		                data: {
+		                    csrf_token: $('[name="csrf_token"]').val(),
+		                    msg: 'UPE stripe.confirmPayment Error ' + JSON.stringify(result.error)
+		                }
+		            });
+		  
+		            alert($('#payment-element').data('errormsg'));
 		        }
 		    });
         }
     });
+}
+
+function initStripePaymentElement() {
+    // validate Billing Form
+    let billingForm = document.getElementById('dwfrm_billing');
+    $(billingForm).find('.form-control.is-invalid').removeClass('is-invalid');
+    if (!billingForm.reportValidity()) {
+        billingForm.focus();
+        billingForm.scrollIntoView();
+        return;
+    }
+
+    var ownerEmail = document.querySelector('#dwfrm_billing input[name$="_emailAddress"]') ? document.querySelector('#dwfrm_billing input[name$="_emailAddress"]').value : '';
+    if (!ownerEmail) {
+        return;
+    }
+    
+    if (window.paymentElementInstance) {
+        window.paymentElementInstance.destroy();
+    }
+    
+    window.paymentElementInstance = window.stripePaymentElements.create('payment', {
+        defaultValues: {
+            billingDetails: {
+                email: ownerEmail,
+                name: (document.querySelector('#dwfrm_billing input[name$="_firstName"]') && document.querySelector('#dwfrm_billing input[name$="_lastName"]')) ? document.querySelector('#dwfrm_billing input[name$="_firstName"]').value + ' ' + document.querySelector('#dwfrm_billing input[name$="_lastName"]').value : '',
+                phone: document.querySelector('#dwfrm_billing input[name$="_phone"]') ? document.querySelector('#dwfrm_billing input[name$="_phone"]').value : '',
+                address: {
+                    postal_code: document.querySelector('#dwfrm_billing input[name$="_postal"]') ? document.querySelector('#dwfrm_billing input[name$="_postal"]').value : '',
+                    country: document.querySelector('#dwfrm_billing select[name$="_country"]') ? document.querySelector('#dwfrm_billing select[name$="_country"]').value : ''
+                }
+            }
+        }
+    });
+    window.paymentElementInstance.mount('#payment-element');
 }
 
 function initNewStripePaymentIntent() {
@@ -1505,8 +1554,7 @@ function initNewStripePaymentIntent() {
 
             window.stripePaymentElements = stripe.elements({ appearance, clientSecret });
 
-            const paymentElement = window.stripePaymentElements.create('payment');
-            paymentElement.mount('#payment-element');
+            initStripePaymentElement();
         }
     });
 }
@@ -1521,4 +1569,29 @@ ready(() => {
         document.querySelector('button[name=dwfrm_billing_save]')
 			.addEventListener('click', onSubmitStripePaymentElement);
     }
+
+    if (document.querySelector('#dwfrm_billing input[name$="_firstName"]')) {
+        document.querySelector('#dwfrm_billing input[name$="_firstName"]').addEventListener('change', initStripePaymentElement);
+    }
+
+    if (document.querySelector('#dwfrm_billing input[name$="_lastName"]')) {
+        document.querySelector('#dwfrm_billing input[name$="_lastName"]').addEventListener('change', initStripePaymentElement);
+    }
+
+    if (document.querySelector('#dwfrm_billing input[name$="_postal"]')) {
+        document.querySelector('#dwfrm_billing input[name$="_postal"]').addEventListener('change', initStripePaymentElement);
+    }
+
+    if (document.querySelector('#dwfrm_billing select[name$="_country"]')) {
+        document.querySelector('#dwfrm_billing select[name$="_country"]').addEventListener('change', initStripePaymentElement);
+    }
+
+    if (document.querySelector('#dwfrm_billing input[name$="_emailAddress"]')) {
+        document.querySelector('#dwfrm_billing input[name$="_emailAddress"]').addEventListener('change', initStripePaymentElement);
+    }
+
+    if (document.querySelector('#dwfrm_billing input[name$="_phone"]')) {
+        document.querySelector('#dwfrm_billing input[name$="_phone"]').addEventListener('change', initStripePaymentElement);
+    }
 });
+

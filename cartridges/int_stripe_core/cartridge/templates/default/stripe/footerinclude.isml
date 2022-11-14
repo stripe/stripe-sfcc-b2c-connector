@@ -26,6 +26,7 @@
 			<input type="hidden" id="stripeEpsElementStyle" value="${JSON.stringify(stripeHelper.getStripeEpsElementStyle())}" />
 			<input type="hidden" id="stripeP24ElementStyle" value="${JSON.stringify(stripeHelper.getStripeP24ElementStyle())}" />
             <input type="hidden" id="stripePaymentElementStyle" value="${JSON.stringify(stripeHelper.getStripePaymentElementStyle())}" />
+            <input type="hidden" id="logStripeErrorMessageURL" value="${URLUtils.https('StripePayments-LogStripeErrorMessage')}" />
 			<script src="${URLUtils.staticURL('/js/stripe.checkout.js')}" ></script>
 		</isif>
 		<isif condition="${pageContext.ns === 'cart'}">

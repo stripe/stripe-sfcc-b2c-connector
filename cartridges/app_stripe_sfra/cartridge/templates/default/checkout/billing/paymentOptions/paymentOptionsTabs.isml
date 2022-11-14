@@ -2,6 +2,9 @@
 
 <isif condition="${paymentOption.ID.equals('STRIPE_PAYMENT_REQUEST_BTN')}"><iscontinue/></isif>
 
+<iscomment>
+	When Stripe Payment Element is Enabled we hide CREDIT_CARD form when there are No saved cards because credit card template is used to display saved cards only in that case
+</iscomment>
 <isif condition="${paymentOption.ID.equals('CREDIT_CARD') && isStripePaymentElementEnabled && !hasSavedCards}"><iscontinue/></isif>
 
 <isset name="selectedPaymentInstruments" value="${pdict.order.billing.payment.selectedPaymentInstruments}" scope="page" />
@@ -11,7 +14,7 @@
 <isset name="checkOption" value="${isActive || empty(selectedPaymentInstrument) && isFirstPaymentOption}" scope="page" />
 
 <li class="nav-item" data-method-id="${paymentOption.ID}">
-    <a class="nav-link credit-card-tab <isif condition="${checkOption}">active</isif>" data-toggle="tab" href="${'#'}${paymentOption.ID}-content" role="tab"
+    <a class="nav-link credit-card-tab <isif condition="${(paymentOption.ID === 'STRIPE_PAYMENT_ELEMENT') || (!isStripePaymentElementEnabled && checkOption)}">active</isif>" data-toggle="tab" href="${'#'}${paymentOption.ID}-content" role="tab"
     	<isif condition="${paymentOption.ID === 'STRIPE_PAYMENT_ELEMENT'}">id="${paymentOption.ID}-tab"</isif>>
         <isif condition="${isStripePaymentElementEnabled && paymentOption.ID === 'CREDIT_CARD' && hasSavedCards}">
         	${Resource.msg('paymentelement.savedmethod', 'stripe', null)}

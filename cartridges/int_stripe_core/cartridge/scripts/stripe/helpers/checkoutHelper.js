@@ -221,9 +221,10 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
         }
     }
 
+    const stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
     if (lineItemCtnr.custom.stripePaymentIntentID) {
         paymentTransaction.setTransactionID(lineItemCtnr.custom.stripePaymentIntentID);
-        paymentTransaction.setType(dw.order.PaymentTransaction.TYPE_AUTH);
+        paymentTransaction.setType(stripeChargeCapture ? dw.order.PaymentTransaction.TYPE_CAPTURE : dw.order.PaymentTransaction.TYPE_AUTH);
     }
 
     if (paymentInstrument) {

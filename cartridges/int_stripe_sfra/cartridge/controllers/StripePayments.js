@@ -85,4 +85,19 @@ server.get('GetCustomerEmail', function (req, res, next) {
     next();
 });
 
+/**
+ * Entry point for handling writing errors to Stripe Logger called as an AJAX request
+ */
+server.post('LogStripeErrorMessage', csrfProtection.validateAjaxRequest, function (req, res, next) {
+    var msg = req.form.msg;
+
+    stripePaymentsHelper.LogStripeErrorMessage(msg);
+
+    res.json({
+        success: true
+    });
+
+    next();
+});
+
 module.exports = server.exports();
