@@ -180,7 +180,7 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
         paymentTransaction.custom.stripeOrderNumber = session.privacy.stripeOrderNumber;
     }
 
-    if (customer.authenticated) {
+    if (customer.authenticated && customer.profile && customer.profile.email) {
         let stripeCustomerId = customer.profile.custom.stripeCustomerID;
 
         if (params.saveCard || params.saveSepaCard) {

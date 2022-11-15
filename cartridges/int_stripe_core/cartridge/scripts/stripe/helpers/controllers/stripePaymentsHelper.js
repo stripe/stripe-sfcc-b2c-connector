@@ -501,7 +501,7 @@ function beforePaymentSubmit(type, params) {
             };
         }
 
-        if (customer.authenticated && customer.profile) {
+        if (customer.authenticated && customer.profile && customer.profile.email) {
             /*
              * Check if registered customer has an associated Stripe customer ID
              * if not, make a call to Stripe to create such id and save it as customer profile custom attribute
