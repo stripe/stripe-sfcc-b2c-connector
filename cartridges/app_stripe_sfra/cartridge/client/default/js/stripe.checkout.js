@@ -795,7 +795,8 @@ function handleIdealPaymentSubmit() {
         dataType: 'json',
         data: {
             csrf_token: $('[name="csrf_token"]').val(),
-            type: 'ideal'
+            type: 'ideal',
+            orderid: document.getElementById('stripe_order_number') ? document.getElementById('stripe_order_number').value : ''
         }
     }).done(function (json) {
         if (json && json.error && json.error.message) {
@@ -848,7 +849,8 @@ function handleSepaDebitPaymentSubmit() {
 
     var beforePaymentSubmitData = {
         csrf_token: $('[name="csrf_token"]').val(),
-        type: 'sepa_debit'
+        type: 'sepa_debit',
+        orderid: document.getElementById('stripe_order_number') ? document.getElementById('stripe_order_number').value : ''
     };
 
     var savedSepaDebitCardId = isSavedSepaCard ? document.querySelector('input[name="saved_sepa_card_id"]:checked').value : '';
@@ -930,7 +932,8 @@ function handleBancontactPaymentSubmit() {
         dataType: 'json',
         data: {
             csrf_token: $('[name="csrf_token"]').val(),
-            type: 'bancontact'
+            type: 'bancontact',
+            orderid: document.getElementById('stripe_order_number') ? document.getElementById('stripe_order_number').value : ''
         }
     }).done(function (json) {
         if (json && json.error && json.error.message) {
@@ -974,7 +977,8 @@ function handlePaypalPaymentSubmit() {
         dataType: 'json',
         data: {
             csrf_token: $('[name="csrf_token"]').val(),
-            type: 'paypal'
+            type: 'paypal',
+            orderid: document.getElementById('stripe_order_number') ? document.getElementById('stripe_order_number').value : ''
         }
     }).done(function (json) {
         if (json && json.error && json.error.message) {
@@ -1015,7 +1019,8 @@ function handleGiropayPaymentSubmit() {
         dataType: 'json',
         data: {
             csrf_token: $('[name="csrf_token"]').val(),
-            type: 'giropay'
+            type: 'giropay',
+            orderid: document.getElementById('stripe_order_number') ? document.getElementById('stripe_order_number').value : ''
         }
     }).done(function (json) {
         if (json && json.error && json.error.message) {
@@ -1066,7 +1071,8 @@ function handleSofortPaymentSubmit() {
         dataType: 'json',
         data: {
             csrf_token: $('[name="csrf_token"]').val(),
-            type: 'sofort'
+            type: 'sofort',
+            orderid: document.getElementById('stripe_order_number') ? document.getElementById('stripe_order_number').value : ''
         }
     }).done(function (json) {
         if (json && json.error && json.error.message) {
@@ -1116,7 +1122,8 @@ function handleEpsPaymentSubmit() {
         dataType: 'json',
         data: {
             csrf_token: $('[name="csrf_token"]').val(),
-            type: 'eps'
+            type: 'eps',
+            orderid: document.getElementById('stripe_order_number') ? document.getElementById('stripe_order_number').value : ''
         }
     }).done(function (json) {
         if (json && json.error && json.error.message) {
@@ -1173,7 +1180,8 @@ function handleP24Submit() {
         dataType: 'json',
         data: {
             csrf_token: $('[name="csrf_token"]').val(),
-            type: 'p24'
+            type: 'p24',
+            orderid: document.getElementById('stripe_order_number') ? document.getElementById('stripe_order_number').value : ''
         }
     }).done(function (json) {
         if (json && json.error && json.error.message) {
@@ -1777,7 +1785,8 @@ function initNewStripePaymentIntent() {
         dataType: 'json',
         data: {
             csrf_token: $('[name="csrf_token"]').val(),
-            type: 'paymentelement'
+            type: 'paymentelement',
+            orderid: document.getElementById('stripe_order_number') ? document.getElementById('stripe_order_number').value : ''
         }
     }).done(function (json) {
         if (json && json.error && json.error.message) {

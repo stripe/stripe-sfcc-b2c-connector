@@ -63,6 +63,10 @@ server.post('BeforePaymentSubmit', csrfProtection.validateAjaxRequest, function 
         params.savedSepaDebitCardId = req.form.savedSepaDebitCardId;
     }
 
+    if (req.form.orderid) {
+        params.orderid = req.form.orderid;
+    }
+
     var responsePayload = stripePaymentsHelper.BeforePaymentSubmit(type, params);
     res.json(responsePayload);
 

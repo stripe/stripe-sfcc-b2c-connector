@@ -64,6 +64,9 @@ function beforePaymentSubmit() {
         if (request.httpParameterMap.savedSepaDebitCardId && request.httpParameterMap.savedSepaDebitCardId.value) {
             params.savedSepaDebitCardId = request.httpParameterMap.savedSepaDebitCardId.value;
         }
+        if (request.httpParameterMap.orderid && request.httpParameterMap.orderid.value) {
+            params.orderid = request.httpParameterMap.orderid.value;
+        }
         responsePayload = stripePaymentsHelper.BeforePaymentSubmit(type, params);
     }
 

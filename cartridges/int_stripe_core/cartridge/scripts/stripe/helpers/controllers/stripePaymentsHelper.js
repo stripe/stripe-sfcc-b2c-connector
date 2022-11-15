@@ -538,6 +538,15 @@ function beforePaymentSubmit(type, params) {
             }
         }
 
+        if (params.orderid) {
+            if (!createPaymentIntentPayload.metadata) {
+                createPaymentIntentPayload.metadata = {};
+            }
+
+            createPaymentIntentPayload.metadata.order_id = params.orderid;
+            createPaymentIntentPayload.metadata.site_id = dw.system.Site.getCurrent().getID();
+        }
+
         const paymentIntent = stripeService.paymentIntents.create(createPaymentIntentPayload);
 
         Transaction.wrap(function () {
