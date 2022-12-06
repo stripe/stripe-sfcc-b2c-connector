@@ -1,7 +1,10 @@
 /* eslint-env es6 */
-/* global request, response, dw, empty, customer */
+/* global request, response, dw, empty, customer, session */
 
 'use strict';
+
+const OrderMgr = require('dw/order/OrderMgr');
+const Transaction = require('dw/system/Transaction');
 
 /**
  * Entry point for writing errors to Stripe Logger
@@ -19,6 +22,25 @@ function logStripeErrorMessage(msg) {
 
 exports.LogStripeErrorMessage = logStripeErrorMessage;
 exports.LogStripeErrorMessage.public = true;
+
+/**
+ * Entry point for fail of Stripe Order
+ */
+function failOrder() {
+    if (session.privacy.stripeOrderNumber) {
+        var order = OrderMgr.getOrder(session.privacy.stripeOrderNumber);
+        if (order) {
+            Transaction.wrap(function () {
+                OrderMgr.failOrder(order, true);
+            });
+        }
+        session.privacy.stripeOrderNumber = null;
+        delete session.privacy.stripeOrderNumber;
+    }
+}
+
+exports.FailOrder = failOrder;
+exports.FailOrder.public = true;
 
 /**
  * Created a response payload for beforePaymentAuthorization based on the status
@@ -66,7 +88,6 @@ function generateCardsPaymentResponse(intent) {
  */
 function beforePaymentAuthorization() {
     var BasketMgr = require('dw/order/BasketMgr');
-    var Transaction = require('dw/system/Transaction');
     var PaymentTransaction = require('dw/order/PaymentTransaction');
     var responsePayload;
 
@@ -119,71 +140,6 @@ function beforePaymentAuthorization() {
                 });
 
                 responsePayload = generateCardsPaymentResponse(paymentIntent);
-            } else if (stripePaymentInstrument && stripePaymentInstrument.paymentMethod === 'STRIPE_ACH_DEBIT') {
-                const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
-
-                const newStripeCustomer = stripeService.customers.create({
-                    source: stripePaymentInstrument.custom.stripeBankAccountTokenId
-                });
-
-                let stripeCustomerId = newStripeCustomer.id;
-
-                Transaction.wrap(function () {
-                    basket.custom.stripeCustomerID = stripeCustomerId;
-                    basket.custom.stripeBankAccountToken = stripePaymentInstrument.custom.stripeBankAccountToken;
-                    basket.custom.stripeIsPaymentIntentInReview = true;
-
-                    if (stripePaymentInstrument && stripePaymentInstrument.paymentTransaction && stripePaymentInstrument.custom.stripeSourceID) {
-                        stripePaymentInstrument.paymentTransaction.setTransactionID(stripePaymentInstrument.custom.stripeSourceID);
-                        stripePaymentInstrument.paymentTransaction.setType(PaymentTransaction.TYPE_AUTH);
-                    }
-
-                    if (stripePaymentInstrument && stripePaymentInstrument.custom.stripeSourceID) {
-                        basket.custom.stripePaymentSourceID = stripePaymentInstrument.custom.stripeSourceID;
-                        basket.custom.stripePaymentIntentID = '';
-                    }
-                });
-
-                responsePayload = {
-                    success: true
-                };
-            } else if (stripePaymentInstrument && stripePaymentInstrument.paymentMethod === 'STRIPE_WECHATPAY') {
-                Transaction.wrap(function () {
-                    basket.custom.stripeWeChatQRCodeURL = stripePaymentInstrument.custom.stripeWeChatQRCodeURL;
-                    basket.custom.stripeIsPaymentIntentInReview = true;
-
-                    if (stripePaymentInstrument && stripePaymentInstrument.paymentTransaction && stripePaymentInstrument.custom.stripeSourceID) {
-                        stripePaymentInstrument.paymentTransaction.setTransactionID(stripePaymentInstrument.custom.stripeSourceID);
-                        stripePaymentInstrument.paymentTransaction.setType(PaymentTransaction.TYPE_AUTH);
-                    }
-
-                    if (stripePaymentInstrument && stripePaymentInstrument.custom.stripeSourceID) {
-                        basket.custom.stripePaymentSourceID = stripePaymentInstrument.custom.stripeSourceID;
-                        basket.custom.stripePaymentIntentID = '';
-                    }
-                });
-
-                responsePayload = {
-                    success: true
-                };
-            } else if (stripePaymentInstrument && stripePaymentInstrument.paymentMethod === 'STRIPE_KLARNA') {
-                Transaction.wrap(function () {
-                    basket.custom.stripeIsPaymentIntentInReview = true;
-
-                    if (stripePaymentInstrument && stripePaymentInstrument.paymentTransaction && stripePaymentInstrument.custom.stripeSourceID) {
-                        stripePaymentInstrument.paymentTransaction.setTransactionID(stripePaymentInstrument.custom.stripeSourceID);
-                        stripePaymentInstrument.paymentTransaction.setType(PaymentTransaction.TYPE_AUTH);
-                    }
-
-                    if (stripePaymentInstrument && stripePaymentInstrument.custom.stripeSourceID) {
-                        basket.custom.stripePaymentSourceID = stripePaymentInstrument.custom.stripeSourceID;
-                        basket.custom.stripePaymentIntentID = '';
-                    }
-                });
-
-                responsePayload = {
-                    success: true
-                };
             } else {
                 Transaction.wrap(function () {
                     /*
@@ -257,7 +213,6 @@ function handleAPM(sfra) {
         const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
         // handle payments with source id
-        // Please Note: for ACH Debit payments, the source id is empty
         if (!empty(sourceId)) {
             const source = stripeService.sources.retrieve(sourceId);
 
@@ -297,9 +252,9 @@ function handleAPM(sfra) {
         }
 
         if (sfra) {
-            redirectUrl = URLUtils.url('Checkout-Begin', 'stage', 'placeOrder');
+            redirectUrl = URLUtils.url('Stripe-PaymentElementOrderPlaced');
         } else {
-            redirectUrl = URLUtils.url('COSummary-Start');
+            redirectUrl = URLUtils.url('Stripe-PaymentElementOrderPlaced');
         }
     } catch (e) {
         logStripeErrorMessage('handleAPM: ' + e.message);
@@ -324,8 +279,8 @@ exports.HandleAPM.public = true;
  * @return {Object} responsePayload.
  */
 function beforePaymentSubmit(type, params) {
-    const supportedTypes = ['alipay', 'au_becs_debit', 'bancontact', 'card', 'card_present',
-        'eps', 'giropay', 'ideal', 'interac_present', 'p24', 'sepa_debit', 'sofort', 'paypal', 'paymentelement'];
+    const supportedTypes = ['au_becs_debit', 'card', 'card_present',
+        'interac_present', 'paymentelement'];
 
     if (supportedTypes.indexOf(type) === -1) {
         return {
@@ -336,8 +291,6 @@ function beforePaymentSubmit(type, params) {
     }
 
     const BasketMgr = require('dw/order/BasketMgr');
-    const Transaction = require('dw/system/Transaction');
-    const Locale = require('dw/util/Locale');
     const Money = require('dw/value/Money');
     const basket = BasketMgr.getCurrentBasket();
     const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
@@ -375,10 +328,6 @@ function beforePaymentSubmit(type, params) {
 
         const amount = Math.round(totalAmount.getValue() * multiplier);
 
-        const locale = Locale.getLocale(request.getLocale());
-        const lang = locale.getLanguage();
-        const country = locale.getCountry();
-
         var shippingAddress = null;
         var shipments = basket.getShipments();
         var iter = shipments.iterator();
@@ -391,91 +340,7 @@ function beforePaymentSubmit(type, params) {
         }
 
         var createPaymentIntentPayload = null;
-        if (type === 'sepa_debit') {
-            createPaymentIntentPayload = {
-                payment_method_types: [type],
-                amount: amount,
-                currency: basketCurrencyCode,
-                // Verify your integration in the https://stripe.com/docs/payments/sepa-debit/accept-a-payment guide by including this parameter
-                metadata: {
-                    integration_check: 'sepa_debit_accept_a_payment'
-                }
-            };
-        } else if (type === 'bancontact') {
-            createPaymentIntentPayload = {
-                payment_method_types: [type],
-                amount: amount,
-                currency: basketCurrencyCode
-            };
-
-            if (['en', 'de', 'fr', 'nl'].indexOf(lang) !== -1) {
-                createPaymentIntentPayload.payment_method_options = {};
-                createPaymentIntentPayload.payment_method_options.bancontact = {};
-                createPaymentIntentPayload.payment_method_options.bancontact.preferred_language = lang;
-            }
-        } else if (type === 'giropay') {
-            createPaymentIntentPayload = {
-                payment_method_types: [type],
-                amount: amount,
-                currency: basketCurrencyCode
-            };
-        } else if (type === 'paypal') {
-            createPaymentIntentPayload = {
-                amount: amount,
-                currency: basketCurrencyCode,
-                payment_method_types: [type]
-            };
-
-            if (lang && country) {
-                const preferredLocale = lang + '_' + country;
-
-                createPaymentIntentPayload.payment_method_options = {
-                    paypal: {
-                        preferred_locale: preferredLocale
-                    }
-                };
-            }
-
-            if (shippingAddress) {
-                createPaymentIntentPayload.shipping = {};
-
-                createPaymentIntentPayload.shipping.name = shippingAddress.getFirstName() + ' ' + shippingAddress.getLastName();
-
-                createPaymentIntentPayload.shipping.phone = shippingAddress.getPhone();
-
-                createPaymentIntentPayload.shipping.address = {};
-                createPaymentIntentPayload.shipping.address.line1 = shippingAddress.getAddress1();
-                createPaymentIntentPayload.shipping.address.line2 = shippingAddress.getAddress2();
-                createPaymentIntentPayload.shipping.address.city = shippingAddress.getCity();
-                createPaymentIntentPayload.shipping.address.state = shippingAddress.getStateCode();
-                createPaymentIntentPayload.shipping.address.country = shippingAddress.getCountryCode() ? shippingAddress.getCountryCode().value.toUpperCase() : '';
-                createPaymentIntentPayload.shipping.address.postal_code = shippingAddress.getPostalCode();
-            }
-        } else if (type === 'sofort') {
-            createPaymentIntentPayload = {
-                payment_method_types: [type],
-                amount: amount,
-                currency: basketCurrencyCode
-            };
-
-            if (['de', 'en', 'es', 'it', 'fr', 'nl', 'pl'].indexOf(lang) !== -1) {
-                createPaymentIntentPayload.payment_method_options = {};
-                createPaymentIntentPayload.payment_method_options.sofort = {};
-                createPaymentIntentPayload.payment_method_options.sofort.preferred_language = lang;
-            }
-        } else if (type === 'eps') {
-            createPaymentIntentPayload = {
-                payment_method_types: [type],
-                amount: amount,
-                currency: basketCurrencyCode
-            };
-        } else if (type === 'p24') {
-            createPaymentIntentPayload = {
-                payment_method_types: [type],
-                amount: amount,
-                currency: basketCurrencyCode
-            };
-        } else if (type === 'paymentelement') {
+        if (type === 'paymentelement') {
             const stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
             createPaymentIntentPayload = {
                 amount: amount,
@@ -520,21 +385,10 @@ function beforePaymentSubmit(type, params) {
             createPaymentIntentPayload.customer = customer.profile.custom.stripeCustomerID;
 
             /*
-             * Save the SEPA Direct Debit account for reuse by setting the setup_future_usage parameter to off_session
-             */
-            if (type === 'sepa_debit' && params.saveSepaCard) {
-                createPaymentIntentPayload.setup_future_usage = 'off_session';
-            }
-
-            /*
              * Save the Stripe Payment Element for reuse by setting the setup_future_usage parameter to off_session
              */
             if (type === 'paymentelement' && stripeHelper.isStripePaymentElementsSavePaymentsEnabled()) {
                 createPaymentIntentPayload.setup_future_usage = 'off_session';
-            }
-
-            if (params.savedSepaDebitCardId) {
-                createPaymentIntentPayload.payment_method = params.savedSepaDebitCardId;
             }
         }
 

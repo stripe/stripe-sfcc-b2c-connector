@@ -4,10 +4,6 @@
 // v1
 var cardElement = null;
 var cardNumberElement = null;
-window.idealBankElement = null;
-window.sepaIbanElement = null;
-window.epsBankElement= null;
-window.p24BankElement= null;
 
 var stripeOptions = [];
 var betas = document.getElementById('stripePaymentMethodsInBeta').value;
@@ -24,16 +20,8 @@ var elements = stripe.elements();
 
 var newCardFormContainer = document.getElementById('new-card-form-container');
 var savedCardsFormContainer = document.getElementById('saved-cards-container');
-var idealPlaceholder = document.getElementById('ideal-bank-element');
-var sepaDebitPlaceholder = document.getElementById('sepa-iban-element');
-var sepaDebitInput = document.getElementById('is-STRIPE_SEPA_DEBIT');
 var prbPlaceholder = document.getElementById('payment-request-button');
-var epsPlaceholder = document.getElementById('eps-bank-element');
-var p24Placeholder = document.getElementById('p24-bank-element');
-
-var newSepaCardFormContainer = document.getElementById('new-sepa-card-form-container');
-var savedSepaCardsFormContainer = document.getElementById('saved-sepa-cards-container');
-
+var 
 var paymentMethodOptions = document.querySelectorAll('input[name$="_selectedPaymentMethodID"]');
 
 var submitBillingFormButton = document.querySelector('button[name=dwfrm_billing_save]');
@@ -190,77 +178,6 @@ function initSavedCards() {
     }
 }
 
-function initIdeal() {
-    window.idealBankElement = elements.create('idealBank', { style: JSON.parse(document.getElementById('stripeIdealElementStyle').value) });
-    window.idealBankElement.mount('#ideal-bank-element');
-}
-
-function initSepaDebit() {
-    window.sepaIbanElement = elements.create('iban', {
-        style: JSON.parse(document.getElementById('stripeSepaDebitStyle').value),
-        supportedCountries: ['SEPA']
-    });
-
-    // Add an instance of the iban Element into the `iban-element` <div>.
-    window.sepaIbanElement.mount('#sepa-iban-element');
-
-    var errorMessage = document.getElementById('sepa-error-message');
-    var bankName = document.getElementById('sepa-bank-name');
-
-    window.sepaIbanElement.on('change', function (event) {
-        // Handle real-time validation errors from the iban Element.
-        if (event.error) {
-            errorMessage.textContent = event.error.message;
-            errorMessage.classList.add('visible');
-        } else {
-            errorMessage.classList.remove('visible');
-        }
-
-        // Display bank name corresponding to IBAN, if available.
-        if (event.bankName) {
-            bankName.textContent = event.bankName;
-            bankName.classList.add('visible');
-        } else {
-            bankName.classList.remove('visible');
-        }
-    });
-}
-
-function initEps() {
-    window.epsBankElement = elements.create('epsBank', { style: JSON.parse(document.getElementById('stripeEpsElementStyle').value) });
-    window.epsBankElement.mount('#eps-bank-element');
-}
-
-function initP24() {
-    window.p24BankElement = elements.create('p24Bank', { style: JSON.parse(document.getElementById('stripeP24ElementStyle').value) });
-    window.p24BankElement.mount('#p24-bank-element');
-}
-
-// Saved Sepa Direct Debit Card
-var switchToSavedSepaCardsLink = document.getElementById('switch-to-saved-sepa-cards');
-if (switchToSavedSepaCardsLink) {
-    switchToSavedSepaCardsLink.addEventListener('click', function () {
-        newSepaCardFormContainer.style.display = 'none';
-        savedSepaCardsFormContainer.style.display = 'block';
-    });
-}
-
-var switchToNewSepaCardLink = document.getElementById('switch-to-add-sepa-card');
-if (switchToNewSepaCardLink) {
-    switchToNewSepaCardLink.addEventListener('click', function () {
-        newSepaCardFormContainer.style.display = 'block';
-        savedSepaCardsFormContainer.style.display = 'none';
-    });
-}
-
-if (savedSepaCardsFormContainer) {
-    newSepaCardFormContainer.style.display = 'none';
-}
-
-function isSavedDirectDebitSepaCard() {
-    return newSepaCardFormContainer && newSepaCardFormContainer.style.display === 'none';
-}
-
 function populateBillingData(pr) {
     var payerName = pr.payerName;
     if (payerName) {
@@ -381,514 +298,6 @@ function getOwnerDetails() {
     };
 }
 
-function getSourceType(selectedPaymentMethod) {
-    return {
-        STRIPE_ACH_DEBIT: 'ach_debit',
-        STRIPE_ALIPAY: 'alipay',
-        STRIPE_MULTIBANCO: 'multibanco',
-        STRIPE_WECHATPAY: 'wechat',
-        STRIPE_KLARNA: 'klarna'
-    }[selectedPaymentMethod];
-}
-
-function getCreateSourcePayload(selectedPaymentMethod) {
-    var stripeSiteIdInput = document.getElementById('stripe_site_id');
-    var stripeOrderNumberInput = document.getElementById('stripe_order_number');
-    var stripeReturnURLInput = document.getElementById('stripe_return_url');
-    var stripeOrderAmountInput = document.getElementById('stripe_order_amount');
-    var stripeOrderCurrencyInput = document.getElementById('stripe_order_currency');
-
-    var amountToPay = parseFloat(stripeOrderAmountInput.value);
-    var currencyCode = stripeOrderCurrencyInput.value && stripeOrderCurrencyInput.value.toLowerCase();
-    var returnURL = stripeReturnURLInput.value;
-
-    return {
-        type: getSourceType(selectedPaymentMethod),
-        amount: amountToPay,
-        currency: currencyCode,
-        redirect: {
-            return_url: returnURL
-        },
-        metadata: {
-            site_id: stripeSiteIdInput.value,
-            order_id: stripeOrderNumberInput.value
-        },
-        owner: getOwnerDetails()
-    };
-}
-
-function processCreateSourceResult(result) {
-    if (result.error) {
-        alert(result.error.message);
-    } else {
-        var sourceIdInput = document.getElementById('stripe_source_id');
-        var sourceClientSecretInput = document.getElementById('stripe_source_client_secret');
-        var redirectURLInput = document.getElementById('stripe_redirect_url');
-
-        sourceIdInput.value = result.source.id;
-        sourceClientSecretInput.value = result.source.client_secret;
-        if (result.source.redirect) {
-            redirectURLInput.value = result.source.redirect.url;
-        }
-
-        document.getElementById('dwfrm_billing').submit();
-    }
-}
-
-function handleIdealPaymentSubmit() {
-    var idealOwnerNameInput = document.getElementById('ideal-name');
-    if (!idealOwnerNameInput.value) {
-        idealOwnerNameInput.focus();
-        return;
-    }
-
-    var stripeReturnURLInput = document.getElementById('stripe_return_url');
-
-    $.ajax({
-        url: document.getElementById('beforePaymentSubmitURL').value,
-        method: 'POST',
-        dataType: 'json',
-        data: {
-            csrf_token: $('[name="csrf_token"]').val(),
-            type: 'ideal',
-            orderid: document.getElementById('stripe_order_number') ? document.getElementById('stripe_order_number').value : ''
-        }
-    }).done(function (json) {
-        if (json && json.error && json.error.message) {
-            alert(json.error.message);
-        }
-        // success client Secret generation
-        if (json.clientSecret) {
-            $.ajax({
-                type: 'POST',
-                url: $("#dwfrm_billing").attr("action"),
-                data: $("#dwfrm_billing").serialize(),
-
-                success: function(response) {
-                    // eslint-disable-next-line no-unused-vars
-                    stripe.confirmIdealPayment(
-                        json.clientSecret,
-                        {
-                            payment_method: {
-                                ideal: window.idealBankElement,
-                                billing_details: {
-                                    name: idealOwnerNameInput.value
-                                }
-                            },
-                            return_url: stripeReturnURLInput.value
-                        }
-                    );
-                }
-            });
-        }
-    }).fail(function (msg) {
-        if (msg.responseJSON.redirectUrl) {
-            window.location.href = msg.responseJSON.redirectUrl;
-        } else {
-            alert(msg);
-        }
-    });
-}
-
-function handleSepaDebitPaymentSubmit() {
-	var isSavedSepaCard = isSavedDirectDebitSepaCard();
-    var sepaNameInput = document.getElementById('sepa-name');
-
-    // validate sepa card form if not saved card selected
-    if (!isSavedSepaCard && !sepaNameInput.value) {
-        sepaNameInput.focus();
-        return;
-    }
-    var owner = getOwnerDetails();
-    var sepaBillingName = (sepaNameInput.value) ? sepaNameInput.value : owner.name;
-
-    var stripeReturnURLInput = document.getElementById('stripe_return_url');
-
-    var beforePaymentSubmitData = {
-        csrf_token: $('[name="csrf_token"]').val(),
-        type: 'sepa_debit',
-        orderid: document.getElementById('stripe_order_number') ? document.getElementById('stripe_order_number').value : ''
-    };
-
-    var savedSepaDebitCardId = isSavedSepaCard ? document.querySelector('input[name="saved_sepa_card_id"]:checked').value : '';
-    if (isSavedSepaCard && !savedSepaDebitCardId) {
-        return;
-    }
-
-    if (isSavedSepaCard) {
-        beforePaymentSubmitData.savedSepaDebitCardId = savedSepaDebitCardId;
-    }
-
-    var stripeSaveSepaCardInput = document.getElementById('stripe_save_sepa_card');
-    if (stripeSaveSepaCardInput && stripeSaveSepaCardInput.checked) {
-        beforePaymentSubmitData.saveSepaCard = true;
-    }
-
-    $.ajax({
-        url: document.getElementById('beforePaymentSubmitURL').value,
-        method: 'POST',
-        dataType: 'json',
-        data: beforePaymentSubmitData
-    }).done(function (json) {
-        if (json && json.error && json.error.message) {
-            alert(json.error.message);
-        }
-        // success client Secret generation
-        if (json.clientSecret) {
-        	var paymentMethod = [];
-            if (savedSepaDebitCardId) {
-                paymentMethod = savedSepaDebitCardId;
-            } else {
-                paymentMethod = {
-                    sepa_debit: window.sepaIbanElement,
-                    billing_details: {
-                        name: sepaBillingName,
-                        email: owner.email
-                    }
-                };
-            }
-
-            // eslint-disable-next-line no-unused-vars
-            stripe.confirmSepaDebitPayment(
-                json.clientSecret,
-                {
-                    payment_method: paymentMethod
-                }
-            ).then(function(result) {
-                if (!result.error) {
-                  document.getElementById('dwfrm_billing').submit();
-                }
-            });
-        }
-    }).fail(function (msg) {
-        if (msg.responseJSON.redirectUrl) {
-            window.location.href = msg.responseJSON.redirectUrl;
-        } else {
-            alert(msg);
-        }
-    });
-}
-
-function handleBancontactPaymentSubmit() {
-    var owner = getOwnerDetails();
-
-    var stripeReturnURLInput = document.getElementById('stripe_return_url');
-
-    $.ajax({
-        url: document.getElementById('beforePaymentSubmitURL').value,
-        method: 'POST',
-        dataType: 'json',
-        data: {
-            csrf_token: $('[name="csrf_token"]').val(),
-            type: 'bancontact',
-            orderid: document.getElementById('stripe_order_number') ? document.getElementById('stripe_order_number').value : ''
-        }
-    }).done(function (json) {
-        if (json && json.error && json.error.message) {
-            alert(json.error.message);
-        }
-        // success client Secret generation
-        if (json.clientSecret) {
-            $.ajax({
-                type: 'POST',
-                url: $("#dwfrm_billing").attr("action"),
-                data: $("#dwfrm_billing").serialize(),
-
-                success: function(response) {
-                    // eslint-disable-next-line no-unused-vars
-                    stripe.confirmBancontactPayment(
-                        json.clientSecret,
-                        {
-                            payment_method: {
-                                billing_details: {
-                                    name: owner.name
-                                }
-                            },
-                            return_url: stripeReturnURLInput.value
-                        }
-                    );
-                }
-            });
-        }
-    }).fail(function (msg) {
-        if (msg.responseJSON.redirectUrl) {
-            window.location.href = msg.responseJSON.redirectUrl;
-        } else {
-            alert(msg);
-        }
-    });
-}
-
-function handlePaypalPaymentSubmit() {
-    var stripeReturnURLInput = document.getElementById('stripe_return_url');
-
-    $.ajax({
-        url: document.getElementById('beforePaymentSubmitURL').value,
-        method: 'POST',
-        dataType: 'json',
-        data: {
-            csrf_token: $('[name="csrf_token"]').val(),
-            type: 'paypal',
-            orderid: document.getElementById('stripe_order_number') ? document.getElementById('stripe_order_number').value : ''
-        }
-    }).done(function (json) {
-        if (json && json.error && json.error.message) {
-            alert(json.error.message);
-        }
-        // success client Secret generation
-        if (json.clientSecret) {
-            $.ajax({
-                type: 'POST',
-                url: $("#dwfrm_billing").attr("action"),
-                data: $("#dwfrm_billing").serialize(),
-
-                success: function(response) {
-                    // eslint-disable-next-line no-unused-vars
-                    stripe.confirmPayPalPayment(
-                        json.clientSecret,
-                        {
-                            return_url: stripeReturnURLInput.value
-                        }
-                    );
-                }
-            });
-        }
-    }).fail(function (msg) {
-        if (msg.responseJSON.redirectUrl) {
-            window.location.href = msg.responseJSON.redirectUrl;
-        } else {
-            alert(msg);
-        }
-    });
-}
-
-function handleGiropayPaymentSubmit() {
-    var owner = getOwnerDetails();
-
-    var stripeReturnURLInput = document.getElementById('stripe_return_url');
-
-    $.ajax({
-        url: document.getElementById('beforePaymentSubmitURL').value,
-        method: 'POST',
-        dataType: 'json',
-        data: {
-            csrf_token: $('[name="csrf_token"]').val(),
-            type: 'giropay',
-            orderid: document.getElementById('stripe_order_number') ? document.getElementById('stripe_order_number').value : ''
-        }
-    }).done(function (json) {
-        if (json && json.error && json.error.message) {
-            alert(json.error.message);
-        }
-        // success client Secret generation
-        if (json.clientSecret) {
-            $.ajax({
-                type: 'POST',
-                url: $("#dwfrm_billing").attr("action"),
-                data: $("#dwfrm_billing").serialize(),
-
-                success: function(response) {
-                    // eslint-disable-next-line no-unused-vars
-                    stripe.confirmGiropayPayment(
-                        json.clientSecret,
-                        {
-                            payment_method: {
-                                billing_details: {
-                                    name: owner.name
-                                }
-                            },
-                            return_url: stripeReturnURLInput.value
-                        }
-                    );
-                }
-            });
-        }
-    }).fail(function (msg) {
-        if (msg.responseJSON.redirectUrl) {
-            window.location.href = msg.responseJSON.redirectUrl;
-        } else {
-            alert(msg);
-        }
-    });
-}
-
-function handleSofortPaymentSubmit() {
-    var sofortCountryCodeSelect = document.getElementById('sofort_country_code');
-    var sofortCountryCode = sofortCountryCodeSelect && sofortCountryCodeSelect.selectedOptions && sofortCountryCodeSelect.selectedOptions.length && sofortCountryCodeSelect.selectedOptions[0] && sofortCountryCodeSelect.selectedOptions[0].value;
-
-    if (!sofortCountryCode) {
-        return;
-    }
-
-    var stripeReturnURLInput = document.getElementById('stripe_return_url');
-
-    $.ajax({
-        url: document.getElementById('beforePaymentSubmitURL').value,
-        method: 'POST',
-        dataType: 'json',
-        data: {
-            csrf_token: $('[name="csrf_token"]').val(),
-            type: 'sofort',
-            orderid: document.getElementById('stripe_order_number') ? document.getElementById('stripe_order_number').value : ''
-        }
-    }).done(function (json) {
-        if (json && json.error && json.error.message) {
-            alert(json.error.message);
-        }
-        // success client Secret generation
-        if (json.clientSecret) {
-            $.ajax({
-                type: 'POST',
-                url: $("#dwfrm_billing").attr("action"),
-                data: $("#dwfrm_billing").serialize(),
-
-                success: function(response) {
-                    // eslint-disable-next-line no-unused-vars
-                    stripe.confirmSofortPayment(
-                        json.clientSecret,
-                        {
-                            payment_method: {
-                                sofort: {
-                                    country: sofortCountryCode
-                                }
-                            },
-                            return_url: stripeReturnURLInput.value
-                        }
-                    );
-                }
-            });
-        }
-    }).fail(function (msg) {
-        if (msg.responseJSON.redirectUrl) {
-            window.location.href = msg.responseJSON.redirectUrl;
-        } else {
-            alert(msg);
-        }
-    });
-}
-
-function handleEpsPaymentSubmit() {
-    var epsOwnerNameInput = document.getElementById('eps-name');
-    if (!epsOwnerNameInput.value) {
-        epsOwnerNameInput.focus();
-        return;
-    }
-
-    var stripeReturnURLInput = document.getElementById('stripe_return_url');
-
-    $.ajax({
-        url: document.getElementById('beforePaymentSubmitURL').value,
-        method: 'POST',
-        dataType: 'json',
-        data: {
-            csrf_token: $('[name="csrf_token"]').val(),
-            type: 'eps',
-            orderid: document.getElementById('stripe_order_number') ? document.getElementById('stripe_order_number').value : ''
-        }
-    }).done(function (json) {
-        if (json && json.error && json.error.message) {
-            alert(json.error.message);
-        }
-        // success client Secret generation
-        if (json.clientSecret) {
-            $.ajax({
-                type: 'POST',
-                url: $("#dwfrm_billing").attr("action"),
-                data: $("#dwfrm_billing").serialize(),
-
-                success: function(response) {
-                    // eslint-disable-next-line no-unused-vars
-                    stripe.confirmEpsPayment(
-                        json.clientSecret,
-                        {
-                            payment_method: {
-                                eps: window.epsBankElement,
-                                billing_details: {
-                                    name: epsOwnerNameInput.value
-                                }
-                            },
-                            return_url: stripeReturnURLInput.value
-                        }
-                    );
-                }
-            });
-        }
-    }).fail(function (msg) {
-        if (msg.responseJSON.redirectUrl) {
-            window.location.href = msg.responseJSON.redirectUrl;
-        } else {
-            alert(msg);
-        }
-    });
-}
-
-function handleP24PaymentSubmit() {
-    var p24OwnerNameInput = document.getElementById('p24-name');
-    if (!p24OwnerNameInput.value) {
-        p24OwnerNameInput.focus();
-        return;
-    }
-
-    var p24OwnerEmailInput = document.getElementById('p24-email');
-    if (!p24OwnerEmailInput.value) {
-        p24OwnerEmailInput.focus();
-        return;
-    }
-
-    var stripeReturnURLInput = document.getElementById('stripe_return_url');
-
-    $.ajax({
-        url: document.getElementById('beforePaymentSubmitURL').value,
-        method: 'POST',
-        dataType: 'json',
-        data: {
-            csrf_token: $('[name="csrf_token"]').val(),
-            type: 'p24',
-            orderid: document.getElementById('stripe_order_number') ? document.getElementById('stripe_order_number').value : ''
-        }
-    }).done(function (json) {
-        if (json && json.error && json.error.message) {
-            alert(json.error.message);
-        }
-        // success client Secret generation
-        if (json.clientSecret) {
-            $.ajax({
-                type: 'POST',
-                url: $("#dwfrm_billing").attr("action"),
-                data: $("#dwfrm_billing").serialize(),
-
-                success: function(response) {
-                    // eslint-disable-next-line no-unused-vars
-                    stripe.confirmP24Payment(
-                        json.clientSecret,
-                        {
-                            payment_method: {
-                                p24: window.p24BankElement,
-                                billing_details: {
-                                    name: p24OwnerNameInput.value,
-                                    email: p24OwnerEmailInput.value
-                                }
-                            },
-                            payment_method_options: {
-                                p24: {
-                                    tos_shown_and_accepted: true
-                                }
-                            },
-                            return_url: stripeReturnURLInput.value
-                        }
-                    );
-                }
-            });
-        }
-    }).fail(function (msg) {
-        if (msg.responseJSON.redirectUrl) {
-            window.location.href = msg.responseJSON.redirectUrl;
-        } else {
-            alert(msg);
-        }
-    });
-}
-
 function onSubmitButtonClicked(event) {
     var selectedPaymentMethod = getSelectedPaymentMethod();
     var createSourcePayload;
@@ -931,69 +340,6 @@ function onSubmitButtonClicked(event) {
                 });
             }
             break;
-        case 'STRIPE_ACH_DEBIT':
-            event.preventDefault();
-
-            var achDebitParams = getBankAccountRequestParamsForAchDebit();
-            stripe.createToken('bank_account', achDebitParams).then(processBankAccountRequestResult);
-
-            break;
-        case 'STRIPE_WECHATPAY':
-            event.preventDefault();
-
-            createSourcePayload = getCreateWeChatSourcePayload();
-
-            stripe.createSource(createSourcePayload).then(processWeChatCreateSourceResult);
-            break;
-        case 'STRIPE_KLARNA':
-            event.preventDefault();
-
-            // get the category the customer chose
-            var selectedCategory = document.querySelector('.klarna-payment-method:checked').value;
-            window.localStorage.setItem('stripe_klarna_payment_option', selectedCategory);
-
-            document.getElementById('dwfrm_billing').submit();
-            break;
-        case 'STRIPE_GIROPAY':
-            event.preventDefault();
-            handleGiropayPaymentSubmit();
-            break;
-        case 'STRIPE_EPS':
-            event.preventDefault();
-            handleEpsPaymentSubmit();
-            break;
-        case 'STRIPE_P24':
-            event.preventDefault();
-            handleP24PaymentSubmit();
-            break;
-        case 'STRIPE_ALIPAY':
-        case 'STRIPE_MULTIBANCO':
-            event.preventDefault();
-
-            createSourcePayload = getCreateSourcePayload(selectedPaymentMethod);
-
-            stripe.createSource(createSourcePayload).then(processCreateSourceResult);
-            break;
-        case 'STRIPE_IDEAL':
-            event.preventDefault();
-            handleIdealPaymentSubmit();
-            break;
-        case 'STRIPE_BANCONTACT':
-            event.preventDefault();
-            handleBancontactPaymentSubmit();
-            break;
-        case 'STRIPE_SOFORT':
-            event.preventDefault();
-            handleSofortPaymentSubmit();
-            break;
-        case 'STRIPE_SEPA_DEBIT':
-            event.preventDefault();
-            handleSepaDebitPaymentSubmit();
-            break;
-        case 'STRIPE_PAYPAL':
-            event.preventDefault();
-            handlePaypalPaymentSubmit();
-            break;
         default:
             event.preventDefault();
 
@@ -1011,24 +357,8 @@ function init() {
         initSavedCards();
     }
 
-    if (idealPlaceholder) {
-        initIdeal();
-    }
-
-    if (sepaDebitPlaceholder && sepaDebitInput) {
-        initSepaDebit();
-    }
-
     if (prbPlaceholder) {
         initPRB();
-    }
-
-    if (epsPlaceholder) {
-        initEps();
-    }
-
-    if (p24Placeholder) {
-        initP24();
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -1084,46 +414,6 @@ function initSummary() {
 		if (window.localStorage.getItem('stripe_payment_method') === 'STRIPE_PAYMENT_ELEMENT') {
 			forceSubmit = true;
         	placeOrderButton.click();
-        } else if (window.localStorage.getItem('stripe_payment_method') === 'STRIPE_KLARNA') {
-            var klarnaPaymentOption = window.localStorage.getItem('stripe_klarna_payment_option');
-
-            window.Klarna.Payments.authorize({
-                payment_method_category: klarnaPaymentOption
-            }, function (res) {
-                if (res.approved) {
-                    // Payment has been authorized
-                    $.ajax({
-                        url: document.getElementById('beforePaymentAuthURL').value,
-                        method: 'POST',
-                        dataType: 'json',
-                        data: {
-                            csrf_token: $('[name="csrf_token"]').val()
-                        }
-                    }).done(function (json) {
-                        handleServerResponse(json);
-                    }).fail(function (msg) {
-                        if (msg.responseJSON.redirectUrl) {
-                            window.location.href = msg.responseJSON.redirectUrl;
-                        } else {
-                            alert(msg.error);
-                        }
-                    });
-                } else if (res.error) {
-                    // Payment not authorized or an error has occurred
-                    alert(res.error);
-                    if ($('.mini-payment-instrument a').length) {
-                        window.location.href = $('.mini-payment-instrument a').attr('href');
-                    }
-                } else {
-                    // handle other states
-                    alert('Order not approved');
-                    if ($('.mini-payment-instrument a').length) {
-                        window.location.href = $('.mini-payment-instrument a').attr('href');
-                    }
-                }
-            });
-
-
         } else {
             $.ajax({
                 url: document.getElementById('beforePaymentAuthURL').value,
@@ -1153,311 +443,6 @@ if (placeOrderButton) {
     initSummary();
 }
 
-function getBankAccountRequestParamsForAchDebit() {
-
-    var stripeOrderCurrencyInput = document.getElementById('stripe_order_currency');
-    var currencyCode = stripeOrderCurrencyInput.value && stripeOrderCurrencyInput.value.toLowerCase();
-
-    return {
-        country: document.getElementById('stripeAccountCountry').value,
-        currency: currencyCode,
-        routing_number: document.getElementById('ach-routing-number').value,
-        account_number: document.getElementById('ach-account-number').value,
-        account_holder_name: document.getElementById('ach-account-holdername').value,
-        account_holder_type: document.getElementById('ach-account-type').value
-    };
-}
-
-function processBankAccountRequestResult(result) {
-
-    if (result.error) {
-        alert(result.error.message);
-    } else {
-
-        // init bank account token id
-        var bankAccountTokenIdInput = document.getElementById('stripe_bank_account_token_id');
-        bankAccountTokenIdInput.value = result.token.id;
-
-        // init bank account token
-        var bankAccountTokenInput = document.getElementById('stripe_bank_account_token');
-        bankAccountTokenInput.value = result.token.bank_account.id;
-
-        document.getElementById('dwfrm_billing').submit();
-    }
-}
-
-//t WeChat
-function getCreateWeChatSourcePayload() {
-    var stripeSiteIdInput = document.getElementById('stripe_site_id');
-    var stripeOrderNumberInput = document.getElementById('stripe_order_number');
-    var stripeOrderAmountInput = document.getElementById('stripe_order_amount');
-    var stripeOrderCurrencyInput = document.getElementById('stripe_order_currency');
-
-    var amountToPay = parseFloat(stripeOrderAmountInput.value);
-    var currencyCode = stripeOrderCurrencyInput.value && stripeOrderCurrencyInput.value.toLowerCase();
-
-    return {
-        type: 'wechat',
-        amount: amountToPay,
-        currency: currencyCode,
-        statement_descriptor: stripeOrderNumberInput.value,
-        metadata: {
-            site_id: stripeSiteIdInput.value,
-            order_id: stripeOrderNumberInput.value
-        },
-        owner: getOwnerDetails()
-    };
-}
-
-function processWeChatCreateSourceResult(result) {
-    if (result.error) {
-        alert(result.error.message);
-    } else {
-        var sourceIdInput = document.getElementById('stripe_source_id');
-        var sourceClientSecretInput = document.getElementById('stripe_source_client_secret');
-        var sourceWeChatQRCodeURL = document.getElementById('stripe_wechat_qrcode_url');
-
-        sourceIdInput.value = result.source.id;
-
-        sourceClientSecretInput.value = result.source.client_secret;
-        sourceWeChatQRCodeURL.value = result.source.wechat.qr_code_url;
-
-        document.getElementById('dwfrm_billing').submit();
-    }
-}
-
-//t Klarna
-function getCreateKlarnaSourcePayload() {
-    var stripeSiteIdInput = document.getElementById('stripe_site_id');
-    var stripeOrderNumberInput = document.getElementById('stripe_order_number');
-    var stripeOrderAmountInput = document.getElementById('stripe_order_amount');
-    var stripeOrderCurrencyInput = document.getElementById('stripe_order_currency');
-    var stripeOrderItemsInput = document.getElementById('stripe_order_items');
-    var stripeOrderShippingInput = document.getElementById('stripe_order_shipping');
-
-    var stripeShippingFirstName = document.getElementById('stripe_shipping_first_name').value;
-    var stripeShippingLastName = document.getElementById('stripe_shipping_last_name').value;
-
-    var stripeSiteLocale = document.getElementById('stripe_site_locale').value;
-
-    var stripeOrderPurchaseCoutry = document.getElementById('stripe_purchase_country').value ?
-            document.getElementById('stripe_purchase_country').value :
-            (document.getElementsByClassName('country').length > 0 ?
-                    document.getElementsByClassName('country')[0].value : '');
-    var stripeOrderItems = JSON.parse(stripeOrderItemsInput.value);
-
-    var amountToPay = parseFloat(stripeOrderAmountInput.value);
-    var currencyCode = stripeOrderCurrencyInput.value && stripeOrderCurrencyInput.value.toLowerCase();
-
-    var firstName = document.querySelector('input[name$="_firstName"]').value;
-    var lastName = document.querySelector('input[name$="_lastName"]').value;
-
-    var stripeOrderShipping = JSON.parse(stripeOrderShippingInput.value);
-
-    return {
-        type: 'klarna',
-        amount: amountToPay,
-        currency: currencyCode,
-        klarna: {
-            product: 'payment',
-            purchase_country: stripeOrderPurchaseCoutry.toUpperCase(),
-            first_name: firstName,
-            last_name: lastName,
-            shipping_first_name: stripeShippingFirstName,
-            shipping_last_name: stripeShippingLastName,
-            locale: stripeSiteLocale
-        },
-        source_order: {
-            items: stripeOrderItems,
-            shipping: stripeOrderShipping
-        },
-        metadata: {
-            site_id: stripeSiteIdInput.value,
-            order_id: stripeOrderNumberInput.value
-        },
-        owner: getOwnerDetails()
-    };
-}
-
-function processKlarnaCreateSourceResult(result) {
-    if (result.error) {
-        alert(result.error.message);
-    } else {
-        var sourceIdInput = document.getElementById('stripe_source_id');
-        if (sourceIdInput) {
-            sourceIdInput.value = result.source.id;
-        }
-
-        // Initialize the SDK
-        window.Klarna.Payments.init({
-            client_token: result.source.klarna.client_token
-        });
-
-        // Load the widget for each payment method category:
-        // - pay_later
-        // - pay_over_time
-        // - pay_now
-        var availableCategories = result.source.klarna.payment_method_categories.split(',');
-        var paymentMethodSelected = false;
-        for (let i = 0; i < availableCategories.length; ++i) {
-            var category = availableCategories[i];
-
-            var klarnaPaymentMethodWrapper = document.getElementById('klarna_' + category + '-wrapper');
-            if (klarnaPaymentMethodWrapper) {
-                klarnaPaymentMethodWrapper.style.display = 'block';
-
-                var klarnaLabel = document.getElementById('klarna_' + category + '_label');
-                if (klarnaLabel && result.source.klarna[category + '_name']) {
-                    klarnaLabel.innerHTML = result.source.klarna[category + '_name'];
-                }
-
-                var klarnaImgWrapper = document.getElementById('klarna_' + category + '_img_wrapper');
-                if (klarnaImgWrapper && result.source.klarna[category + '_asset_urls_standard']) {
-                    klarnaImgWrapper.innerHTML = "<img src='" + result.source.klarna[category + '_asset_urls_standard'] + "' />";
-                }
-            }
-
-            if (!paymentMethodSelected) {
-                var klarnaCategory = document.getElementById('klarna_' + category);
-                if (klarnaCategory) {
-                    document.getElementById('klarna_' + category).checked = true;
-                }
-                paymentMethodSelected = true;
-            }
-
-            // create div for Klarna category when it doesn't exists (used when re-load Klarna widget in Order confirmation page)
-            var klarnaCategoryContainerDiv = document.getElementById('klarna_' + category + '_container');
-            if (!klarnaCategoryContainerDiv) {
-                $('<div id="' + 'klarna_' + category + '_container' + '" style="display:none;"></div>').appendTo('#primary');
-            }
-
-            window.Klarna.Payments.load({
-                container: '#klarna_' + category + '_container',
-                payment_method_category: category
-            }, function (res) {
-                if (res.show_form) {
-                    /*
-                     * this payment method category can be used, allow the customer
-                     * to choose it in your interface.
-                     */
-                } else {
-                    // this payment method category is not available
-                }
-            });
-        }
-
-        if (document.getElementById('klarna_no_payment_methods')) {
-            document.getElementById('klarna_no_payment_methods').style.display = paymentMethodSelected ? 'none' : 'block';
-        }
-    }
-}
-
-function refreshKlarnaWhenIsActive() {
-    var isOrderConfirmation = $('.checkout-progress-indicator > div.active').hasClass('step-3');
-    if (isOrderConfirmation && window.localStorage.getItem('stripe_payment_method') === 'STRIPE_KLARNA') {
-        var klarnaSourceObj = window.localStorage.getItem('stripe_klarna_source');
-        if (klarnaSourceObj) {
-            var klarnaSource = JSON.parse(klarnaSourceObj);
-            if (klarnaSource) {
-                // create source and load Klarna widget
-                stripe.createSource(klarnaSource).then(processKlarnaCreateSourceResult);
-            }
-        }
-        return;
-    }
-
-    // check if Klarna is active
-    var activePaymentMethod = document.querySelector('.payment-method-options .field-wrapper > input[type=radio]:checked');
-    if (!activePaymentMethod || !activePaymentMethod.value.includes('KLARNA')) {
-        return;
-    }
-
-    // validate Billing Form
-    let billingForm = document.getElementById('dwfrm_billing');
-    $(billingForm).find('.form-control.is-invalid').removeClass('is-invalid');
-    if (!billingForm.reportValidity()) {
-        billingForm.focus();
-        billingForm.scrollIntoView();
-        return;
-    }
-
-    // create source and load Klarna widget
-    var createSourcePayload = getCreateKlarnaSourcePayload();
-    window.localStorage.setItem('stripe_klarna_source', JSON.stringify(createSourcePayload));
-    stripe.createSource(createSourcePayload).then(processKlarnaCreateSourceResult);
-}
-
-var ready = (callback) => {
-    if (document.readyState !== 'loading') {
-        callback();
-    } else {
-        document.addEventListener('DOMContentLoaded', callback);
-    }
-};
-
-ready(() => {
-    $('.payment-method-options .field-wrapper > input[type=radio]').change(function() {
-        if (this.value === 'STRIPE_KLARNA') {
-            if (!document.querySelector('input[name$="_address1"]').value
-                || !document.querySelector('input[name$="_city"]').value
-                || !document.querySelector('input[name$="_postal"]').value
-                || !document.querySelector('select[name$="_country"]').value
-                || !document.querySelector('input[name$="_emailAddress"]').value
-                || !document.querySelector('input[name$="_phone"]').value) {
-
-                alert(document.getElementById('klarna-widget-wrapper').dataset.errormsg);
-
-                document.getElementById('is-CREDIT_CARD').click();
-
-                return false;
-            }
-
-            // create source and load Klarna widgets
-            var createSourcePayload = getCreateKlarnaSourcePayload();
-            window.localStorage.setItem('stripe_klarna_source', JSON.stringify(createSourcePayload));
-            stripe.createSource(createSourcePayload).then(processKlarnaCreateSourceResult);
-        }
-    });
-
-    if (document.querySelector('#dwfrm_billing input[name$="_firstName"]')) {
-        document.querySelector('#dwfrm_billing input[name$="_firstName"]').addEventListener('change', refreshKlarnaWhenIsActive);
-    }
-
-    if (document.querySelector('#dwfrm_billing input[name$="_lastName"]')) {
-        document.querySelector('#dwfrm_billing input[name$="_lastName"]').addEventListener('change', refreshKlarnaWhenIsActive);
-    }
-
-    if (document.querySelector('#dwfrm_billing input[name$="_address1"]')) {
-        document.querySelector('#dwfrm_billing input[name$="_address1"]').addEventListener('change', refreshKlarnaWhenIsActive);
-    }
-
-    if (document.querySelector('#dwfrm_billing input[name$="_address2"]')) {
-        document.querySelector('#dwfrm_billing input[name$="_address2"]').addEventListener('change', refreshKlarnaWhenIsActive);
-    }
-
-    if (document.querySelector('#dwfrm_billing input[name$="_city"]')) {
-        document.querySelector('#dwfrm_billing input[name$="_city"]').addEventListener('change', refreshKlarnaWhenIsActive);
-    }
-
-    if (document.querySelector('#dwfrm_billing input[name$="_postal"]')) {
-        document.querySelector('#dwfrm_billing input[name$="_postal"]').addEventListener('change', refreshKlarnaWhenIsActive);
-    }
-
-    if (document.querySelector('#dwfrm_billing select[name$="_country"]')) {
-        document.querySelector('#dwfrm_billing select[name$="_country"]').addEventListener('change', refreshKlarnaWhenIsActive);
-    }
-
-    if (document.querySelector('#dwfrm_billing input[name$="_emailAddress"]')) {
-        document.querySelector('#dwfrm_billing input[name$="_emailAddress"]').addEventListener('change', refreshKlarnaWhenIsActive);
-    }
-
-    if (document.querySelector('#dwfrm_billing input[name$="_phone"]')) {
-        document.querySelector('#dwfrm_billing input[name$="_phone"]').addEventListener('change', refreshKlarnaWhenIsActive);
-    }
-
-    refreshKlarnaWhenIsActive();
-});
-
 /* Stripe Payment Element */
 function onSubmitStripePaymentElement(event) {
     if (getSelectedPaymentMethod() !== 'STRIPE_PAYMENT_ELEMENT')
@@ -1472,32 +457,72 @@ function onSubmitStripePaymentElement(event) {
         data: $("#dwfrm_billing").serialize(),
 
         success: function(response) {
-            // eslint-disable-next-line no-unused-vars
-            var error = stripe.confirmPayment({
-		        elements: window.stripePaymentElements,
-		        confirmParams: {
-		            // Make sure to change this to your payment completion page
-		            return_url: returnURL
-		        }
-		    }).then(function (result) {
-		    	if (result.error) {
-		            let billingForm = document.getElementById('dwfrm_billing');
-					billingForm.focus();
-			        billingForm.scrollIntoView();
+        	var formaction = $('#payment-element').data('formaction');
+        	if (!formaction)
+        		return;
+	
+        	var tokenname = $('#payment-element').data('tokenname');
+        	if (!tokenname)
+        		return;
+        
+        	var tokenvalue = $('#payment-element').data('tokenvalue');
+        	if (!tokenvalue)
+        		return;
 
-		            $.ajax({
-		                url: document.getElementById('logStripeErrorMessageURL').value,
-		                method: 'POST',
-		                dataType: 'json',
-		                data: {
-		                    csrf_token: $('[name="csrf_token"]').val(),
-		                    msg: 'UPE stripe.confirmPayment Error ' + JSON.stringify(result.error)
-		                }
-		            });
-		  
-		            alert($('#payment-element').data('errormsg'));
+        	var form = document.createElement("form");
+            form.style.display = "none";
+            form.classList.add("submit-order");
+            document.body.appendChild(form);
+            
+            form.method = "POST";
+            form.action = formaction; 
+
+            var orderIdInput = document.createElement("input");
+            orderIdInput.name = tokenname;
+            orderIdInput.value = tokenvalue;
+            form.appendChild(orderIdInput);
+            
+            $.ajax({
+		        type: 'POST',
+		        url: $("form.submit-order").attr("action"),
+		        data: $("form.submit-order").serialize(),
+		
+		        success: function(response) {
+		            // eslint-disable-next-line no-unused-vars
+		            var error = stripe.confirmPayment({
+				        elements: window.stripePaymentElements,
+				        confirmParams: {
+				            // Make sure to change this to your payment completion page
+				            return_url: returnURL
+				        }
+				    }).then(function (result) {
+				    	if (result.error) {
+				            $.ajax({
+				                url: document.getElementById('logStripeErrorMessageURL').value,
+				                method: 'POST',
+				                dataType: 'json',
+				                data: {
+				                    csrf_token: $('[name="csrf_token"]').val(),
+				                    msg: 'UPE stripe.confirmPayment Error ' + JSON.stringify(result.error)
+				                }
+				            }).done(function () {
+				            	alert($('#payment-element').data('errormsg'));
+				            	
+				            	$.ajax({
+		                            url: document.getElementById('stripeFailOrderURL').value,
+		                            method: 'POST',
+		                            dataType: 'json',
+		                            data: {
+		                                csrf_token: $('[name="csrf_token"]').val()
+		                            }
+		                        }).done(function () {
+		                            window.location.replace(document.getElementById('billingPageUrl').value);
+		                        });
+				            });
+				        }
+				    });
 		        }
-		    });
+	        });    
         }
     });
 }
@@ -1568,6 +593,14 @@ function initNewStripePaymentIntent() {
     });
 }
 
+var ready = (callback) => {
+    if (document.readyState !== 'loading') {
+        callback();
+    } else {
+        document.addEventListener('DOMContentLoaded', callback);
+    }
+};
+
 ready(() => {
     if (!submitBillingFormButton)
         return;
@@ -1577,6 +610,9 @@ ready(() => {
 		
         document.querySelector('button[name=dwfrm_billing_save]')
 			.addEventListener('click', onSubmitStripePaymentElement);
+
+		$('button[name=dwfrm_billing_save] span')
+			.text($('#payment-element').data('submitordertxt'));
     }
 
     if (document.querySelector('#dwfrm_billing input[name$="_firstName"]')) {

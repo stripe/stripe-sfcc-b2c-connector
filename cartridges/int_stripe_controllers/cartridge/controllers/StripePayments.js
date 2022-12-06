@@ -58,12 +58,7 @@ function beforePaymentSubmit() {
     } else {
         var type = request.httpParameterMap.type.stringValue;
         var params = {};
-        if (request.httpParameterMap.saveSepaCard && request.httpParameterMap.saveSepaCard.value) {
-            params.saveSepaCard = true;
-        }
-        if (request.httpParameterMap.savedSepaDebitCardId && request.httpParameterMap.savedSepaDebitCardId.value) {
-            params.savedSepaDebitCardId = request.httpParameterMap.savedSepaDebitCardId.value;
-        }
+
         if (request.httpParameterMap.orderid && request.httpParameterMap.orderid.value) {
             params.orderid = request.httpParameterMap.orderid.value;
         }
@@ -100,3 +95,24 @@ function logStripeErrorMessage() {
 
 exports.LogStripeErrorMessage = logStripeErrorMessage;
 exports.LogStripeErrorMessage.public = true;
+
+/**
+ * Entry point for fail Stripe order
+ */
+function failOrder() {
+    if (!CSRFProtection.validateRequest()) {
+        app.getModel('Customer').logout();
+        response.setStatus(500);
+    } else {
+        stripePaymentsHelper.FailOrder();
+    }
+
+    var jsonResponse = JSON.stringify({
+        success: true
+    });
+    response.setContentType('application/json');
+    response.writer.print(jsonResponse);
+}
+
+exports.FailOrder = failOrder;
+exports.FailOrder.public = true;

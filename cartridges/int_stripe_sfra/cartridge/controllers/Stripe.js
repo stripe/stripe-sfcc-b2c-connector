@@ -20,4 +20,9 @@ server.post('WebHook', function (req, res, next) {
     next();
 });
 
+server.get('PaymentElementOrderPlaced', function (req, res, next) {
+    res.render('checkout/paymentelementorderplaced.isml', {});
+    next();
+});
+
 module.exports = server.exports();

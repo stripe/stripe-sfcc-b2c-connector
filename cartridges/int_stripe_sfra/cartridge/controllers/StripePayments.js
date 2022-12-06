@@ -27,7 +27,7 @@ server.get('HandleAPM', function (req, res, next) {
 });
 
 /**
- * Get Stripe Order Items used for Klarna Widget
+ * Get Stripe Order Items
  */
 server.get('GetStripeOrderItems', function (req, res, next) {
     var BasketMgr = require('dw/order/BasketMgr');
@@ -53,15 +53,7 @@ server.get('GetStripeOrderItems', function (req, res, next) {
  */
 server.post('BeforePaymentSubmit', csrfProtection.validateAjaxRequest, function (req, res, next) {
     var type = req.form.type;
-
     var params = {};
-    if (req.form.saveSepaCard) {
-        params.saveSepaCard = req.form.saveSepaCard;
-    }
-
-    if (req.form.savedSepaDebitCardId) {
-        params.savedSepaDebitCardId = req.form.savedSepaDebitCardId;
-    }
 
     if (req.form.orderid) {
         params.orderid = req.form.orderid;
@@ -96,6 +88,19 @@ server.post('LogStripeErrorMessage', csrfProtection.validateAjaxRequest, functio
     var msg = req.form.msg;
 
     stripePaymentsHelper.LogStripeErrorMessage(msg);
+
+    res.json({
+        success: true
+    });
+
+    next();
+});
+
+/**
+ * Entry point for handling writing errors to Stripe Logger called as an AJAX request
+ */
+server.post('FailOrder', csrfProtection.validateAjaxRequest, function (req, res, next) {
+    stripePaymentsHelper.FailOrder();
 
     res.json({
         success: true

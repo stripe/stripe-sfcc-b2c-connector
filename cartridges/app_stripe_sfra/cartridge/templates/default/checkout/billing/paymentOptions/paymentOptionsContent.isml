@@ -9,21 +9,19 @@
     </isscript>
 </isif>
 <input type="hidden" id="stripeCardFormStyle" value="${JSON.stringify(stripeHelper.getStripeCardFormStyle())}" />
-<input type="hidden" id="stripeIdealElementStyle" value="${JSON.stringify(stripeHelper.getStripeIdealElementStyle())}" />
-<input type="hidden" id="stripeSepaDebitStyle" value="${JSON.stringify(stripeHelper.getStripeSepaDebitStyle())}" />
 <input type="hidden" id="stripePaymentButtonStyle" value="${JSON.stringify(stripeHelper.getPaymentRequestButtonStyle())}" />
 <input type="hidden" id="stripeAccountCountry" value="${stripeCheckoutHelper.getPRCountry()}" />
 <input type="hidden" id="beforePaymentAuthURL" value="${URLUtils.https('StripePayments-BeforePaymentAuthorization')}" />
 <input type="hidden" id="getStripeOrderItemsURL" value="${URLUtils.https('StripePayments-GetStripeOrderItems')}" />
 <input type="hidden" id="billingPageUrl" value="${URLUtils.url('Checkout-Begin', 'stage', 'payment')}" />
 <input type="hidden" id="getCustomerEmailURL" value="${URLUtils.https('StripePayments-GetCustomerEmail')}" />
-<input type="hidden" id="stripeEpsElementStyle" value="${JSON.stringify(stripeHelper.getStripeEpsElementStyle())}" />
-<input type="hidden" id="stripeP24ElementStyle" value="${JSON.stringify(stripeHelper.getStripeP24ElementStyle())}" />
 <input type="hidden" id="stripePaymentElementStyle" value="${JSON.stringify(stripeHelper.getStripePaymentElementStyle())}" />
 
 <input type="hidden" id="beforePaymentSubmitURL" value="${URLUtils.https('StripePayments-BeforePaymentSubmit')}" />
 
 <input type="hidden" id="logStripeErrorMessageURL" value="${URLUtils.https('StripePayments-LogStripeErrorMessage')}" />
+
+<input type="hidden" id="stripeFailOrderURL" value="${URLUtils.https('StripePayments-FailOrder')}" />
 
 <input type="hidden" name="stripe_source_client_secret" id="stripe_source_client_secret">
 <input type="hidden" name="stripe_redirect_url" id="stripe_redirect_url">
@@ -71,23 +69,6 @@
         <iselse/>
             <isinclude template="checkout/billing/paymentOptions/creditCardContent" />
         </isif>
-
-    <iselseif condition="${paymentOption.ID === 'STRIPE_ACH_DEBIT'}"/>
-        <isinclude template="checkout/billing/paymentOptions/achDebitContent" />
-	<iselseif condition="${paymentOption.ID === 'STRIPE_WECHATPAY'}"/>
-        <isinclude template="checkout/billing/paymentOptions/wechatContent" />
-    <iselseif condition="${paymentOption.ID === 'STRIPE_KLARNA'}"/>
-        <isinclude template="checkout/billing/paymentOptions/klarnaContent" />
-    <iselseif condition="${paymentOption.ID === 'STRIPE_IDEAL'}"/>
-        <isinclude template="checkout/billing/paymentOptions/idealContent" />
-    <iselseif condition="${paymentOption.ID === 'STRIPE_SOFORT'}"/>
-        <isinclude template="checkout/billing/paymentOptions/sofortContent" />
-    <iselseif condition="${paymentOption.ID === 'STRIPE_SEPA_DEBIT'}"/>
-        <isinclude template="checkout/billing/paymentOptions/sepaDebitContent" />
-    <iselseif condition="${paymentOption.ID === 'STRIPE_EPS'}"/>
-        <isinclude template="checkout/billing/paymentOptions/epsContent" />
-    <iselseif condition="${paymentOption.ID === 'STRIPE_P24'}"/>
-        <isinclude template="checkout/billing/paymentOptions/p24Content" />
    	<iselseif condition="${paymentOption.ID === 'STRIPE_PAYMENT_ELEMENT'}"/>
    		<isinclude template="checkout/billing/paymentOptions/stripePaymentElementContent" />
     <iselse/>

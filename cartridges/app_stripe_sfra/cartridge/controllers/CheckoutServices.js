@@ -1,4 +1,5 @@
 /* eslint-env es6 */
+/* global session */
 
 'use strict';
 
@@ -230,6 +231,8 @@ server.prepend('PlaceOrder', server.middleware.https, function (req, res, next) 
         this.emit('route:Complete', req, res);
         return null;
     }
+    session.privacy.stripeOrderNumber = order.orderNo;
+
     res.json({
         error: false,
         orderID: order.orderNo,

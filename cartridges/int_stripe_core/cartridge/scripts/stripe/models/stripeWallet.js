@@ -76,47 +76,6 @@ function fetchSavedPaymentInstruments(stripeCustomerId) {
 }
 
 /**
- * Retrieves a list of Sepa Direct Debit payment instruments (Stripe Payment Methods or Sources)
- * attached to a Stripe customer. Default instrument is placed first.
- *
- * @param {string} stripeCustomerId - ID of Stripe customer
- * @return {ArrayList<Object>} - Saved instruments attached
- * to a Stripe customer
- */
-function fetchSavedSepaDirectDebitPaymentInstruments(stripeCustomerId) {
-    var result = [];
-
-    if (stripeCustomerId) {
-        try {
-            const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
-
-            const stripePaymentInstrumentsResponse = stripeService.paymentMethods.list(stripeCustomerId, 'sepa_debit');
-            const stripePaymentInstruments = stripePaymentInstrumentsResponse && stripePaymentInstrumentsResponse.data;
-
-            if (stripePaymentInstruments && stripePaymentInstruments.length) {
-                stripePaymentInstruments.forEach(function (stripePaymentMethod) {
-                    if (stripePaymentMethod.id && stripePaymentMethod.sepa_debit && stripePaymentMethod.sepa_debit.last4) {
-                        var savedSepaDebit = [];
-                        savedSepaDebit.id = stripePaymentMethod.id;
-                        savedSepaDebit.last4 = stripePaymentMethod.sepa_debit.last4;
-
-                        result.push({
-                            id: stripePaymentMethod.id,
-                            last4: stripePaymentMethod.sepa_debit.last4
-                        });
-                    }
-                });
-            }
-        } catch (e) {
-            require('dw/system/Logger').error(e.message);
-            throw e;
-        }
-    }
-
-    return result;
-}
-
-/**
  * A wrapper for SFCC API customer object to provided functionality for managing
  * Stripe saved cards.
  *
@@ -194,10 +153,6 @@ function StripeWallet(apiCustomer) {
                 }
             });
         }
-    };
-
-    this.getSepaDirectDebitPaymentInstruments = function () {
-        return fetchSavedSepaDirectDebitPaymentInstruments(stripeCustomerId);
     };
 }
 

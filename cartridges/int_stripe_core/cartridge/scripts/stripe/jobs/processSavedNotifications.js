@@ -144,12 +144,10 @@ function createCharge(stripeNotificationObject, order, stripePaymentInstrument) 
         description: 'Charge for ' + customerEmail + ', order ' + order.orderNo
     };
 
-    if (stripePaymentInstrument.paymentMethod !== 'STRIPE_WECHATPAY') {
-        var stripeCustomerId = stripePaymentInstrument.custom.stripeCustomerID || getStripeCustomerIdFromOrder(order);
+    var stripeCustomerId = stripePaymentInstrument.custom.stripeCustomerID || getStripeCustomerIdFromOrder(order);
 
-        if (stripeCustomerId) {
-            createChargePayload.customer = stripeCustomerId;
-        }
+    if (stripeCustomerId) {
+        createChargePayload.customer = stripeCustomerId;
     }
 
     const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
@@ -185,7 +183,7 @@ function createCharge(stripeNotificationObject, order, stripePaymentInstrument) 
  * @param {dw.order.Order} order - Order to fail
  * @param {dw.order.OrderPaymentInstrument} stripePaymentInstrument - Stripe payment instrument
  */
-function failOrder(stripeNotificationObject, order, stripePaymentInstrument) {
+function failOrder(stripeNotificationObject, order) {
     var chargeJSON = JSON.parse(stripeNotificationObject.custom.stripeWebhookData);
     var failedDetailsForOrder = {
         failure_code: chargeJSON.data.object.failure_code ? chargeJSON.data.object.failure_code : '',
@@ -202,10 +200,6 @@ function failOrder(stripeNotificationObject, order, stripePaymentInstrument) {
             logger.error('Error: {0}', failStatus.message);
         } else {
             stripeLogger.info('\nSuccessfully set order status to failed');
-        }
-
-        if (stripePaymentInstrument.paymentMethod === 'STRIPE_WECHATPAY') {
-            order.custom.stripeIsPaymentIntentInReview = false; // eslint-disable-line no-param-reassign
         }
 
         stripeNotificationObject.custom.processingStatus = 'FAIL_OR_CANCEL';  // eslint-disable-line
@@ -463,9 +457,7 @@ function processNotificationObject(stripeNotificationObject) {
         return;
     }
 
-    // we do not store source Id for orders placed with WeChat
-    // so we skip the following checks for WeChat orders
-    if (stripeAPMPaymentInstrument && stripePaymentInstrument.custom.stripeSourceID && stripePaymentInstrument.paymentMethod !== 'STRIPE_WECHATPAY') {
+    if (stripeAPMPaymentInstrument && stripePaymentInstrument.custom.stripeSourceID) {
         const piStripeSourceId = stripePaymentInstrument.custom.stripeSourceID;
 
         if (coStripeSourceId !== piStripeSourceId) {
@@ -489,7 +481,7 @@ function processNotificationObject(stripeNotificationObject) {
         case 'source.failed':
         case 'charge.failed':
         case 'payment_intent.payment_failed':
-            failOrder(stripeNotificationObject, order, stripePaymentInstrument);
+            failOrder(stripeNotificationObject, order);
             break;
         case 'charge.succeeded':
         case 'payment_intent.succeeded':
