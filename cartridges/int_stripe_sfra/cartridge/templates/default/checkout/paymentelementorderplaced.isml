@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+</head>
+
+<body>
+    <script type="text/javascript">
+        var continueUrl = window.localStorage.getItem('stripe_pe_continueurl');
+        var orderId = window.localStorage.getItem('stripe_pe_orderid');
+        var orderToken = window.localStorage.getItem('stripe_pe_ordertoken');
+
+        if (continueUrl && orderId && orderToken) {    
+            var form = document.createElement("form");
+            form.style.display = "none";
+
+            document.body.appendChild(form);
+
+            form.method = "POST";
+            form.action = continueUrl; 
+
+            var orderIdInput = document.createElement("input");
+            orderIdInput.name = 'orderID';
+            orderIdInput.value = orderId;
+            form.appendChild(orderIdInput);
+
+            var orderTokenInput = document.createElement("input");
+            orderTokenInput.name = 'orderToken';
+            orderTokenInput.value = orderToken;
+            form.appendChild(orderTokenInput);
+
+            form.submit();
+        }
+    </script>
+</body>
+
+</html>
