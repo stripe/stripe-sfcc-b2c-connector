@@ -21,7 +21,6 @@ var elements = stripe.elements();
 var newCardFormContainer = document.getElementById('new-card-form-container');
 var savedCardsFormContainer = document.getElementById('saved-cards-container');
 var prbPlaceholder = document.getElementById('payment-request-button');
-var 
 var paymentMethodOptions = document.querySelectorAll('input[name$="_selectedPaymentMethodID"]');
 
 var submitBillingFormButton = document.querySelector('button[name=dwfrm_billing_save]');

@@ -231,6 +231,12 @@ server.prepend('PlaceOrder', server.middleware.https, function (req, res, next) 
         this.emit('route:Complete', req, res);
         return null;
     }
+
+    // init payment transaction data used for OM App
+    Transaction.begin();
+    stripeCheckoutHelper.createStripePaymentInstrument(order, 'STRIPE_PAYMENT_ELEMENT', {});
+    Transaction.commit();
+
     session.privacy.stripeOrderNumber = order.orderNo;
 
     res.json({

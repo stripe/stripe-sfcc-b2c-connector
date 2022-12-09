@@ -153,6 +153,16 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
     }
 
     const paymentTransaction = paymentInstrument.paymentTransaction;
+
+    // for Stripe Payment Element, we create the order before actual confirming the payment on stripe
+    // so we need to add the Payment processor and transaction details manually
+    if (!paymentTransaction.getPaymentProcessor() && paymentMethodId === 'STRIPE_PAYMENT_ELEMENT') {
+        const PaymentMgr = require('dw/order/PaymentMgr');
+        var processor = PaymentMgr.getPaymentMethod('STRIPE_PAYMENT_ELEMENT').getPaymentProcessor();
+        if (processor) {
+            paymentTransaction.setPaymentProcessor(processor);
+        }
+    }
     var stripeAccountId = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeAccountId');
     var stripeAccountType = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeAccountType');
 

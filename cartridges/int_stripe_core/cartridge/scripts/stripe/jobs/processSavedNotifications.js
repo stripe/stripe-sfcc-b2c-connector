@@ -217,16 +217,17 @@ function failOrder(stripeNotificationObject, order) {
  * @param {dw.order.Order} order - Order to place
  * @param {dw.order.OrderPaymentInstrument} stripePaymentInstrument - Stripe payment instrument
  */
-function placeOrder(stripeNotificationObject, order, stripePaymentInstrument) {
-    var chargeJSON = JSON.parse(stripeNotificationObject.custom.stripeWebhookData);
+function placeOrder(stripeNotificationObject, order, stripePaymentInstrument) { // eslint-disable-line
+//  var chargeJSON = JSON.parse(stripeNotificationObject.custom.stripeWebhookData);
     Transaction.wrap(function () {
+        /*
         stripePaymentInstrument.paymentTransaction.transactionID = chargeJSON.data.object.balance_transaction; // eslint-disable-line
         stripePaymentInstrument.paymentTransaction.type = PaymentTransaction.TYPE_CAPTURE; // eslint-disable-line
         stripePaymentInstrument.custom.stripeChargeID = chargeJSON.data.object.id; // eslint-disable-line
         stripePaymentInstrument.paymentTransaction.custom.stripeChargeId = chargeJSON.data.object.id; // eslint-disable-line
         stripePaymentInstrument.paymentTransaction.custom.stripeChargeOutcomeData = JSON.stringify(chargeJSON.data.object.outcome ? chargeJSON.data.object.outcome : {}); // eslint-disable-line
         stripePaymentInstrument.paymentTransaction.custom.stripeJsonData = stripeNotificationObject.custom.stripeWebhookData; // eslint-disable-line
-
+        */
         var placeOrderStatus = OrderMgr.placeOrder(order);
         if (placeOrderStatus === Status.ERROR) {
             OrderMgr.failOrder(order, true);
