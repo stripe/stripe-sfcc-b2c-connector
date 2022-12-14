@@ -1,3 +1,5 @@
+<isset name="stripeHelper" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper')}" scope="page" />
+
 <input type="hidden" name="stripe_card_number" id="stripe_card_number">
 <input type="hidden" name="stripe_card_holder" id="stripe_card_holder">
 <input type="hidden" name="stripe_card_type" id="stripe_card_type">
@@ -5,6 +7,8 @@
 <input type="hidden" name="stripe_card_expiration_month" id="stripe_card_expiration_month">
 <input type="hidden" name="stripe_card_expiration_year" id="stripe_card_expiration_year">
 <input type="hidden" name="stripe_pr_used" id="stripe_pr_used">
+
+<isset name="isStripePaymentElementEnabled" value="${stripeHelper.isStripePaymentElementEnabled()}" scope="page" />
 
 <div id="new-card-form-container">
 	<div class="form-row required">

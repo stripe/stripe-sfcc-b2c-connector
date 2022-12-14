@@ -12,6 +12,8 @@
 
 <input type="hidden" id="updateBillingAddress" value="${URLUtils.https('Account-UpdateBillingAddress')}">
 
+<isset name="isStripePaymentElementEnabled" value="${stripeHelper.isStripePaymentElementEnabled()}" scope="page" />
+
 <div id="new-card-form-container">
 	<div class="form-group">
 		<isif condition="${require('*/cartridge/scripts/stripe/helpers/stripeHelper').isCustomCardForm()}">

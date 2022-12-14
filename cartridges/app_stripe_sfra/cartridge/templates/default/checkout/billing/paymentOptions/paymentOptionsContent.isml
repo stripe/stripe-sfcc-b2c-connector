@@ -53,7 +53,12 @@
         		<iscontinue/>
         	</isif>
 
-            <div class="tab-pane ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">
+			<isif condition="${!isStripePaymentElementEnabled}">
+            	<div class="tab-pane ${paymentOption.ID}-content active" id="${paymentOption.ID}-content" role="tabpanel">
+            <iselse/>
+            	<div class="tab-pane ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">
+            </isif>
+            
                 <fieldset class="payment-form-fields">
 
                     <!--- payment method is credit card --->

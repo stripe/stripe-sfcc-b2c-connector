@@ -231,7 +231,9 @@ exports.isStripePaymentElementsSavePaymentsEnabled = function () {
 exports.isStripePaymentElementEnabled = function () {
     var PaymentMgr = require('dw/order/PaymentMgr');
 
-    return !empty(PaymentMgr.getPaymentMethod('STRIPE_PAYMENT_ELEMENT'));
+    var paymentElementPM = PaymentMgr.getPaymentMethod('STRIPE_PAYMENT_ELEMENT');
+
+    return !empty(paymentElementPM) && paymentElementPM.isActive();
 };
 
 /**
@@ -242,5 +244,7 @@ exports.isStripePaymentElementEnabled = function () {
 exports.isCreditCardEnabled = function () {
     var PaymentMgr = require('dw/order/PaymentMgr');
 
-    return !empty(PaymentMgr.getPaymentMethod('CREDIT_CARD'));
+    var creditCardPM = PaymentMgr.getPaymentMethod('CREDIT_CARD');
+
+    return !empty(creditCardPM) && creditCardPM.isActive();
 };
