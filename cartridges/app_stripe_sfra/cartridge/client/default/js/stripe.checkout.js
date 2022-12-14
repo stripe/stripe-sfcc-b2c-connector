@@ -135,7 +135,7 @@ if (savedCardsFormContainer) {
 }
 
 function isSavedCard() {
-    return newCardFormContainer && newCardFormContainer.style.display === 'none';
+    return document.getElementById('saved-cards-container') && (document.getElementById('saved-cards-container').style.display === 'block') && newCardFormContainer && newCardFormContainer.style.display === 'none';
 }
 
 function capitalize(text) {

@@ -20,11 +20,13 @@
 <isset name="stripeHelper" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper')}" scope="page" />
 <isset name="wallet" value="${stripeHelper.getStripeWallet(customer)}" scope="page" />
 
+<isset name="isStripePaymentElementEnabled" value="${stripeHelper.isStripePaymentElementEnabled()}" scope="page" />
+
 <iscomment>
     Stripe Payment Elements
     -------------------
 </iscomment>
-<div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='STRIPE_PAYMENT_ELEMENT'}">payment-method-expanded</isif>" data-method="STRIPE_PAYMENT_ELEMENT">
+<div class="payment-method <isif condition="${isStripeCardsPaymentMethodEnabled}">payment-method-expanded</isif>" data-method="STRIPE_PAYMENT_ELEMENT">
     <div id="payment-element" style="width:100%"
 		data-errormsg="${Resource.msg('apm.error.fail','stripe',null)}"
 		data-formaction="${URLUtils.https('COSummary-Submit')}"

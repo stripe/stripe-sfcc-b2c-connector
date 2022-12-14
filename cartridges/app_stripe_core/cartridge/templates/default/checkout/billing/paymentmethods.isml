@@ -6,6 +6,7 @@
 <isset name="stripeHelper" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper')}" scope="page" />
 
 <isset name="isStripePaymentElementEnabled" value="${stripeHelper.isStripePaymentElementEnabled()}" scope="page" />
+<isset name="isCreditCardEnabled" value="${stripeHelper.isCreditCardEnabled()}" scope="page" />
 
 <isset name="wallet" value="${stripeHelper.getStripeWallet(customer)}" scope="page" />
 <isset name="savedCards" value="${wallet.getPaymentInstruments()}" scope="page" />
@@ -58,7 +59,7 @@
 				<div class="form-row label-inline">
 					<isset name="radioID" value="${paymentMethodType.value}" scope="page"/>
 					<div class="field-wrapper">
-						<input id="is-${radioID}" type="radio" class="input-radio" name="${pdict.CurrentForms.billing.paymentMethods.selectedPaymentMethodID.htmlName}" value="${paymentMethodType.htmlValue}" <isif condition="${(paymentMethodType.value == pdict.CurrentForms.billing.paymentMethods.selectedPaymentMethodID.htmlValue) || (paymentMethodType.value === 'STRIPE_PAYMENT_ELEMENT' && !hasSavedCards)}">checked="checked"</isif> />
+						<input id="is-${radioID}" type="radio" class="input-radio" name="${pdict.CurrentForms.billing.paymentMethods.selectedPaymentMethodID.htmlName}" value="${paymentMethodType.htmlValue}" <isif condition="${(paymentMethodType.value == pdict.CurrentForms.billing.paymentMethods.selectedPaymentMethodID.htmlValue) || (paymentMethodType.value === 'STRIPE_PAYMENT_ELEMENT')}">checked="checked"</isif> />
 					</div>
 					<label for="is-${radioID}">
 						<isif condition="${paymentMethodType.value === 'CREDIT_CARD' && isStripePaymentElementEnabled}">
@@ -84,21 +85,20 @@
 			Credit card block
 			--------------------------------------------------------------
 		</iscomment>
-
 		<div class="payment-method <isif condition="${empty(pdict.selectedPaymentID) || pdict.selectedPaymentID=='CREDIT_CARD'}">payment-method-expanded</isif>" data-method="CREDIT_CARD"
-			<isif condition="${isStripePaymentElementEnabled && !hasSavedCards}">style="display:none;"</isif>>
+			<isif condition="${isStripePaymentElementEnabled && (!isCreditCardEnabled || !hasSavedCards)}">style="display:none;"</isif>>
 			<iscomment>
 				Stripe changes BEGIN
 			</iscomment>
-			<isif condition="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').isStripeCardsPaymentMethodEnabled() && stripeEnabled}">
+			<isif condition="${!isStripePaymentElementEnabled && isCreditCardEnabled && stripeEnabled}">
 				<isinclude template="stripe/checkout/billing/cardform" />
 			<iscomment>
 				Only show the credit card form if stripe is disabled and the credit card method has a different processor than STRIPE_CREDIT
 			</iscomment>
 			<iselseif condition="${!require('*/cartridge/scripts/stripe/helpers/checkoutHelper').isStripeCardsPaymentMethodEnabled()}"/>
-			<iscomment>
-				Stripe changes END
-			</iscomment>
+				<iscomment>
+					Stripe changes END
+				</iscomment>
 				<iscomment>display select box with stored credit cards if customer is authenticated</iscomment>
 				<isif condition="${pdict.CurrentCustomer.authenticated && !empty(pdict.ApplicableCreditCards)}">
 

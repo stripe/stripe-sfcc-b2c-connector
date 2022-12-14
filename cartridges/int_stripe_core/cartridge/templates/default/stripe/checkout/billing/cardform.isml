@@ -10,6 +10,7 @@
 
 <isset name="isStripePaymentElementEnabled" value="${stripeHelper.isStripePaymentElementEnabled()}" scope="page" />
 
+
 <div id="new-card-form-container">
 	<div class="form-row required">
 		<label class="label" for="cardholder-name">${Resource.msg('creditcard.ownerlabel','forms',null)}</label>

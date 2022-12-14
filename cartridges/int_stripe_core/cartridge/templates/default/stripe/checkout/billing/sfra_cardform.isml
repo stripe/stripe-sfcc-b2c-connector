@@ -42,7 +42,7 @@
 	</isif>
 </div>
 <isif condition="${hasSavedCards}">
-	<div class="form-group" id="saved-cards-container">
+	<div class="form-group" id="saved-cards-container" style="display:block">
 		<label class="form-control-label">${Resource.msg('creditcard.savedcard','stripe',null)}</label>
 		<isloop items="${savedCards}" var="savedCard" status="cardsloopstate">
 			<div class="form-check">
