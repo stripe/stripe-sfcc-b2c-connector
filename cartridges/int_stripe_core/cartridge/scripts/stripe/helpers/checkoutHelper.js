@@ -570,3 +570,55 @@ exports.getSiteLocale = function () {
 
     return locale ? locale.replace('_', '-') : null;
 };
+
+exports.isBasketPaymentIntentValid = function () {
+    const BasketMgr = require('dw/order/BasketMgr');
+    const currentBasket = BasketMgr.getCurrentBasket();
+    if (!currentBasket || !currentBasket.custom.stripePaymentIntentID) {
+        return false;
+    }
+
+    const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
+    const paymentIntent = stripeService.paymentIntents.retrieve(currentBasket.custom.stripePaymentIntentID);
+    if (!paymentIntent) {
+        return false;
+    }
+
+    /*
+     * validate basket currency code and amount are same as currency code and amount from payment intent
+     */
+    const Money = require('dw/value/Money');
+    const basketCurrencyCode = currentBasket.getCurrencyCode();
+    const basketTotal = currentBasket.getTotalGrossPrice();
+
+    var basketCurency = dw.util.Currency.getCurrency(basketCurrencyCode);
+    var multiplier = Math.pow(10, basketCurency.getDefaultFractionDigits());
+
+    // Iterates over the list of gift certificate payment instruments
+    // and updates the total redemption amount.
+    var gcPaymentInstrs = currentBasket.getGiftCertificatePaymentInstruments().iterator();
+    var orderPI = null;
+    var giftCertTotal = new Money(0.0, currentBasket.getCurrencyCode());
+
+    while (gcPaymentInstrs.hasNext()) {
+        orderPI = gcPaymentInstrs.next();
+        giftCertTotal = giftCertTotal.add(orderPI.getPaymentTransaction().getAmount());
+    }
+
+    var totalAmount = basketTotal.subtract(giftCertTotal);
+    const amount = Math.round(totalAmount.getValue() * multiplier);
+
+    if (amount !== paymentIntent.amount || basketCurrencyCode.toLowerCase() !== paymentIntent.currency.toLowerCase()) {
+        /*
+         * unlink current payment intent from Basket to be able to place a new order
+         */
+        const Transaction = require('dw/system/Transaction');
+        Transaction.wrap(function () {
+            currentBasket.custom.stripePaymentIntentID = '';
+        });
+
+        return false;
+    }
+
+    return true;
+};

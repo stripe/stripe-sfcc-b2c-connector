@@ -145,6 +145,14 @@ function start() {
     // 'Created'.
     // Stripe changes BEGIN
     const stripeCheckoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
+    const isBasketPaymentIntentValid = stripeCheckoutHelper.isBasketPaymentIntentValid();
+    if (!isBasketPaymentIntentValid) {
+        return {
+            error: true,
+            PlaceOrderError: new Status(Status.ERROR, 'confirm.error.technical')
+        };
+    }
+
     var order = stripeCheckoutHelper.createOrder(cart.object);
     // Stripe changes END
 

@@ -542,9 +542,10 @@ function handleStripePaymentElementSubmitOrder() {
             // enable the placeOrder button here
             $('body').trigger('checkout:enableButton', '.next-step-button button');
             if (data.error) {
-                if (data.cartError) {
-                    window.location.href = data.redirectUrl;
+                if (data.errorMessage) {
+                    alert(data.errorMessage);
                 }
+                window.location.replace(document.getElementById('billingPageUrl').value);
             } else {
                 window.localStorage.setItem('stripe_pe_continueurl', data.continueUrl);
                 window.localStorage.setItem('stripe_pe_orderid', data.orderID);

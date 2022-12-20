@@ -241,15 +241,21 @@ function placeOrder(stripeNotificationObject, order, stripePaymentInstrument) { 
         stripeNotificationObject.custom.processingStatus = 'PROCESSED'; // eslint-disable-line
     });
 
-    var statusMail = true;
-    if (isSFRA()) {
-        var COHelpers = require('*/cartridge/scripts/checkout/checkoutHelpers');
-        COHelpers.sendConfirmationEmail(order, 'default');
-    } else {
-        statusMail = sendMail(order, 'mail/orderconfirmation', Resource.msg('order.orderconfirmation-email.001', 'order', null));
-    }
+    const stripeCheckoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
+    var isAPMOrder = stripeCheckoutHelper.isAPMOrder(order);
+    if (isAPMOrder) {
+        var statusMail = true;
+        if (isSFRA()) {
+            var COHelpers = require('*/cartridge/scripts/checkout/checkoutHelpers');
+            COHelpers.sendConfirmationEmail(order, 'default');
+        } else {
+            statusMail = sendMail(order, 'mail/orderconfirmation', Resource.msg('order.orderconfirmation-email.001', 'order', null));
+        }
 
-    stripeLogger.info('Successfully proccesed CO with event id: {0}, source id: {1} , updated SFCC order status to "EXPORT_STATUS_READY". Set up CO processingStatus to {2}, email send - {3}', stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId, 'PROCESSED', statusMail.status === Status.OK ? 'true' : 'false');
+        stripeLogger.info('Successfully proccesed CO with event id: {0}, source id: {1} , updated SFCC order status to "EXPORT_STATUS_READY". Set up CO processingStatus to {2}, email send - {3}', stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId, 'PROCESSED', statusMail.status === Status.OK ? 'true' : 'false');
+    } else {
+        stripeLogger.info('Successfully proccesed CO with event id: {0}, source id: {1} , updated SFCC order status to "EXPORT_STATUS_READY". Set up CO processingStatus to {2}, email Not sent', stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId, 'PROCESSED');
+    }
 }
 
 /**

@@ -147,6 +147,20 @@ server.prepend('PlaceOrder', server.middleware.https, function (req, res, next) 
 
     // Stripe changes BEGIN
     const stripeCheckoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
+    var isBasketPaymentIntentValid = stripeCheckoutHelper.isBasketPaymentIntentValid();
+    if (!isBasketPaymentIntentValid) {
+        res.json({
+            error: true,
+            cartError: true,
+            fieldErrors: [],
+            serverErrors: [],
+            redirectUrl: URLUtils.url('Cart-Show').toString(),
+            errorMessage: Resource.msg('error.payment.not.valid', 'checkout', null)
+        });
+        this.emit('route:Complete', req, res);
+        return null;
+    }
+
     var order = stripeCheckoutHelper.createOrder(currentBasket);
     // Stripe changes END
 
