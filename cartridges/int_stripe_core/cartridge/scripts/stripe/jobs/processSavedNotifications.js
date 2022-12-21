@@ -247,7 +247,8 @@ function placeOrder(stripeNotificationObject, order, stripePaymentInstrument) { 
         var statusMail = true;
         if (isSFRA()) {
             var COHelpers = require('*/cartridge/scripts/checkout/checkoutHelpers');
-            COHelpers.sendConfirmationEmail(order, 'default');
+            var customerLocaleID = order.getCustomerLocaleID();
+            COHelpers.sendConfirmationEmail(order, customerLocaleID ? customerLocaleID : 'default'); // eslint-disable-line
         } else {
             statusMail = sendMail(order, 'mail/orderconfirmation', Resource.msg('order.orderconfirmation-email.001', 'order', null));
         }
@@ -331,7 +332,8 @@ function placeOrderAfterReview(stripeNotificationObject, order) {
     var statusMail = true;
     if (isSFRA()) {
         var COHelpers = require('*/cartridge/scripts/checkout/checkoutHelpers');
-        COHelpers.sendConfirmationEmail(order, 'default');
+        var customerLocaleID = order.getCustomerLocaleID();
+        COHelpers.sendConfirmationEmail(order, customerLocaleID ? customerLocaleID : 'default'); // eslint-disable-line
     } else {
         statusMail = sendMail(order, 'mail/orderconfirmation', Resource.msg('order.orderconfirmation-email.001', 'order', null));
     }
