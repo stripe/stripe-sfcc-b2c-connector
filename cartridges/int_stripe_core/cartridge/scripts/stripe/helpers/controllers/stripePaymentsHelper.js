@@ -57,10 +57,7 @@ function generateCardsPaymentResponse(intent) {
         responsePayload = {
             success: true
         };
-    } else if (
-        (intent.status === 'requires_action' || intent.status === 'requires_source_action')
-        && intent.next_action.type === 'use_stripe_sdk'
-    ) {
+    } else if (intent.status === 'requires_action' || intent.status === 'requires_source_action') {
         // Tell the client to handle the action
         responsePayload = {
             requires_action: true,
@@ -88,15 +85,19 @@ function generateCardsPaymentResponse(intent) {
  */
 function beforePaymentAuthorization() {
     var BasketMgr = require('dw/order/BasketMgr');
-    var PaymentTransaction = require('dw/order/PaymentTransaction');
     var responsePayload;
+    var checkoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
+    var stripePaymentInstrument;
+    var paymentIntent;
+    var paymentIntentId;
+    const stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
+    const stripeAccountId = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeAccountId');
+    const stripeAccountType = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeAccountType');
 
     try {
         var basket = BasketMgr.getCurrentBasket();
         if (basket) {
-            var checkoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
-
-            var stripePaymentInstrument = checkoutHelper.getStripePaymentInstrument(basket);
+            stripePaymentInstrument = checkoutHelper.getStripePaymentInstrument(basket);
 
             /*
              * Check if we have a zero order i.e. after full gift certificate redemption
@@ -112,8 +113,7 @@ function beforePaymentAuthorization() {
             }
 
             if (stripePaymentInstrument && stripePaymentInstrument.paymentMethod === 'CREDIT_CARD') {
-                var paymentIntent;
-                var paymentIntentId = (stripePaymentInstrument.paymentTransaction)
+                paymentIntentId = (stripePaymentInstrument.paymentTransaction)
                     ? stripePaymentInstrument.paymentTransaction.getTransactionID() : null;
                 if (paymentIntentId) {
                     paymentIntent = checkoutHelper.confirmPaymentIntent(paymentIntentId, stripePaymentInstrument);
@@ -122,7 +122,15 @@ function beforePaymentAuthorization() {
 
                     Transaction.wrap(function () {
                         stripePaymentInstrument.paymentTransaction.setTransactionID(paymentIntent.id);
-                        stripePaymentInstrument.paymentTransaction.setType(PaymentTransaction.TYPE_AUTH);
+                        stripePaymentInstrument.paymentTransaction.setType(stripeChargeCapture ? dw.order.PaymentTransaction.TYPE_CAPTURE : dw.order.PaymentTransaction.TYPE_AUTH);
+
+                        if (!empty(stripeAccountId)) {
+                            stripePaymentInstrument.paymentTransaction.custom.stripeAccountId = stripeAccountId;
+                        }
+
+                        if (!empty(stripeAccountType) && 'value' in stripeAccountType && !empty(stripeAccountType.value)) {
+                            stripePaymentInstrument.paymentTransaction.custom.stripeAccountType = stripeAccountType.value;
+                        }
                     });
                 }
 
@@ -147,7 +155,15 @@ function beforePaymentAuthorization() {
                      */
                     if (basket.custom.stripePaymentIntentID && stripePaymentInstrument && stripePaymentInstrument.paymentTransaction) {
                         stripePaymentInstrument.paymentTransaction.setTransactionID(basket.custom.stripePaymentIntentID);
-                        stripePaymentInstrument.paymentTransaction.setType(PaymentTransaction.TYPE_AUTH);
+                        stripePaymentInstrument.paymentTransaction.setType(stripeChargeCapture ? dw.order.PaymentTransaction.TYPE_CAPTURE : dw.order.PaymentTransaction.TYPE_AUTH);
+
+                        if (!empty(stripeAccountId)) {
+                            stripePaymentInstrument.paymentTransaction.custom.stripeAccountId = stripeAccountId;
+                        }
+
+                        if (!empty(stripeAccountType) && 'value' in stripeAccountType && !empty(stripeAccountType.value)) {
+                            stripePaymentInstrument.paymentTransaction.custom.stripeAccountType = stripeAccountType.value;
+                        }
                     }
 
                     /*
@@ -155,7 +171,15 @@ function beforePaymentAuthorization() {
                      */
                     if (stripePaymentInstrument && stripePaymentInstrument.paymentTransaction && stripePaymentInstrument.custom.stripeSourceID) {
                         stripePaymentInstrument.paymentTransaction.setTransactionID(stripePaymentInstrument.custom.stripeSourceID);
-                        stripePaymentInstrument.paymentTransaction.setType(PaymentTransaction.TYPE_AUTH);
+                        stripePaymentInstrument.paymentTransaction.setType(stripeChargeCapture ? dw.order.PaymentTransaction.TYPE_CAPTURE : dw.order.PaymentTransaction.TYPE_AUTH);
+
+                        if (!empty(stripeAccountId)) {
+                            stripePaymentInstrument.paymentTransaction.custom.stripeAccountId = stripeAccountId;
+                        }
+
+                        if (!empty(stripeAccountType) && 'value' in stripeAccountType && !empty(stripeAccountType.value)) {
+                            stripePaymentInstrument.paymentTransaction.custom.stripeAccountType = stripeAccountType.value;
+                        }
                     }
 
                     if (stripePaymentInstrument && stripePaymentInstrument.custom.stripeSourceID) {
@@ -167,6 +191,64 @@ function beforePaymentAuthorization() {
                 responsePayload = {
                     success: true
                 };
+            }
+        } else {
+            /*
+             * Handle the case when SFCC order is being created before making call to Stripe to create a Payment Intent and confirm the payment
+             */
+            if (!session || !session.privacy || !session.privacy.stripeOrderNumber) {
+                responsePayload = {
+                    success: false
+                };
+                return responsePayload;
+            }
+
+            var order = OrderMgr.getOrder(session.privacy.stripeOrderNumber);
+            if (!order) {
+                responsePayload = {
+                    success: false
+                };
+                return responsePayload;
+            }
+
+            stripePaymentInstrument = checkoutHelper.getStripePaymentInstrument(order);
+
+            if (stripePaymentInstrument && stripePaymentInstrument.paymentMethod === 'CREDIT_CARD') {
+                paymentIntentId = (stripePaymentInstrument.paymentTransaction)
+                    ? stripePaymentInstrument.paymentTransaction.getTransactionID() : null;
+                if (paymentIntentId) {
+                    paymentIntent = checkoutHelper.confirmPaymentIntent(paymentIntentId, stripePaymentInstrument);
+                } else {
+                    paymentIntent = checkoutHelper.createPaymentIntent(stripePaymentInstrument);
+
+                    Transaction.wrap(function () {
+                        stripePaymentInstrument.paymentTransaction.setTransactionID(paymentIntent.id);
+                        stripePaymentInstrument.paymentTransaction.setType(stripeChargeCapture ? dw.order.PaymentTransaction.TYPE_CAPTURE : dw.order.PaymentTransaction.TYPE_AUTH);
+
+                        if (!empty(stripeAccountId)) {
+                            stripePaymentInstrument.paymentTransaction.custom.stripeAccountId = stripeAccountId;
+                        }
+
+                        if (!empty(stripeAccountType) && 'value' in stripeAccountType && !empty(stripeAccountType.value)) {
+                            stripePaymentInstrument.paymentTransaction.custom.stripeAccountType = stripeAccountType.value;
+                        }
+                    });
+                }
+
+                Transaction.wrap(function () {
+                    if (paymentIntent.review) {
+                        order.custom.stripeIsPaymentIntentInReview = true;
+                    }
+                    order.custom.stripePaymentIntentID = paymentIntent.id;
+                    order.custom.stripePaymentSourceID = '';
+
+                    if (paymentIntent.charges && paymentIntent.charges.data && paymentIntent.charges.data.length > 0 && paymentIntent.charges.data[0].outcome) {
+                        order.custom.stripeRiskLevel = paymentIntent.charges.data[0].outcome.risk_level;
+                        order.custom.stripeRiskScore = paymentIntent.charges.data[0].outcome.risk_score;
+                    }
+                });
+
+                responsePayload = generateCardsPaymentResponse(paymentIntent);
             }
         }
     } catch (e) {

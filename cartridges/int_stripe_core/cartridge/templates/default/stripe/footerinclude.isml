@@ -22,6 +22,8 @@
 			<input type="hidden" id="stripePaymentElementStyle" value="${JSON.stringify(stripeHelper.getStripePaymentElementStyle())}" />
             <input type="hidden" id="logStripeErrorMessageURL" value="${URLUtils.https('StripePayments-LogStripeErrorMessage')}" />
             <input type="hidden" id="stripeFailOrderURL" value="${URLUtils.https('StripePayments-FailOrder')}" />
+            <input type="hidden" id="stripeCardOrderPlacedURL" value="${URLUtils.https('Stripe-CardOrderPlaced')}" />
+
             <input type="hidden" id="stripe_return_url" value="${URLUtils.https("StripePayments-HandleAPM")}">
 			<script src="${URLUtils.staticURL('/js/stripe.checkout.js')}" ></script>
 		</isif>

@@ -22,6 +22,7 @@
 <input type="hidden" id="logStripeErrorMessageURL" value="${URLUtils.https('StripePayments-LogStripeErrorMessage')}" />
 
 <input type="hidden" id="stripeFailOrderURL" value="${URLUtils.https('StripePayments-FailOrder')}" />
+<input type="hidden" id="stripeCardOrderPlacedURL" value="${URLUtils.https('Stripe-CardOrderPlaced')}" />
 
 <input type="hidden" name="stripe_source_client_secret" id="stripe_source_client_secret">
 <input type="hidden" name="stripe_redirect_url" id="stripe_redirect_url">

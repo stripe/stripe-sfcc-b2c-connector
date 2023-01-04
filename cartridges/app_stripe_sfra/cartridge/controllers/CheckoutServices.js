@@ -147,8 +147,12 @@ server.prepend('PlaceOrder', server.middleware.https, function (req, res, next) 
 
     // Stripe changes BEGIN
     const stripeCheckoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
-    var isBasketPaymentIntentValid = stripeCheckoutHelper.isBasketPaymentIntentValid();
-    if (!isBasketPaymentIntentValid) {
+    if (currentBasket.custom.stripePaymentIntentID && !stripeCheckoutHelper.isBasketPaymentIntentValid()) {
+        // detach the associated payment intent id from the basket
+        Transaction.wrap(function () {
+            currentBasket.custom.stripePaymentIntentID = '';
+        });
+
         res.json({
             error: true,
             cartError: true,
@@ -172,6 +176,8 @@ server.prepend('PlaceOrder', server.middleware.https, function (req, res, next) 
         this.emit('route:Complete', req, res);
         return null;
     }
+
+    session.privacy.stripeOrderNumber = order.orderNo;
 
     // Handles payment authorization
     var handlePaymentResult = COHelpers.handlePayments(order, order.orderNo);
@@ -202,56 +208,11 @@ server.prepend('PlaceOrder', server.middleware.https, function (req, res, next) 
         return null;
     }
 
-    // Stripe changes BEGIN
-    var isAPMOrder = stripeCheckoutHelper.isAPMOrder(order);
-    if (!isAPMOrder) {
-        var stripePaymentInstrument = stripeCheckoutHelper.getStripePaymentInstrument(order);
-
-        if (stripePaymentInstrument && order.custom.stripeIsPaymentIntentInReview) {
-            res.json({
-                error: false,
-                orderID: order.orderNo,
-                orderToken: order.orderToken,
-                continueUrl: URLUtils.url('Order-Confirm').toString()
-            });
-
-            this.emit('route:Complete', req, res);
-            return null;
-        }
-        // Places the order
-        var placeOrderResult = COHelpers.placeOrder(order, fraudDetectionStatus);
-        if (placeOrderResult.error) {
-            stripeCheckoutHelper.refundCharge(order);
-            res.json({
-                error: true,
-                errorMessage: Resource.msg('error.technical', 'checkout', null)
-            });
-            this.emit('route:Complete', req, res);
-            return null;
-        }
-
-        COHelpers.sendConfirmationEmail(order, req.locale.id);
-
-        // Reset usingMultiShip after successful Order placement
-        req.session.privacyCache.set('usingMultiShipping', false);
-
-        res.json({
-            error: false,
-            orderID: order.orderNo,
-            orderToken: order.orderToken,
-            continueUrl: URLUtils.url('Order-Confirm').toString()
-        });
-
-        this.emit('route:Complete', req, res);
-        return null;
+    if (stripeCheckoutHelper.isAPMOrder(order)) {
+        Transaction.begin();
+        stripeCheckoutHelper.createStripePaymentInstrument(order, 'STRIPE_PAYMENT_ELEMENT', {});
+        Transaction.commit();
     }
-
-    // init payment transaction data used for OM App
-    Transaction.begin();
-    stripeCheckoutHelper.createStripePaymentInstrument(order, 'STRIPE_PAYMENT_ELEMENT', {});
-    Transaction.commit();
-
-    session.privacy.stripeOrderNumber = order.orderNo;
 
     res.json({
         error: false,

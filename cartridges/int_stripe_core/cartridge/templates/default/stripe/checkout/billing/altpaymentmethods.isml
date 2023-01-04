@@ -26,12 +26,14 @@
     Stripe Payment Elements
     -------------------
 </iscomment>
-<div class="payment-method <isif condition="${isStripeCardsPaymentMethodEnabled}">payment-method-expanded</isif>" data-method="STRIPE_PAYMENT_ELEMENT">
-    <div id="payment-element" style="width:100%"
-		data-errormsg="${Resource.msg('apm.error.fail','stripe',null)}"
-		data-formaction="${URLUtils.https('COSummary-Submit')}"
-		data-tokenname="${dw.web.CSRFProtection.getTokenName()}"
-		data-tokenvalue="${dw.web.CSRFProtection.generateToken()}"
-		data-submitordertxt="${Resource.msg('global.submitorder','locale',null)}">
-    </div>
-</div>
+<isif condition="${isStripePaymentElementEnabled}">
+	<div class="payment-method payment-method-expanded" data-method="STRIPE_PAYMENT_ELEMENT">
+	    <div id="payment-element" style="width:100%"
+			data-errormsg="${Resource.msg('apm.error.fail','stripe',null)}"
+			data-formaction="${URLUtils.https('COSummary-Submit')}"
+			data-tokenname="${dw.web.CSRFProtection.getTokenName()}"
+			data-tokenvalue="${dw.web.CSRFProtection.generateToken()}"
+			data-submitordertxt="${Resource.msg('global.submitorder','locale',null)}">
+	    </div>
+	</div>
+</isif>

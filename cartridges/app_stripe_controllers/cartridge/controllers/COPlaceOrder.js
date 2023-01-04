@@ -146,7 +146,12 @@ function start() {
     // Stripe changes BEGIN
     const stripeCheckoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
     const isBasketPaymentIntentValid = stripeCheckoutHelper.isBasketPaymentIntentValid();
-    if (!isBasketPaymentIntentValid) {
+    if (cart.object.custom.stripePaymentIntentID && !isBasketPaymentIntentValid) {
+        // detach the associated payment intent id from the basket
+        Transaction.wrap(function () {
+            cart.object.custom.stripePaymentIntentID = '';
+        });
+
         return {
             error: true,
             PlaceOrderError: new Status(Status.ERROR, 'confirm.error.technical')
@@ -182,45 +187,6 @@ function start() {
             };
         });
     }
-
-    // Stripe changes BEGIN
-    var isAPMOrder = stripeCheckoutHelper.isAPMOrder(order);
-    if (!isAPMOrder) {
-
-        var stripePaymentInstrument = stripeCheckoutHelper.getStripePaymentInstrument(order);
-
-        if (stripePaymentInstrument && order.custom.stripeIsPaymentIntentInReview) {
-            return {
-                Order: order,
-                order_created: true
-            };
-        } else {
-            var orderPlacementStatus = Order.submit(order);
-            if (!orderPlacementStatus.error) {
-                clearForms();
-            } else {
-                stripeCheckoutHelper.refundCharge(order);
-            }
-            return orderPlacementStatus;
-        }
-    } else {
-        const Email = app.getModel('Email');
-        const Resource = require('dw/web/Resource');
-        Email.sendMail({
-            template: 'stripe/mail/orderreceived',
-            recipient: order.getCustomerEmail(),
-            subject: Resource.msg('order.ordercreceived-email.001', 'stripe', null),
-            context: {
-                Order: order
-            }
-        });
-
-        return {
-            Order: order,
-            order_created: true
-        };
-    }
-    // Stripe changes END
 }
 
 function clearForms() {

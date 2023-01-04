@@ -83,9 +83,12 @@ function Authorize(args) {
     }
 
     if (!paymentIntentId) {
+        /*
+         * Pass the initial Authorize because SFCC orde is being created before making a call to Sripe to Authorize
+         */
         responsePayload = {
-            authorized: false,
-            error: true
+            authorized: true,
+            error: false
         };
     } else {
         const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
