@@ -240,6 +240,14 @@ function getOwnerDetails() {
 
 function handleServerResponse(response) {
     if (response.error) {
+        $.ajax({
+            url: document.getElementById('stripeFailOrderURL').value,
+            method: 'POST',
+            dataType: 'json',
+            data: {
+                csrf_token: $('[name="csrf_token"]').val()
+            }
+        });
         alert(response.error.message);
         window.location.replace(document.getElementById('billingPageUrl').value);
     } else if (response.requires_action) {
@@ -410,6 +418,15 @@ document.querySelector('button.submit-payment').addEventListener('click', functi
         $('.payment-details').text(paymentMethodName);
         $('.payment-details').removeClass('payment-details').addClass('payment-details-stripe');
 
+        return;
+    }
+
+    if ($('#dwfrm_billing .' + $('.tab-pane.active').attr('id') + ' .payment-form-fields input.form-control').val() === 'CREDIT_CARD') {
+        window.localStorage.setItem('stripe_payment_method', 'CREDIT_CARD');
+    } else if ($('#dwfrm_billing .' + $('.tab-pane.active').attr('id') + ' .payment-form-fields input.form-control').val() === 'STRIPE_PAYMENT_REQUEST_BTN') {
+        window.localStorage.setItem('stripe_payment_method', 'STRIPE_PAYMENT_REQUEST_BTN');
+    } else {
+        window.localStorage.setItem('stripe_payment_method', '');
         return;
     }
 
@@ -875,6 +892,10 @@ function handleStripeCardSubmitOrder() {
 // v1
 // eslint-disable-next-line consistent-return
 document.querySelector('button.place-order').addEventListener('click', function (event) {
+    if (window.localStorage.getItem('stripe_payment_method') !== 'STRIPE_PAYMENT_ELEMENT' && window.localStorage.getItem('stripe_payment_method') !== 'CREDIT_CARD' && window.localStorage.getItem('stripe_payment_method') !== 'STRIPE_PAYMENT_REQUEST_BTN') {
+        return true;
+    }
+
     event.stopImmediatePropagation();
 
     // eslint-disable-next-line no-empty

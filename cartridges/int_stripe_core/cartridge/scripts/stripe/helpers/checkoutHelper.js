@@ -272,6 +272,12 @@ exports.createPaymentIntent = function (paymentInstrument) {
         createPaymentIntentPayload.setup_future_usage = 'off_session';
     }
 
+    if (session.privacy.stripeOrderNumber) {
+        createPaymentIntentPayload.metadata = {};
+        createPaymentIntentPayload.metadata.order_id = session.privacy.stripeOrderNumber;
+        createPaymentIntentPayload.metadata.site_id = dw.system.Site.getCurrent().getID();
+    }
+
     const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
     const paymentIntent = stripeService.paymentIntents.create(createPaymentIntentPayload);

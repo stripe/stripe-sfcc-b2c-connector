@@ -368,7 +368,16 @@ function init() {
 function handleServerResponse(response) {
     if (response.error) {
         alert(response.error.message);
-        window.location.replace(document.getElementById('billingPageUrl').value);
+        $.ajax({
+            url: document.getElementById('stripeFailOrderURL').value,
+            method: 'POST',
+            dataType: 'json',
+            data: {
+                csrf_token: $('[name="csrf_token"]').val()
+            }
+        }).done(function () {
+            window.location.replace(document.getElementById('billingPageUrl').value);
+        });
     } else if (response.requires_action) {
         // Use Stripe.js to handle required card action
         stripe.handleCardAction(response.payment_intent_client_secret).then(function (result) {
