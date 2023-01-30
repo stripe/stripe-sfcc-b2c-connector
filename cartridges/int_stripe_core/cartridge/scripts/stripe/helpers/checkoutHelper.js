@@ -288,16 +288,29 @@ exports.createPaymentIntent = function (paymentInstrument) {
 exports.confirmPaymentIntent = function (paymentIntentId, paymentInstrument) {
     const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
+    const paymentIntent = stripeService.paymentIntents.retrieve(paymentIntentId);
+    if (!paymentIntent) {
+        return paymentIntent;
+    }
+
+    // Only a PaymentIntent with one of the following statuses may be confirmed: requires_confirmation, requires_action.
+    if (paymentIntent.status !== 'requires_confirmation' && paymentIntent.status !== 'requires_action') {
+        return paymentIntent;
+    }
+
     const paymentMethod = paymentInstrument.custom.stripeSourceID;
+    if (paymentMethod) {
+        return paymentIntent;
+    }
 
     const paymentIntentPayload = {
         payment_method: paymentMethod,
         return_url: dw.web.URLUtils.https('StripePayments-HandleAPM').toString()
     };
 
-    const paymentIntent = stripeService.paymentIntents.confirm(paymentIntentId, paymentIntentPayload);
+    const paymentIntentConfirmed = stripeService.paymentIntents.confirm(paymentIntentId, paymentIntentPayload);
 
-    return paymentIntent;
+    return paymentIntentConfirmed;
 };
 
 exports.getSiteID = function () {

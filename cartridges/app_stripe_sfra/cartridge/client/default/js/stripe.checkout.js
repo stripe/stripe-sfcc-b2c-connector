@@ -248,7 +248,9 @@ function handleServerResponse(response) {
                 csrf_token: $('[name="csrf_token"]').val()
             }
         });
-        alert(response.error.message);
+        if (response.error.message) {
+            alert(response.error.message);
+        }
         window.location.replace(document.getElementById('billingPageUrl').value);
     } else if (response.requires_action) {
         // Use Stripe.js to handle required card action
@@ -869,7 +871,8 @@ function handleStripeCardSubmitOrder() {
                     method: 'POST',
                     dataType: 'json',
                     data: {
-                        csrf_token: $('[name="csrf_token"]').val()
+                        csrf_token: $('[name="csrf_token"]').val(),
+                        isinitial: true
                     }
                 }).done(function (json) {
                     handleServerResponse(json);

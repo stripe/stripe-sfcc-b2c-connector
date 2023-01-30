@@ -11,7 +11,9 @@ var csrfProtection = require('*/cartridge/scripts/middleware/csrf');
  * Entry point for handling payment intent creation and confirmation AJAX calls.
  */
 server.post('BeforePaymentAuthorization', csrfProtection.validateAjaxRequest, function (req, res, next) {
-    var responsePayload = stripePaymentsHelper.BeforePaymentAuthorization();
+    var isInitial = (req.form && req.form.isinitial) ? req.form.isinitial : false;
+
+    var responsePayload = stripePaymentsHelper.BeforePaymentAuthorization(isInitial);
     res.json(responsePayload);
     next();
 });

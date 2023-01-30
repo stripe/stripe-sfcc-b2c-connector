@@ -21,7 +21,8 @@ function beforePaymentAuthorization() {
         };
         response.setStatus(500);
     } else {
-        responsePayload = stripePaymentsHelper.BeforePaymentAuthorization();
+        var isInitial = (request.httpParameterMap.isinitial && request.httpParameterMap.isinitial.value) ? request.httpParameterMap.isinitial.value : false;
+        responsePayload = stripePaymentsHelper.BeforePaymentAuthorization(isInitial);
     }
 
     var jsonResponse = JSON.stringify(responsePayload);
