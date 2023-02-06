@@ -101,7 +101,7 @@ function Authorize(args) {
                 }
             });
 
-            if ((!stripeChargeCapture && paymentIntent.status !== 'requires_capture' && paymentIntent.status !== 'succeeded') || (stripeChargeCapture && paymentIntent.status !== 'succeeded')) {
+            if ((!stripeChargeCapture && paymentIntent.status !== 'requires_payment_method' && paymentIntent.status !== 'requires_capture' && paymentIntent.status !== 'succeeded') || (stripeChargeCapture && paymentIntent.status !== 'succeeded')) {
                 throw new Error('Payment was not successful, payment intent status is ' + paymentIntent.status);
             }
 

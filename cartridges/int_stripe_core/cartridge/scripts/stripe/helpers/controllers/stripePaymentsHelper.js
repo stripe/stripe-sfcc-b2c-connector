@@ -63,7 +63,7 @@ function generateCardsPaymentResponse(intent) {
             requires_action: true,
             payment_intent_client_secret: intent.client_secret
         };
-    } else if (intent.status === 'succeeded') {
+    } else if (intent.status === 'succeeded' || intent.status === 'requires_confirmation') {
         // The payment didn’t need any additional actions and completed!
         // Handle post-payment fulfilment
         responsePayload = {
@@ -81,9 +81,10 @@ function generateCardsPaymentResponse(intent) {
 
 /**
  * Entry point for handling payment intent creation and confirmation AJAX calls.
+ * @param {boolean} isInitial when we need to create a new payment intent
  * @return {Object} responsePayload.
  */
-function beforePaymentAuthorization() {
+function beforePaymentAuthorization(isInitial) {
     var BasketMgr = require('dw/order/BasketMgr');
     var responsePayload;
     var checkoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
@@ -198,7 +199,7 @@ function beforePaymentAuthorization() {
              */
             if (!session || !session.privacy || !session.privacy.stripeOrderNumber) {
                 responsePayload = {
-                    success: false
+                    error: true
                 };
                 return responsePayload;
             }
@@ -206,7 +207,7 @@ function beforePaymentAuthorization() {
             var order = OrderMgr.getOrder(session.privacy.stripeOrderNumber);
             if (!order) {
                 responsePayload = {
-                    success: false
+                    error: true
                 };
                 return responsePayload;
             }
@@ -214,11 +215,7 @@ function beforePaymentAuthorization() {
             stripePaymentInstrument = checkoutHelper.getStripePaymentInstrument(order);
 
             if (stripePaymentInstrument && stripePaymentInstrument.paymentMethod === 'CREDIT_CARD') {
-                paymentIntentId = (stripePaymentInstrument.paymentTransaction)
-                    ? stripePaymentInstrument.paymentTransaction.getTransactionID() : null;
-                if (paymentIntentId) {
-                    paymentIntent = checkoutHelper.confirmPaymentIntent(paymentIntentId, stripePaymentInstrument);
-                } else {
+                if (isInitial) {
                     paymentIntent = checkoutHelper.createPaymentIntent(stripePaymentInstrument);
 
                     Transaction.wrap(function () {
@@ -233,6 +230,27 @@ function beforePaymentAuthorization() {
                             stripePaymentInstrument.paymentTransaction.custom.stripeAccountType = stripeAccountType.value;
                         }
                     });
+                } else {
+                    paymentIntentId = (stripePaymentInstrument.paymentTransaction)
+                        ? stripePaymentInstrument.paymentTransaction.getTransactionID() : null;
+                    if (paymentIntentId) {
+                        paymentIntent = checkoutHelper.confirmPaymentIntent(paymentIntentId, stripePaymentInstrument);
+                    } else {
+                        paymentIntent = checkoutHelper.createPaymentIntent(stripePaymentInstrument);
+
+                        Transaction.wrap(function () {
+                            stripePaymentInstrument.paymentTransaction.setTransactionID(paymentIntent.id);
+                            stripePaymentInstrument.paymentTransaction.setType(stripeChargeCapture ? dw.order.PaymentTransaction.TYPE_CAPTURE : dw.order.PaymentTransaction.TYPE_AUTH);
+
+                            if (!empty(stripeAccountId)) {
+                                stripePaymentInstrument.paymentTransaction.custom.stripeAccountId = stripeAccountId;
+                            }
+
+                            if (!empty(stripeAccountType) && 'value' in stripeAccountType && !empty(stripeAccountType.value)) {
+                                stripePaymentInstrument.paymentTransaction.custom.stripeAccountType = stripeAccountType.value;
+                            }
+                        });
+                    }
                 }
 
                 Transaction.wrap(function () {

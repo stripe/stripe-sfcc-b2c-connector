@@ -218,7 +218,40 @@ function failOrder(stripeNotificationObject, order) {
  * @param {dw.order.OrderPaymentInstrument} stripePaymentInstrument - Stripe payment instrument
  */
 function placeOrder(stripeNotificationObject, order, stripePaymentInstrument) { // eslint-disable-line
-//  var chargeJSON = JSON.parse(stripeNotificationObject.custom.stripeWebhookData);
+    var chargeJSON = JSON.parse(stripeNotificationObject.custom.stripeWebhookData);
+
+    // add card info (if any) to payment instrument for Stripe payment element
+    try {
+        const stripePEPaymentInstruments = order.getPaymentInstruments('STRIPE_PAYMENT_ELEMENT');
+        const stripePEPaymentInstrument = stripePEPaymentInstruments.length && stripePEPaymentInstruments[0];
+
+        if (stripePEPaymentInstrument && chargeJSON && chargeJSON.data && chargeJSON.data.object && chargeJSON.data.object.payment_method_details) {
+            Transaction.wrap(function () {
+                if (chargeJSON.data.object.billing_details && chargeJSON.data.object.billing_details.name) {
+                    stripePEPaymentInstrument.creditCardHolder = chargeJSON.data.object.billing_details.name;
+                }
+
+                if (chargeJSON.data.object.payment_method_details.card && chargeJSON.data.object.payment_method_details.card.last4) {
+                    stripePEPaymentInstrument.creditCardNumber = '************' + chargeJSON.data.object.payment_method_details.card.last4;
+                }
+
+                if (chargeJSON.data.object.payment_method_details.card && chargeJSON.data.object.payment_method_details.card.brand) {
+                    stripePEPaymentInstrument.creditCardType = chargeJSON.data.object.payment_method_details.card.brand;
+                }
+
+                if (chargeJSON.data.object.payment_method_details.card && chargeJSON.data.object.payment_method_details.card.exp_month) {
+                    stripePEPaymentInstrument.creditCardExpirationMonth = chargeJSON.data.object.payment_method_details.card.exp_month;
+                }
+
+                if (chargeJSON.data.object.payment_method_details.card && chargeJSON.data.object.payment_method_details.card.exp_month) {
+                    stripePEPaymentInstrument.creditCardExpirationYear = chargeJSON.data.object.payment_method_details.card.exp_year;
+                }
+            });
+        }
+    } catch (e) {
+        logger.error('Error writing stripePEPaymentInstrument: {0}', e.message);
+    }
+
     Transaction.wrap(function () {
         /*
         stripePaymentInstrument.paymentTransaction.transactionID = chargeJSON.data.object.balance_transaction; // eslint-disable-line

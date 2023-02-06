@@ -439,7 +439,8 @@ function handleStripeCardSubmitOrder() {
 		        method: 'POST',
 		        dataType: 'json',
 		        data: {
-		            csrf_token: $('[name="csrf_token"]').val()
+		            csrf_token: $('[name="csrf_token"]').val(),
+		            isinitial: true
 		        }
 		    }).done(function (json) {
 		        handleServerResponse(json);	

@@ -137,7 +137,7 @@ function getStripeServiceDefinition() {
                     name: 'Stripe SFCCB2C',
                     partner_id: 'pp_partner_Fs71dOwRYXhmze',
                     url: '[https://stripe.com/docs/plugins/salesforce-commerce-cloud]',
-                    version: '22.4.0'
+                    version: '23.1.0'
                 }
             };
 
