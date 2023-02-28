@@ -4,6 +4,7 @@
 
 var COHelpers = module.superModule;
 var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
+var stripePaymentsHelper = require('*/cartridge/scripts/stripe/helpers/controllers/stripePaymentsHelper');
 
 if (stripeHelper.isStripeEnabled()) {
     /**
@@ -19,8 +20,13 @@ if (stripeHelper.isStripeEnabled()) {
     };
 
     COHelpers.createOrder = function createOrder(currentBasket) {
-        const stripeCheckoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
-        return stripeCheckoutHelper.createOrder(currentBasket);
+        try {
+            const stripeCheckoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
+            return stripeCheckoutHelper.createOrder(currentBasket);
+        } catch (e) {
+            stripePaymentsHelper.LogStripeErrorMessage('COHelpers.createOrder createOrder error: ' + e.message);
+            return null;
+        }
     };
 }
 

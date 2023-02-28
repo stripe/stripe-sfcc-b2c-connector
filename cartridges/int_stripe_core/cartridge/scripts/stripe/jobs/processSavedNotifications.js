@@ -1,6 +1,6 @@
 /* eslint-env es6 */
 /* eslint-disable no-plusplus */
-/* global empty */
+/* global empty, dw */
 
 'use strict';
 
@@ -184,6 +184,11 @@ function createCharge(stripeNotificationObject, order, stripePaymentInstrument) 
  * @param {dw.order.OrderPaymentInstrument} stripePaymentInstrument - Stripe payment instrument
  */
 function failOrder(stripeNotificationObject, order) {
+    // If the order is failed, do not try to fail it
+    if (order.status === dw.order.Order.ORDER_STATUS_FAILED) {
+        return;
+    }
+
     var chargeJSON = JSON.parse(stripeNotificationObject.custom.stripeWebhookData);
     var failedDetailsForOrder = {
         failure_code: chargeJSON.data.object.failure_code ? chargeJSON.data.object.failure_code : '',
@@ -195,7 +200,7 @@ function failOrder(stripeNotificationObject, order) {
     Transaction.wrap(function () {
         order.addNote('Stripe Processing Job Note(failed details)', JSON.stringify(failedDetailsForOrder));
         var failStatus = OrderMgr.failOrder(order, true);
-        if (failStatus.status === Status.ERROR) {
+        if (failStatus.isError()) {
             stripeLogger.info('\n' + failStatus.message);
             logger.error('Error: {0}', failStatus.message);
         } else {
@@ -261,10 +266,12 @@ function placeOrder(stripeNotificationObject, order, stripePaymentInstrument) { 
         stripePaymentInstrument.paymentTransaction.custom.stripeChargeOutcomeData = JSON.stringify(chargeJSON.data.object.outcome ? chargeJSON.data.object.outcome : {}); // eslint-disable-line
         stripePaymentInstrument.paymentTransaction.custom.stripeJsonData = stripeNotificationObject.custom.stripeWebhookData; // eslint-disable-line
         */
-        var placeOrderStatus = OrderMgr.placeOrder(order);
-        if (placeOrderStatus === Status.ERROR) {
-            OrderMgr.failOrder(order, true);
-            stripeLogger.info('An error occured durring place order: {0}, error message: {1}', order.orderNo, placeOrderStatus.message);
+        if (order.status !== dw.order.Order.ORDER_STATUS_NEW && order.status !== dw.order.Order.ORDER_STATUS_OPEN && order.status !== dw.order.Order.ORDER_STATUS_COMPLETED) {
+            var placeOrderStatus = OrderMgr.placeOrder(order);
+            if (placeOrderStatus.isError()) {
+                OrderMgr.failOrder(order, true);
+                stripeLogger.info('An error occured durring place order: {0}, error message: {1}', order.orderNo, placeOrderStatus.message);
+            }
         }
 
         order.setConfirmationStatus(Order.CONFIRMATION_STATUS_CONFIRMED);
@@ -349,10 +356,12 @@ function processChargeRefunded(stripeNotificationObject, order, stripePaymentIns
  */
 function placeOrderAfterReview(stripeNotificationObject, order) {
     Transaction.wrap(function () {
-        var placeOrderStatus = OrderMgr.placeOrder(order);
-        if (placeOrderStatus === Status.ERROR) {
-            OrderMgr.failOrder(order, true);
-            stripeLogger.info('An error occured durring place order: {0}, error message: {1}', order.orderNo, placeOrderStatus.message);
+        if (order.status !== dw.order.Order.ORDER_STATUS_NEW && order.status !== dw.order.Order.ORDER_STATUS_OPEN && order.status !== dw.order.Order.ORDER_STATUS_COMPLETED) {
+            var placeOrderStatus = OrderMgr.placeOrder(order);
+            if (placeOrderStatus.isError()) {
+                OrderMgr.failOrder(order, true);
+                stripeLogger.info('An error occured durring place order: {0}, error message: {1}', order.orderNo, placeOrderStatus.message);
+            }
         }
 
         order.setConfirmationStatus(Order.CONFIRMATION_STATUS_CONFIRMED);
@@ -381,10 +390,15 @@ function placeOrderAfterReview(stripeNotificationObject, order) {
  * @param {dw.order.Order} order - Order to place
  */
 function failOrderAfterReview(stripeNotificationObject, order) {
+    // If the order is failed, do not try to fail it
+    if (order.status === dw.order.Order.ORDER_STATUS_FAILED) {
+        return;
+    }
+
     Transaction.wrap(function () {
         order.addNote('Stripe Processing Job Note(failed details)', stripeNotificationObject.custom.stripeWebhookData);
         var failStatus = OrderMgr.failOrder(order, true);
-        if (failStatus.status === Status.ERROR) {
+        if (failStatus.isError()) {
             stripeLogger.info('\n' + failStatus.message);
             logger.error('Error: {0}', failStatus.message);
         } else {

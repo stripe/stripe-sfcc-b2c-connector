@@ -401,7 +401,11 @@ exports.createOrder = function (currentBasket) {
             return newOrder;
         });
     } catch (error) {
-        return null;
+        if (order) {
+            Transaction.wrap(function () {
+                order.addNote('Error Create Order', error.message);
+            });
+        }
     }
 
     return order;
