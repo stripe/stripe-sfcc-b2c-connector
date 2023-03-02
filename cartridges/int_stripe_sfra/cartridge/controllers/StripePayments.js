@@ -398,7 +398,7 @@ server.post('CardPaymentSubmitOrder', csrfProtection.validateAjaxRequest, functi
     } else if (paymentIntent.status === 'requires_action' || paymentIntent.status === 'requires_source_action') {
         // Tell the client to handle the action
         Transaction.wrap(function () {
-            order.addNote('Stripe 3DS', 'requires_action');
+            order.addNote('Stripe 3DS', 'requires_action: Pending');
         });
         responsePayload.requires_action = true;
         responsePayload.payment_intent_client_secret = paymentIntent.client_secret;
@@ -555,7 +555,7 @@ server.post('CardPaymentHandleRequiresAction', csrfProtection.validateAjaxReques
             }
         } else if (paymentIntent.status === 'requires_action' || paymentIntent.status === 'requires_source_action') {
             Transaction.wrap(function () {
-                order.addNote('Stripe 3DS', 'requires_action');
+                order.addNote('Stripe 3DS', 'requires_action: Pending');
             });
             // Tell the client to handle the action
             responsePayload.requires_action = true;
@@ -565,6 +565,7 @@ server.post('CardPaymentHandleRequiresAction', csrfProtection.validateAjaxReques
             // Handle post-payment fulfilment
             try {
                 Transaction.wrap(function () {
+                    order.addNote('Stripe 3DS', 'requires_action: Confirmed');
                     var placeOrderStatus = OrderMgr.placeOrder(order);
                     if (placeOrderStatus.isError()) {
                         throw new Error();

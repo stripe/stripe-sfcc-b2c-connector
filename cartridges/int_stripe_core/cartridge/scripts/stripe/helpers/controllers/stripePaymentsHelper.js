@@ -32,7 +32,7 @@ function failOrder() {
             var order = OrderMgr.getOrder(session.privacy.stripeOrderNumber);
             if (order) {
                 Transaction.wrap(function () {
-                    order.addNote('Fail order from stripePaymentsHelper.js failOrder', 'session.privacy.stripeOrderNumber');
+                    order.addNote('Order Failed Reason', 'failed from storefront Stripe.js: stripe.confirmPayment (for Stripe Payment Elements) or stripe.handleCardAction (for Card Payments)');
                     OrderMgr.failOrder(order, true);
                 });
             }
