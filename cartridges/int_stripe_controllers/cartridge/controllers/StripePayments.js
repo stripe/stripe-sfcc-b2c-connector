@@ -591,6 +591,7 @@ function cardPaymentHandleRequiresAction() {
             // The payment requires capture which will be made later
             try {
                 Transaction.wrap(function () {
+                    order.addNote('Stripe 3DS', 'requires_action: Confirmed');
                     var placeOrderStatus = OrderMgr.placeOrder(order);
                     if (placeOrderStatus.isError()) {
                         throw new Error();
