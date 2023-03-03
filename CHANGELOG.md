@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 23.2.0 (2023-03-03)
+* fix Saved Card functionality - not saving cards when capture mode is enabled
+* merge confirmPaymentIntent and placeOrder in one request instead of separate AJAX calls
+* merge create SFCC order and Stripe payment intent into one request instead of separate AJAX calls
+* clean up session privacy variable for Stripe Order Id after placing an order
+
 ## 23.1.0 (2023-02-06)
 * Card payments: add additional check to generate new payment intent on place order
 * Stripe Payment Element: Init card details for Card Payments in OMS
