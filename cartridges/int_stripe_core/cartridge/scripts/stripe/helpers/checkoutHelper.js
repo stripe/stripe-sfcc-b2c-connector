@@ -264,7 +264,7 @@ exports.createPaymentIntent = function (paymentInstrument) {
         createPaymentIntentPayload.customer = paymentInstrument.custom.stripeCustomerID;
     }
 
-    if (!stripeChargeCapture && paymentInstrument.custom.stripeSavePaymentInstrument) {
+    if (paymentInstrument.custom.stripeSavePaymentInstrument) {
         createPaymentIntentPayload.save_payment_method = true;
     }
 
