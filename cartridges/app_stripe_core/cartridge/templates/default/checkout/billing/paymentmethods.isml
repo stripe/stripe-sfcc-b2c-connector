@@ -90,7 +90,7 @@
 			<iscomment>
 				Stripe changes BEGIN
 			</iscomment>
-			<isif condition="${!isStripePaymentElementEnabled && isCreditCardEnabled && stripeEnabled}">
+			<isif condition="${isCreditCardEnabled && stripeEnabled}">
 				<isinclude template="stripe/checkout/billing/cardform" />
 			<iscomment>
 				Only show the credit card form if stripe is disabled and the credit card method has a different processor than STRIPE_CREDIT
