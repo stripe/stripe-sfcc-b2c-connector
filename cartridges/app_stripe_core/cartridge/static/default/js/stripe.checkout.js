@@ -365,20 +365,8 @@ function init() {
     });
 }
 
-function handleServerResponse(response) {
-    if (response.error) {
-        alert(response.error.message);
-        $.ajax({
-            url: document.getElementById('stripeFailOrderURL').value,
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                csrf_token: $('[name="csrf_token"]').val()
-            }
-        }).done(function () {
-            window.location.replace(document.getElementById('billingPageUrl').value);
-        });
-    } else if (response.requires_action) {
+function handleStripeRequiresActionResponse(response) {
+    if (response.requires_action) {
         // Use Stripe.js to handle required card action
         stripe.handleCardAction(response.payment_intent_client_secret).then(function (result) {
             if (result.error) {
@@ -397,14 +385,14 @@ function handleServerResponse(response) {
                 // The card action has been handled
                 // The PaymentIntent can be confirmed again on the server
                 $.ajax({
-                    url: document.getElementById('beforePaymentAuthURL').value,
+                    url: document.getElementById('cardPaymentHandleRequiresActionURL').value,
                     method: 'POST',
                     dataType: 'json',
                     data: {
                         csrf_token: $('[name="csrf_token"]').val()
                     }
                 }).done(function (json) {
-                    handleServerResponse(json);
+                    handleStripeRequiresActionResponse(json);
                 }).fail(function (msg) {
                     if (msg.error) {
                         alert(msg.error);
@@ -430,37 +418,29 @@ function handleServerResponse(response) {
 
 function handleStripeCardSubmitOrder() {
     $.ajax({
-        type: 'POST',
-        url: $("form.submit-order").attr("action"),
-        data: $("form.submit-order").serialize(),
-        success: function(response) {
-            $.ajax({
-		        url: document.getElementById('beforePaymentAuthURL').value,
-		        method: 'POST',
-		        dataType: 'json',
-		        data: {
-		            csrf_token: $('[name="csrf_token"]').val(),
-		            isinitial: true
-		        }
-		    }).done(function (json) {
-		        handleServerResponse(json);	
-		    }).fail(function (msg) {
-		        if (msg.responseJSON.redirectUrl) {
-		            window.location.href = msg.responseJSON.redirectUrl;
-		        } else {
-		            alert(msg.error);
-		            $.ajax({
-                        url: document.getElementById('stripeFailOrderURL').value,
-                        method: 'POST',
-                        dataType: 'json',
-                        data: {
-                            csrf_token: $('[name="csrf_token"]').val()
-                        }
-                    }).done(function () {
-                        window.location.replace(document.getElementById('billingPageUrl').value);
-                    });
-		        }
-		    });
+        url: document.getElementById('cardPaymentSubmitOrderURL').value,
+        method: 'POST',
+        dataType: 'json',
+        data: {
+            csrf_token: $('[name="csrf_token"]').val()
+        },
+        success: function (data) {
+            if (data.error) {
+                if (data.errorMessage) {
+                    alert(data.errorMessage);
+                }
+                window.location.replace(document.getElementById('billingPageUrl').value);
+            } else {
+                if (data.requires_action) {
+                    handleStripeRequiresActionResponse(data);
+                } else {
+                    forceSubmit = true;
+                    window.location.replace(document.getElementById('stripeCardOrderPlacedURL').value);
+                }
+            }
+        },
+        error: function () {
+            window.location.replace(document.getElementById('billingPageUrl').value);
         }
     });
 }

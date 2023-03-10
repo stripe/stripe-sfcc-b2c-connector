@@ -15,7 +15,8 @@
 			<input type="hidden" id="stripeCardFormStyle" value="${JSON.stringify(stripeHelper.getStripeCardFormStyle())}" />
 			<input type="hidden" id="stripePaymentButtonStyle" value="${JSON.stringify(stripeHelper.getPaymentRequestButtonStyle())}" />
 			<input type="hidden" id="stripeAccountCountry" value="${stripeCheckoutHelper.getPRCountry()}" />
-			<input type="hidden" id="beforePaymentAuthURL" value="${URLUtils.https('StripePayments-BeforePaymentAuthorization')}" />
+			<input type="hidden" id="cardPaymentSubmitOrderURL" value="${URLUtils.https('StripePayments-CardPaymentSubmitOrder')}" />
+			<input type="hidden" id="cardPaymentHandleRequiresActionURL" value="${URLUtils.https('StripePayments-CardPaymentHandleRequiresAction')}" />
 			<input type="hidden" id="billingPageUrl" value="${isSFRA ? URLUtils.url('Checkout-Begin', 'stage', 'payment') : URLUtils.url('COShipping-Start')}" />
 			<input type="hidden" id="beforePaymentSubmitURL" value="${URLUtils.https('StripePayments-BeforePaymentSubmit')}" />
 			<input type="hidden" id="stripePaymentMethodsInBeta" value="${stripeHelper.getPaymentMethodsInBeta()}" />

@@ -7,8 +7,6 @@ var URLUtils = require('dw/web/URLUtils');
 var app = require('*/cartridge/scripts/app');
 var OrderMgr = require('dw/order/OrderMgr');
 var Resource = require('dw/web/Resource');
-var Order = require('dw/order/Order');
-var Transaction = require('dw/system/Transaction');
 var stripeCheckoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
 
 /**
@@ -104,28 +102,9 @@ function cardOrderPlaced() {
     }
 
     var isAPMOrder = stripeCheckoutHelper.isAPMOrder(order);
-    const stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
     if (!isAPMOrder) {
-        Transaction.wrap(function () {
-            OrderMgr.placeOrder(order);
-
-            order.setConfirmationStatus(Order.CONFIRMATION_STATUS_CONFIRMED);
-            order.setExportStatus(Order.EXPORT_STATUS_READY);
-
-            if (stripeChargeCapture) {
-                order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
-            }
-        });
-
-        const Email = app.getModel('Email');
-        Email.sendMail({
-            template: 'stripe/mail/orderreceived',
-            recipient: order.getCustomerEmail(),
-            subject: Resource.msg('order.ordercreceived-email.001', 'stripe', null),
-            context: {
-                Order: order
-            }
-        });
+        session.privacy.stripeOrderNumber = null;
+        delete session.privacy.stripeOrderNumber;
     }
 
     if (!customer.authenticated) {

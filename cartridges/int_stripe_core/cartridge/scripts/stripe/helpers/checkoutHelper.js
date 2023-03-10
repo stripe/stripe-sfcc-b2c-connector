@@ -264,7 +264,7 @@ exports.createPaymentIntent = function (paymentInstrument) {
         createPaymentIntentPayload.customer = paymentInstrument.custom.stripeCustomerID;
     }
 
-    if (!stripeChargeCapture && paymentInstrument.custom.stripeSavePaymentInstrument) {
+    if (paymentInstrument.custom.stripeSavePaymentInstrument) {
         createPaymentIntentPayload.save_payment_method = true;
     }
 
@@ -401,7 +401,11 @@ exports.createOrder = function (currentBasket) {
             return newOrder;
         });
     } catch (error) {
-        return null;
+        if (order) {
+            Transaction.wrap(function () {
+                order.addNote('Error Create Order', error.message);
+            });
+        }
     }
 
     return order;

@@ -11,7 +11,8 @@
 <input type="hidden" id="stripeCardFormStyle" value="${JSON.stringify(stripeHelper.getStripeCardFormStyle())}" />
 <input type="hidden" id="stripePaymentButtonStyle" value="${JSON.stringify(stripeHelper.getPaymentRequestButtonStyle())}" />
 <input type="hidden" id="stripeAccountCountry" value="${stripeCheckoutHelper.getPRCountry()}" />
-<input type="hidden" id="beforePaymentAuthURL" value="${URLUtils.https('StripePayments-BeforePaymentAuthorization')}" />
+<input type="hidden" id="cardPaymentSubmitOrderURL" value="${URLUtils.https('StripePayments-CardPaymentSubmitOrder')}" />
+<input type="hidden" id="cardPaymentHandleRequiresActionURL" value="${URLUtils.https('StripePayments-CardPaymentHandleRequiresAction')}" />
 <input type="hidden" id="getStripeOrderItemsURL" value="${URLUtils.https('StripePayments-GetStripeOrderItems')}" />
 <input type="hidden" id="billingPageUrl" value="${URLUtils.url('Checkout-Begin', 'stage', 'payment')}" />
 <input type="hidden" id="getCustomerEmailURL" value="${URLUtils.https('StripePayments-GetCustomerEmail')}" />
@@ -22,7 +23,6 @@
 <input type="hidden" id="logStripeErrorMessageURL" value="${URLUtils.https('StripePayments-LogStripeErrorMessage')}" />
 
 <input type="hidden" id="stripeFailOrderURL" value="${URLUtils.https('StripePayments-FailOrder')}" />
-<input type="hidden" id="stripeCardOrderPlacedURL" value="${URLUtils.https('Stripe-CardOrderPlaced')}" />
 
 <input type="hidden" name="stripe_source_client_secret" id="stripe_source_client_secret">
 <input type="hidden" name="stripe_redirect_url" id="stripe_redirect_url">

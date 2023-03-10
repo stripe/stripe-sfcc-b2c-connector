@@ -238,100 +238,6 @@ function getOwnerDetails() {
     };
 }
 
-function handleServerResponse(response) {
-    if (response.error) {
-        $.ajax({
-            url: document.getElementById('stripeFailOrderURL').value,
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                csrf_token: $('[name="csrf_token"]').val()
-            }
-        });
-        if (response.error.message) {
-            alert(response.error.message);
-        }
-        window.location.replace(document.getElementById('billingPageUrl').value);
-    } else if (response.requires_action) {
-        // Use Stripe.js to handle required card action
-        stripe.handleCardAction(response.payment_intent_client_secret).then(function (result) {
-            if (result.error) {
-                $.ajax({
-                    url: document.getElementById('stripeFailOrderURL').value,
-                    method: 'POST',
-                    dataType: 'json',
-                    data: {
-                        csrf_token: $('[name="csrf_token"]').val()
-                    }
-                });
-                alert(result.error.message);
-                window.location.replace(document.getElementById('billingPageUrl').value);
-            } else {
-                // The card action has been handled
-                // The PaymentIntent can be confirmed again on the server
-                $.ajax({
-                    url: document.getElementById('beforePaymentAuthURL').value,
-                    method: 'POST',
-                    dataType: 'json',
-                    data: {
-                        csrf_token: $('[name="csrf_token"]').val()
-                    }
-                }).done(function (json) {
-                    handleServerResponse(json);
-                }).fail(function (msg) {
-                    $.ajax({
-                        url: document.getElementById('stripeFailOrderURL').value,
-                        method: 'POST',
-                        dataType: 'json',
-                        data: {
-                            csrf_token: $('[name="csrf_token"]').val()
-                        }
-                    });
-                    if (msg.responseJSON.redirectUrl) {
-                        window.location.href = msg.responseJSON.redirectUrl;
-                    } else {
-                        alert(msg);
-                    }
-                });
-            }
-        });
-    } else {
-        forceSubmit = true;
-        $.ajax({
-            url: document.getElementById('stripeCardOrderPlacedURL').value,
-            method: 'GET',
-            dataType: 'json',
-            async: false
-        }).done(function () {
-            var continueUrl = window.localStorage.getItem('stripe_pe_continueurl');
-            var orderId = window.localStorage.getItem('stripe_pe_orderid');
-            var orderToken = window.localStorage.getItem('stripe_pe_ordertoken');
-
-            if (continueUrl && orderId && orderToken) {
-                var form = document.createElement('form');
-                form.style.display = 'none';
-
-                document.body.appendChild(form);
-
-                form.method = 'POST';
-                form.action = continueUrl;
-
-                var orderIdInput = document.createElement('input');
-                orderIdInput.name = 'orderID';
-                orderIdInput.value = orderId;
-                form.appendChild(orderIdInput);
-
-                var orderTokenInput = document.createElement('input');
-                orderTokenInput.name = 'orderToken';
-                orderTokenInput.value = orderToken;
-                form.appendChild(orderTokenInput);
-
-                form.submit();
-            }
-        });
-    }
-}
-
 function populateBillingData(pr) {
     var form = document.getElementById('dwfrm_billing');
 
@@ -846,16 +752,99 @@ ready(() => {
     }
 });
 
+function redirectToCheckoutSummaryPage() {
+    var continueUrl = window.localStorage.getItem('stripe_pe_continueurl');
+    var orderId = window.localStorage.getItem('stripe_pe_orderid');
+    var orderToken = window.localStorage.getItem('stripe_pe_ordertoken');
+
+    if (continueUrl && orderId && orderToken) {
+        var form = document.createElement('form');
+        form.style.display = 'none';
+
+        document.body.appendChild(form);
+
+        form.method = 'POST';
+        form.action = continueUrl;
+
+        var orderIdInput = document.createElement('input');
+        orderIdInput.name = 'orderID';
+        orderIdInput.value = orderId;
+        form.appendChild(orderIdInput);
+
+        var orderTokenInput = document.createElement('input');
+        orderTokenInput.name = 'orderToken';
+        orderTokenInput.value = orderToken;
+        form.appendChild(orderTokenInput);
+
+        form.submit();
+    }
+}
+
+function handleStripeRequiresActionResponse(response) {
+    if (response.requires_action) {
+        // Use Stripe.js to handle required card action
+        stripe.handleCardAction(response.payment_intent_client_secret).then(function (result) {
+            if (result.error) {
+                $.ajax({
+                    url: document.getElementById('stripeFailOrderURL').value,
+                    method: 'POST',
+                    dataType: 'json',
+                    data: {
+                        csrf_token: $('[name="csrf_token"]').val()
+                    }
+                });
+                alert(result.error.message);
+                window.location.replace(document.getElementById('billingPageUrl').value);
+            } else {
+                // The card action has been handled
+                // The PaymentIntent can be confirmed again on the server
+                $.ajax({
+                    url: document.getElementById('cardPaymentHandleRequiresActionURL').value,
+                    method: 'POST',
+                    dataType: 'json',
+                    data: {
+                        csrf_token: $('[name="csrf_token"]').val()
+                    }
+                }).done(function (json) {
+                    handleStripeRequiresActionResponse(json);
+                }).fail(function (msg) {
+                    $.ajax({
+                        url: document.getElementById('stripeFailOrderURL').value,
+                        method: 'POST',
+                        dataType: 'json',
+                        data: {
+                            csrf_token: $('[name="csrf_token"]').val()
+                        }
+                    });
+                    if (msg.responseJSON.redirectUrl) {
+                        window.location.href = msg.responseJSON.redirectUrl;
+                    } else {
+                        alert(msg);
+                    }
+                });
+            }
+        });
+    } else {
+        forceSubmit = true;
+        redirectToCheckoutSummaryPage();
+    }
+}
+
 // eslint-disable-next-line
 function handleStripeCardSubmitOrder() {
     $('body').trigger('checkout:disableButton', '.next-step-button button');
     $.spinner().start();
+
     $.ajax({
-        url: $('.place-order').data('action'),
+        url: document.getElementById('cardPaymentSubmitOrderURL').value,
         method: 'POST',
+        data: {
+            csrf_token: $('[name="csrf_token"]').val()
+        },
         success: function (data) {
             // enable the placeOrder button here
             $('body').trigger('checkout:enableButton', '.next-step-button button');
+
             if (data.error) {
                 if (data.errorMessage) {
                     alert(data.errorMessage);
@@ -866,23 +855,11 @@ function handleStripeCardSubmitOrder() {
                 window.localStorage.setItem('stripe_pe_orderid', data.orderID);
                 window.localStorage.setItem('stripe_pe_ordertoken', data.orderToken);
 
-                $.ajax({
-                    url: document.getElementById('beforePaymentAuthURL').value,
-                    method: 'POST',
-                    dataType: 'json',
-                    data: {
-                        csrf_token: $('[name="csrf_token"]').val(),
-                        isinitial: true
-                    }
-                }).done(function (json) {
-                    handleServerResponse(json);
-                }).fail(function (msg) {
-                    if (msg.responseJSON.redirectUrl) {
-                        window.location.href = msg.responseJSON.redirectUrl;
-                    } else {
-                        alert(msg.error);
-                    }
-                });
+                if (data.requires_action) {
+                    handleStripeRequiresActionResponse(data);
+                } else {
+                    redirectToCheckoutSummaryPage();
+                }
             }
         },
         error: function () {
