@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 23.2.0 (2023-04-24)
+* Stripe Payment Element: Defer intent/decoupled payment intent creation on init of Stripe Payment Element widget
+* Stripe Card Payments: Bug fix redirecting to Order Completed Page instead of Order failure page on 3DS card decline
+
 ## 23.2.0 (2023-03-03)
 * fix Saved Card functionality - not saving cards when capture mode is enabled
 * merge confirmPaymentIntent and placeOrder in one request instead of separate AJAX calls

@@ -253,6 +253,13 @@ function placeOrder(stripeNotificationObject, order, stripePaymentInstrument) { 
                 }
             });
         }
+        
+        if (chargeJSON && chargeJSON.data && chargeJSON.data.object && chargeJSON.data.object.outcome && chargeJSON.data.object.outcome.risk_level && chargeJSON.data.object.outcome.risk_score) {
+        	Transaction.wrap(function () {
+        		order.custom.stripeRiskLevel = chargeJSON.data.object.outcome.risk_level;
+                order.custom.stripeRiskScore = chargeJSON.data.object.outcome.risk_score;
+            });
+        }
     } catch (e) {
         logger.error('Error writing stripePEPaymentInstrument: {0}', e.message);
     }

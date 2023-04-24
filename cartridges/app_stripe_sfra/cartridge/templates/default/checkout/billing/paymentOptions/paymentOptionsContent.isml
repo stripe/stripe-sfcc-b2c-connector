@@ -18,7 +18,9 @@
 <input type="hidden" id="getCustomerEmailURL" value="${URLUtils.https('StripePayments-GetCustomerEmail')}" />
 <input type="hidden" id="stripePaymentElementStyle" value="${JSON.stringify(stripeHelper.getStripePaymentElementStyle())}" />
 
-<input type="hidden" id="beforePaymentSubmitURL" value="${URLUtils.https('StripePayments-BeforePaymentSubmit')}" />
+<input type="hidden" id="paymentElementSubmitOrderURL" value="${URLUtils.https('StripePayments-PaymentElementSubmitOrder')}" />
+<input type="hidden" id="isStripePaymentElementsSavePaymentsEnabled" value="${customer.authenticated && customer.profile && customer.profile.email && stripeHelper.isStripePaymentElementsSavePaymentsEnabled()}" />
+<input type="hidden" id="stripeCaptureMethod" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture') ? 'automatic' : 'manual'}" />
 
 <input type="hidden" id="logStripeErrorMessageURL" value="${URLUtils.https('StripePayments-LogStripeErrorMessage')}" />
 
