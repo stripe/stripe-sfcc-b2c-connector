@@ -194,6 +194,14 @@
                 <externally-managed-flag>false</externally-managed-flag>
                 <default-value>true</default-value>
             </attribute-definition>
+            <attribute-definition attribute-id="includeShippingDetailsInPaymentIntentPayload">
+                <display-name xml:lang="x-default">Include Shipping Details</display-name>
+                <description xml:lang="x-default">Enables or disables sending the shipping details in the payment intent payload</description>
+                <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <default-value>true</default-value>
+            </attribute-definition>
             <attribute-definition attribute-id="stripePaymentElementStyle">
                 <display-name xml:lang="x-default">Stripe Payment Element Style</display-name>
                 <description xml:lang="x-default">Style Configuration for Stripe Payment Elements</description>
@@ -339,6 +347,7 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <attribute attribute-id="stripePaymentElementStyle"/>
                 <attribute attribute-id="stripePaymentElementsSavePayments"/>
                 <attribute attribute-id="stripeDisplayRiskScoreData"/>
+                <attribute attribute-id="includeShippingDetailsInPaymentIntentPayload"/>
             </attribute-group>
         </group-definitions>
     </type-extension>
