@@ -70,7 +70,7 @@ exports.authorizeCreditCard = function (order, paymentInstrument, cvc) {
             billing_details: billingDetails
         });
 
-        const paymentIntent = stripe.paymentIntents.create({
+        const paymentIntentPayload = {
             amount: orderAmount,
             currency: amount.currencyCode.toLowerCase(),
             payment_method: paymentMethod.id,
@@ -81,7 +81,14 @@ exports.authorizeCreditCard = function (order, paymentInstrument, cvc) {
             },
             confirm: true,
             payment_method_options: { card: { moto: true } }
-        });
+        };
+
+        var shipments = order.getShipments();
+        if (shipments && dw.system.Site.getCurrent().getCustomPreferenceValue('includeShippingDetailsInPaymentIntentPayload')) {
+            paymentIntentPayload.shipping = require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getPaymentIntentShipmentPayload(shipments);
+        }
+
+        const paymentIntent = stripe.paymentIntents.create(paymentIntentPayload);
 
         if (paymentIntent.status === 'succeeded'
          || (paymentIntent.status === 'requires_capture' && !stripeChargeCapture)) {

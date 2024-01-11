@@ -312,7 +312,7 @@ server.post('CardPaymentSubmitOrder', csrfProtection.validateAjaxRequest, functi
 
     var paymentIntent = null;
     try {
-        paymentIntent = checkoutHelper.createPaymentIntent(stripePaymentInstrument);
+        paymentIntent = checkoutHelper.createPaymentIntent(stripePaymentInstrument, order.getShipments());
     } catch (e) {
         Transaction.wrap(function () {
             var noteMessage = e.message.length > 1000 ? e.message.substring(0, 1000) : e.message;
@@ -486,7 +486,7 @@ server.post('CardPaymentHandleRequiresAction', csrfProtection.validateAjaxReques
         if (paymentIntentId) {
             paymentIntent = checkoutHelper.confirmPaymentIntent(paymentIntentId, stripePaymentInstrument);
         } else {
-            paymentIntent = checkoutHelper.createPaymentIntent(stripePaymentInstrument);
+            paymentIntent = checkoutHelper.createPaymentIntent(stripePaymentInstrument, order.getShipments());
 
             Transaction.wrap(function () {
                 stripePaymentInstrument.paymentTransaction.setTransactionID(paymentIntent.id);
@@ -872,6 +872,23 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
             },
             capture_method: stripeChargeCapture ? 'automatic' : 'manual'
         };
+
+        if (!empty(shippingAddress) && dw.system.Site.getCurrent().getCustomPreferenceValue('includeShippingDetailsInPaymentIntentPayload')) {
+            createPaymentIntentPayload.shipping = {
+                address: {
+                    city: shippingAddress.city,
+                    country: shippingAddress.countryCode.value,
+                    line1: shippingAddress.address1,
+                    line2: !empty(shippingAddress.address2) ? shippingAddress.address2 : '',
+                    postal_code: shippingAddress.postalCode,
+                    state: shippingAddress.stateCode
+                },
+                name: shippingAddress.fullName,
+                phone: shippingAddress.phone,
+                tracking_number: !empty(shipment) && !empty(shipment.trackingNumber) ? shipment.trackingNumber : '',
+                carrier: !empty(shipment) && !empty(shipment.shippingMethod) ? shipment.shippingMethod.displayName : ''
+            };
+        }
 
         if (request.httpCookies['stripe.link.persistent_token'] && request.httpCookies['stripe.link.persistent_token'].value) {
             createPaymentIntentPayload.payment_method_options = {

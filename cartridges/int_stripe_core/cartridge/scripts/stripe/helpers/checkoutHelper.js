@@ -241,7 +241,7 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
     }
 };
 
-exports.createPaymentIntent = function (paymentInstrument) {
+exports.createPaymentIntent = function (paymentInstrument, orderShipments) {
     const paymentMethod = paymentInstrument.custom.stripeSourceID;
 
     var currentCurency = dw.util.Currency.getCurrency(paymentInstrument.paymentTransaction.amount.currencyCode);
@@ -276,6 +276,10 @@ exports.createPaymentIntent = function (paymentInstrument) {
         createPaymentIntentPayload.metadata = {};
         createPaymentIntentPayload.metadata.order_id = session.privacy.stripeOrderNumber;
         createPaymentIntentPayload.metadata.site_id = dw.system.Site.getCurrent().getID();
+    }
+
+    if (orderShipments && dw.system.Site.getCurrent().getCustomPreferenceValue('includeShippingDetailsInPaymentIntentPayload')) {
+        createPaymentIntentPayload.shipping = exports.getPaymentIntentShipmentPayload(orderShipments);
     }
 
     const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
@@ -643,3 +647,41 @@ exports.isBasketPaymentIntentValid = function () {
 
     return true;
 };
+
+/**
+ * Creates the shipping payload for the Payment Intent
+ * @param {dw.order.Order} order object
+ * @returns {Object} shipment details payload
+ */
+exports.getPaymentIntentShipmentPayload = function (shipments) {
+    var shippingAddress = null;
+    var iter = shipments.iterator();
+    while (iter != null && iter.hasNext()) {
+        var shipment = iter.next();
+        shippingAddress = shipment.getShippingAddress();
+        if (shippingAddress) {
+            break;
+        }
+    }
+
+    var paymentIntentShippingPayload = {};
+
+    if (shippingAddress) {
+        paymentIntentShippingPayload = {
+            address: {
+                city: shippingAddress.city,
+                country: shippingAddress.countryCode.value,
+                line1: shippingAddress.address1,
+                line2: !empty(shippingAddress.address2) ? shippingAddress.address2 : '',
+                postal_code: shippingAddress.postalCode,
+                state: shippingAddress.stateCode
+            },
+            name: shippingAddress.fullName,
+            phone: shippingAddress.phone,
+            tracking_number: !empty(shipment) && !empty(shipment.trackingNumber) ? shipment.trackingNumber : '',
+            carrier: !empty(shipment) && !empty(shipment.shippingMethod) ? shipment.shippingMethod.displayName : ''
+        };
+    }
+
+    return paymentIntentShippingPayload;
+}
