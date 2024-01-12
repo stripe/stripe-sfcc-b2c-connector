@@ -10,10 +10,14 @@ var base = module.superModule;
  * @returns {integer} the formatted money value
  */
 function getTotalsValue(total) {
+    if (!total.available) {
+        return 0;
+    }
+
     var currentCurency = dw.util.Currency.getCurrency(total.getCurrencyCode());
     var multiplier = Math.pow(10, currentCurency.getDefaultFractionDigits());
 
-    return !total.available ? 0 : parseInt(total.value * multiplier, 10);
+    return parseInt(total.value * multiplier, 10);
 }
 
 /**
