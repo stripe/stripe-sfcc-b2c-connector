@@ -550,7 +550,6 @@ function handleStripePaymentElementSubmitOrder() {
                                     msg: 'UPE stripe.confirmPayment Error ' + JSON.stringify(result.error)
                                 }
                             }).done(function () {
-                                alert($('#payment-element').data('errormsg'));
                                 $.spinner().start();
 
                                 $.ajax({
@@ -564,6 +563,7 @@ function handleStripePaymentElementSubmitOrder() {
                                         if (result.success === false) {
                                             window.location.replace(result.redirectUrl);
                                         } else {
+                                            alert($('#payment-element').data('errormsg'));
                                             window.location.replace(document.getElementById('billingPageUrl').value);
                                         }
                                     }
