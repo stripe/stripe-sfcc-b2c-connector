@@ -75,11 +75,39 @@ server.post('LogStripeErrorMessage', csrfProtection.validateAjaxRequest, functio
  * Entry point for handling writing errors to Stripe Logger called as an AJAX request
  */
 server.post('FailOrder', csrfProtection.validateAjaxRequest, function (req, res, next) {
-    stripePaymentsHelper.FailOrder();
+    var returnObj = { success: true };
 
-    res.json({
-        success: true
-    });
+    if (session.privacy.stripeOrderNumber) {
+        var order = require('dw/order/OrderMgr').getOrder(session.privacy.stripeOrderNumber);
+        var paymentIntentId = order ? order.getPaymentInstruments()[0].getPaymentTransaction().transactionID : null;
+
+        if (!empty(paymentIntentId)) {
+            var stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
+            var paymentIntent = stripeService.paymentIntents.retrieve(paymentIntentId);
+
+            // Set a cookie to authenticate customers for Link
+            if ((paymentIntent.status === 'succeeded' || paymentIntent.status === 'processing' || paymentIntent.status === 'requires_capture') && paymentIntent.payment_method) {
+                var paymentMethod = stripeService.paymentMethods.retrieve(paymentIntent.payment_method);
+                if (paymentMethod && paymentMethod.link && paymentMethod.link.persistent_token) {
+                    var stripeCookie = new dw.web.Cookie('stripe.link.persistent_token', paymentMethod.link.persistent_token);
+                    stripeCookie.setSecure(true);
+                    stripeCookie.setHttpOnly(true);
+                    stripeCookie.setMaxAge(90 * 24 * 3600);
+
+                    res.addHttpCookie(stripeCookie);
+                }
+
+                returnObj.success = false;
+                returnObj.redirectUrl = require('dw/web/URLUtils').url('Stripe-PaymentElementOrderPlaced').toString();
+            }
+        }
+    }
+
+    if (returnObj.success !== false ) {
+        stripePaymentsHelper.FailOrder();
+    }
+
+    res.json(returnObj);
 
     next();
 });

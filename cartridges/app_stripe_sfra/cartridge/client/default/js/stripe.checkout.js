@@ -559,9 +559,14 @@ function handleStripePaymentElementSubmitOrder() {
                                     dataType: 'json',
                                     data: {
                                         csrf_token: $('[name="csrf_token"]').val()
+                                    },
+                                    success: function (result) {
+                                        if (result.success === false) {
+                                            window.location.replace(result.redirectUrl);
+                                        } else {
+                                            window.location.replace(document.getElementById('billingPageUrl').value);
+                                        }
                                     }
-                                }).done(function () {
-                                    window.location.replace(document.getElementById('billingPageUrl').value);
                                 });
                             });
                         }
