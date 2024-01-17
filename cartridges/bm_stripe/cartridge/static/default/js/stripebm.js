@@ -121,4 +121,34 @@ ready(() => {
             httpRequest.send(formData);
         });
     }
+
+    if (document.querySelector('button.stripe-payment-capture-submit')) {
+        // eslint-disable-next-line no-unused-vars
+        document.querySelector('button.stripe-payment-capture-submit').addEventListener('click', (e) => {
+            e.preventDefault();
+
+            var stripePaymentCaptureForm = document.getElementById('stripe-payments-setup-form');
+            var isStripePaymentCaptureFormValid = stripePaymentCaptureForm.checkValidity();
+            if (!isStripePaymentCaptureFormValid) {
+                stripePaymentCaptureForm.reportValidity();
+                return;
+            }
+
+            var httpRequest = new XMLHttpRequest();
+            var formData = document.getElementById('stripe-payments-setup-form').serialize();
+
+            httpRequest.onreadystatechange = function () {
+                if (this.readyState === 4 && this.status === 200) {
+                    var response = JSON.parse(this.responseText);
+                    var result = document.getElementById('payment-capture-result');
+                    result.style.color = response.error ? '#ff0000' : '';
+                    result.innerHTML = response.message;
+                }
+            };
+
+            httpRequest.open('POST', document.getElementById('stripe-payments-setup-form').action, true);
+            httpRequest.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+            httpRequest.send(formData);
+        });
+    }
 });
