@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 23.4.0 (2024-01-18)
+* Business Manager module for capturing payments 
+* Added the option to include Shipping Details in the payment intent payload
+* Fixed an issue where a model was crashing the website when the session was expiring during the checkout
+* Fixed an issue where closing 3DS popup right after confirming it on mobile was resulting in a successful payment but a failed order
+* Removed URL brackets from the service header.
+
 ## 23.2.0 (2023-04-24)
 * Stripe Payment Element: Defer intent/decoupled payment intent creation on init of Stripe Payment Element widget
 * Stripe Card Payments: Bug fix redirecting to Order Completed Page instead of Order failure page on 3DS card decline
