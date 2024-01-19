@@ -80,4 +80,24 @@
 		<icon>icons/sitespaymentmethods_ico.gif</icon>
 	</menuaction>
 
+	<menuaction id="stripePaymentsCapture" menupath="stripeSite" position="9003" site="true">
+		<name xml:lang="x-default">Stripe Payments Capture</name>
+		<short_description xml:lang="x-default">
+			Stripe Payments Capture
+		</short_description>
+		<description xml:lang="x-default">
+			Stripe Payments Capture
+		</description>
+		<exec pipeline="StripeBM" node="PaymentsCapture" />
+		<sub-pipelines>
+			<pipeline name="StripeBM-PaymentsCapture" />
+			<pipeline name="StripeBM-HandlePaymentsCapture" />
+		</sub-pipelines>
+		<parameters>
+		</parameters>
+		<permissions>
+		</permissions>
+		<icon>icons/sitespaymentmethods_ico.gif</icon>
+	</menuaction>
+
 </extensions>

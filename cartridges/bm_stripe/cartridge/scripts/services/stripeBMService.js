@@ -307,3 +307,29 @@ exports.refunds = {
         return callService(requestObject, apiKey);
     }
 };
+
+// https://stripe.com/docs/api/payment_intents
+exports.captures = {
+    captureByPaymentIntent: function (amount, paymentIntentId, apiKey) {
+        var requestObject = {
+            endpoint: ['/payment_intents', paymentIntentId, 'capture'].join('/'),
+            httpMethod: 'POST',
+            payload: {
+                amount_to_capture: amount
+            }
+        };
+
+        return callService(requestObject, apiKey);
+    },
+    captureByCharge: function (amount, chargeId, apiKey) {
+        var requestObject = {
+            endpoint: ['/charges', chargeId, 'capture'].join('/'),
+            httpMethod: 'POST',
+            payload: {
+                amount: amount
+            }
+        };
+
+        return callService(requestObject, apiKey);
+    }
+};

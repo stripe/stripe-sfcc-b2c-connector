@@ -296,4 +296,103 @@ server.post('HandlePaymentsRefund', function (req, res, next) {
     }
 });
 
+
+server.get('PaymentsCapture', function (req, res, next) {
+    res.render('/stripebm/paymentscapture');
+    next();
+});
+
+server.post('HandlePaymentsCapture', function (req, res, next) {
+    const orderNumber = req.form.stripe_order_number;
+    const amountToCapture = req.form.stripe_amount_to_capture;
+
+    const stripeBMService = require('*/cartridge/scripts/services/stripeBMService');
+    const stripeBmHelper = require('~/cartridge/scripts/helpers/stripeBmHelper');
+
+    const apiKey = stripeBmHelper.getApiKey();
+
+    try {
+        const order = OrderMgr.getOrder(orderNumber);
+        if (!order) {
+            res.json({
+                error: true,
+                message: Resource.msgf('paymentcapture.ordernotfound', 'stripebm', null, orderNumber)
+            });
+            return next();
+        }
+
+        const amount = (amountToCapture * 100);
+
+        /*
+         * check if stripePaymentIntentID is Not empty then refund by payment_intent
+         */
+        if (order.custom.stripePaymentIntentID) {
+            var captureResult = stripeBMService.captures.captureByPaymentIntent(amount, order.custom.stripePaymentIntentID, apiKey);
+
+            if (captureResult.status && captureResult.status === 'succeeded') {
+                res.json({
+                    error: false,
+                    message: Resource.msg('paymentscapture.capturesucceeded', 'stripebm', null)
+                });
+            } else if (captureResult.status && captureResult.status === 'pending') {
+                res.json({
+                    error: false,
+                    message: Resource.msg('paymentscapture.capturepending', 'stripebm', null)
+                });
+            } else {
+                res.json({
+                    error: true,
+                    message: JSON.stringify(captureResult)
+                });
+            }
+
+            return next();
+        }
+
+        /*
+         * search for stripeChargeID in Payment Instruments and try to refund with it
+         */
+        var paymentInstruments = order.getPaymentInstruments();
+        for (var i = 0; i < paymentInstruments.length; i++) {
+            var paymentInstrument = paymentInstruments[i];
+
+            if (paymentInstrument && paymentInstrument.custom.stripeChargeID) {
+                var captureChargeResult = stripeBMService.captures.captureByCharge(amount, paymentInstrument.custom.stripeChargeID, apiKey);
+
+                if (captureChargeResult.status && captureChargeResult.status === 'succeeded') {
+                    res.json({
+                        error: false,
+                        message: Resource.msg('paymentscapture.capturesucceeded', 'stripebm', null)
+                    });
+                } else if (captureChargeResult.status && captureChargeResult.status === 'pending') {
+                    res.json({
+                        error: false,
+                        message: Resource.msg('paymentscapture.capturepending', 'stripebm', null)
+                    });
+                } else {
+                    res.json({
+                        error: true,
+                        message: JSON.stringify(captureChargeResult)
+                    });
+                }
+                return next();
+            }
+        }
+
+        res.json({
+            error: true,
+            message: Resource.msg('paymentscharge.cannotchargeorder', 'stripebm', null)
+        });
+
+        return next();
+    } catch (e) {
+        res.json({
+            error: true,
+            message: e.message
+        });
+
+        return next();
+    }
+});
+
 module.exports = server.exports();
