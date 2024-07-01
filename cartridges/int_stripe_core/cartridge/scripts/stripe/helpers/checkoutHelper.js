@@ -462,7 +462,7 @@ exports.refundCharge = function (order) {
 
 exports.getStripeOrderDetails = function (basket) {
     var stripeOrderAmount = exports.getNonGiftCertificateAmount(basket);
-    var currentCurency = dw.util.Currency.getCurrency(stripeOrderAmount.getCurrencyCode());
+    var currentCurency = dw.util.Currency.getCurrency(stripeOrderAmount.getCurrencyCode() || basket.getCurrencyCode());
     var multiplier = Math.pow(10, currentCurency.getDefaultFractionDigits());
     var stripeOrderAmountCalculated = Math.round(stripeOrderAmount.getValue() * multiplier);
 
@@ -563,31 +563,117 @@ exports.getStripeOrderDetails = function (basket) {
     };
 };
 
-exports.getShippingOptions = function () {
-    var basket = dw.order.BasketMgr.getCurrentBasket();
-    var shipments = basket.getShipments();
+exports.getShippingOptionsSFRA = function (params) {
+    var Transaction = require('dw/system/Transaction');
+    var BasketMgr = require('dw/order/BasketMgr');
+    var cartHelper = require('*/cartridge/scripts/cart/cartHelpers');
+    var basketCalculationHelpers = require('*/cartridge/scripts/helpers/basketCalculationHelpers');
 
-    var currentCurency = dw.util.Currency.getCurrency(basket.getCurrencyCode());
+    var returnObj = {};
+    
+    var currentBasket = params.pid ? BasketMgr.createTemporaryBasket() : BasketMgr.getCurrentBasket();
+
+    Transaction.begin();
+
+    if (params.pid) {
+        var addToCartResult = cartHelper.addProductToCart(
+            currentBasket,
+            params.pid,
+            parseInt(params.quantity, 10),
+            Object.hasOwnProperty.call(params, 'childProducts') ? JSON.parse(params.childProducts) : [],
+            params.options ? JSON.parse(params.options) : []
+        );
+
+        if (!addToCartResult.error) {
+            cartHelper.ensureAllShipmentsHaveMethods(currentBasket);
+            basketCalculationHelpers.calculateTotals(currentBasket);
+        }
+    }
+
+    var shipments = currentBasket.getShipments();
+
+    var currentCurency = dw.util.Currency.getCurrency(currentBasket.getCurrencyCode());
     var multiplier = Math.pow(10, currentCurency.getDefaultFractionDigits());
 
     var shipmentShippingModel = dw.order.ShippingMgr.getShipmentShippingModel(shipments[0]);
     var shippingMethods = shipmentShippingModel.getApplicableShippingMethods();
 
-    // Filter out whatever the method associated with in store pickup
-    var result = [];
-    for (let i = 0; i < shippingMethods.length; i++) {
-        var shippingMethod = shippingMethods[i];
-        if (!shippingMethod.custom.storePickupEnabled) {
-            result.push({
-                id: shippingMethod.ID,
-                label: shippingMethod.displayName,
-                detail: shippingMethod.description,
-                amount: Math.round(shipmentShippingModel.getShippingCost(shippingMethod).amount.value * multiplier)
-            });
+    if (params.selectedShippingRateId) {
+        require('*/cartridge/scripts/checkout/shippingHelpers').selectShippingMethod(shipments[0], params.selectedShippingRateId, shippingMethods);
+        basketCalculationHelpers.calculateTotals(currentBasket);
+    } else {
+        // Filter out whatever the method associated with in store pickup
+        returnObj.shippingMethods = [];
+        for (let i = 0; i < shippingMethods.length; i++) {
+            var shippingMethod = shippingMethods[i];
+            if (!shippingMethod.custom.storePickupEnabled) {
+                returnObj.shippingMethods.push({
+                    id: shippingMethod.ID,
+                    displayName: shippingMethod.displayName,
+                    detail: shippingMethod.description,
+                    amount: Math.round(shipmentShippingModel.getShippingCost(shippingMethod).amount.value * multiplier)
+                });
+            }
         }
     }
 
-    return result;
+    returnObj.cartTotal = exports.getStripeOrderDetails(currentBasket).amount;
+
+    Transaction.rollback();
+
+    return returnObj;
+};
+
+exports.getShippingOptionsSiteGenesis = function (params) {
+    var app = require('*/cartridge/scripts/app');
+    var Transaction = require('dw/system/Transaction');
+    var BasketMgr = require('dw/order/BasketMgr');
+    
+    var returnObj = {};
+    
+    var currentBasket = !empty(params.pid) && !empty(params.pid.stringValue) ? BasketMgr.createTemporaryBasket() : BasketMgr.getCurrentBasket();
+    var cart = app.getModel('Cart').get(currentBasket);
+
+    Transaction.begin();
+
+    if (!empty(params.pid) && !empty(params.pid.stringValue)) {
+        var productToAdd = app.getModel('Product').get(params.pid.stringValue);
+        var productOptionModel = productToAdd.updateOptionSelection(params);
+        cart.addProductItem(productToAdd.object, params.Quantity.doubleValue, productOptionModel);
+    }
+
+    var shipments = currentBasket.getShipments();
+
+    var currentCurency = dw.util.Currency.getCurrency(currentBasket.getCurrencyCode());
+    var multiplier = Math.pow(10, currentCurency.getDefaultFractionDigits());
+
+    var shipmentShippingModel = dw.order.ShippingMgr.getShipmentShippingModel(shipments[0]);
+    var shippingMethods = shipmentShippingModel.getApplicableShippingMethods();
+
+    if (!empty(params.selectedShippingRateId) && !empty(params.selectedShippingRateId.stringValue)) {
+        cart.updateShipmentShippingMethod(shipments[0].ID, params.selectedShippingRateId);
+        cart.calculate();
+    } else {
+        // Filter out whatever the method associated with in store pickup
+        returnObj.shippingMethods = [];
+        for (let i = 0; i < shippingMethods.length; i++) {
+            var shippingMethod = shippingMethods[i];
+            if (!shippingMethod.custom.storePickupEnabled) {
+                returnObj.shippingMethods.push({
+                    id: shippingMethod.ID,
+                    displayName: shippingMethod.displayName,
+                    detail: shippingMethod.description,
+                    amount: Math.round(shipmentShippingModel.getShippingCost(shippingMethod).amount.value * multiplier)
+                });
+            }
+        }
+    }
+
+    returnObj.cartTotal = exports.getStripeOrderDetails(currentBasket).amount;
+
+    Transaction.rollback();
+
+    return returnObj;
 };
 
 exports.getSiteLocale = function () {
@@ -684,4 +770,15 @@ exports.getPaymentIntentShipmentPayload = function (shipments) {
     }
 
     return paymentIntentShippingPayload;
+}
+
+/**
+ * Returns temporary basket if there are already products in the shopping cart
+ * @param {dw.order.Basket} basket 
+ * @returns {dw.order.Basket} basket 
+ */
+exports.retrieveTemporaryOrCurrentBasket = function (basket) {
+    var productLineItems = basket.getAllProductLineItems();
+
+    return productLineItems.length ? require('dw/order/BasketMgr').createTemporaryBasket() : basket;
 }

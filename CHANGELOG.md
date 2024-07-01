@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 23.5.0 (2024-07-01)
+* Express Checkout for SFRA and Site Genesis
+
 ## 23.4.0 (2024-01-18)
 * Business Manager module for capturing payments 
 * Added the option to include Shipping Details in the payment intent payload

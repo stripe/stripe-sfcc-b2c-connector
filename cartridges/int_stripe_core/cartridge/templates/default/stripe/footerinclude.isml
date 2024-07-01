@@ -34,5 +34,6 @@
 			<input type="hidden" id="stripeAccountCountry" value="${stripeCheckoutHelper.getPRCountry()}" />
 			<script src="${URLUtils.staticURL('/js/stripe.cart.js')}" ></script>
 		</isif>
+		<script src="${URLUtils.staticURL('/js/stripe.expressCheckout.js')}" ></script>
 	</isif>
 </isif>

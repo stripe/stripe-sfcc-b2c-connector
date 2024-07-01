@@ -36,9 +36,8 @@ exports.PaymentRequestButtonHandler.public = true;
  * Return shipping options used for payment request button
  */
 function getShippingOptions() {
-    // v1
-    // eslint-disable-next-line no-unused-vars
-    var currentBasket = dw.order.BasketMgr.getCurrentBasket();
+    response.setContentType('application/json');
+    response.writer.print(JSON.stringify(require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getShippingOptionsSiteGenesis(request.httpParameterMap)));
 }
 
 exports.GetShippingOptions = getShippingOptions;

@@ -104,14 +104,14 @@
                 <default-value>US</default-value>
             </attribute-definition>
             <attribute-definition attribute-id="stripeAccountId">
-                <display-name xml:lang="x-default">stripeAccountId</display-name>
+                <display-name xml:lang="x-default">Stripe Account ID</display-name>
                 <type>string</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
                 <min-length>0</min-length>
             </attribute-definition>
             <attribute-definition attribute-id="stripeAccountType">
-                <display-name xml:lang="x-default">stripeAccountType</display-name>
+                <display-name xml:lang="x-default">Stripe Account Type</display-name>
                 <type>enum-of-string</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
@@ -141,7 +141,7 @@
                 <min-length>0</min-length>
             </attribute-definition>
             <attribute-definition attribute-id="stripeApiURL">
-                <display-name xml:lang="x-default">stripeApiURL</display-name>
+                <display-name xml:lang="x-default">Stripe Api Url</display-name>
                 <type>string</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
@@ -149,7 +149,7 @@
                 <default-value>https://js.stripe.com/v3/</default-value>
             </attribute-definition>
             <attribute-definition attribute-id="stripeCardElementCSSStyle">
-                <display-name xml:lang="x-default">stripeCardElementCSSStyle</display-name>
+                <display-name xml:lang="x-default">Stripe Card Element CSS Style</display-name>
                 <description xml:lang="x-default">Style Configuration for Stripe Elements</description>
                 <type>string</type>
                 <mandatory-flag>false</mandatory-flag>
@@ -205,6 +205,14 @@
             <attribute-definition attribute-id="stripePaymentElementStyle">
                 <display-name xml:lang="x-default">Stripe Payment Element Style</display-name>
                 <description xml:lang="x-default">Style Configuration for Stripe Payment Elements</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripeExpressCheckoutStyle">
+                <display-name xml:lang="x-default">Stripe Express Checkout Style</display-name>
+                <description xml:lang="x-default">Style Configuration for Stripe Express Checkout</description>
                 <type>string</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
@@ -320,6 +328,24 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <externally-managed-flag>false</externally-managed-flag>
                 <default-value>true</default-value>
             </attribute-definition>
+
+             <attribute-definition attribute-id="stripeExpressCheckoutProductPageEnabled">
+                <display-name xml:lang="x-default">Express Checkout Enabled On Product Page</display-name>
+                <description xml:lang="x-default">Enables/Disables Express Checkout Functionality On Product Page</description>
+                <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <default-value>false</default-value>
+            </attribute-definition>
+
+            <attribute-definition attribute-id="stripeExpressCheckoutCartPageEnabled">
+                <display-name xml:lang="x-default">Express Checkout Enabled On Cart Page</display-name>
+                <description xml:lang="x-default">Enables/Disables Express Checkout Functionality On Cart Page</description>
+                <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <default-value>false</default-value>
+            </attribute-definition>
         </custom-attribute-definitions>
         <group-definitions>
             <attribute-group group-id="Stripe Configs">
@@ -328,27 +354,37 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <attribute attribute-id="stripePublicKey"/>
                 <attribute attribute-id="stripeIsSFRA"/>
                 <attribute attribute-id="stripeChargeCapture"/>
-                <attribute attribute-id="stripeCardElementCSSStyle"/>
                 <attribute attribute-id="stripeApiURL"/>
-                <attribute attribute-id="stripePaymentRequestButtonStyle"/>
                 <attribute attribute-id="applePayVerificationString"/>
                 <attribute attribute-id="stripeAccountCountryCode"/>
                 <attribute attribute-id="stripeWebhookSigningSecret"/>
                 <attribute attribute-id="stripeAllowedWebHookStatuses"/>
-                <attribute attribute-id="stripeAllowedAPMMethods"/>
                 <attribute attribute-id="stripeSaveCustomerCards"/>
                 <attribute attribute-id="stripeEnabled"/>
-                <attribute attribute-id="stripeCustomCreditCardForm"/>
                 <attribute attribute-id="stripeUpdateInvoiceOnRefundWebhook"/>
-                <attribute attribute-id="stripePaymentMethodsInBeta"/>
                 <attribute attribute-id="stripeApiVersion"/>
                 <attribute attribute-id="stripeAccountId"/>
                 <attribute attribute-id="stripeAccountType"/>
-                <attribute attribute-id="stripePaymentElementStyle"/>
-                <attribute attribute-id="stripePaymentElementsSavePayments"/>
                 <attribute attribute-id="stripeDisplayRiskScoreData"/>
                 <attribute attribute-id="includeShippingDetailsInPaymentIntentPayload"/>
             </attribute-group>
+            <attribute-group group-id="Stripe APM Configurations">
+                <display-name xml:lang="x-default">Stripe APM Configurations</display-name>
+                <attribute attribute-id="stripePaymentRequestButtonStyle"/>
+                <attribute attribute-id="stripeAllowedAPMMethods"/>
+                <attribute attribute-id="stripePaymentMethodsInBeta"/>
+                <attribute attribute-id="stripePaymentElementStyle"/>
+                <attribute attribute-id="stripePaymentElementsSavePayments"/>
+                <attribute attribute-id="stripeExpressCheckoutProductPageEnabled"/>
+                <attribute attribute-id="stripeExpressCheckoutCartPageEnabled"/>
+                <attribute attribute-id="stripeExpressCheckoutStyle"/>
+            </attribute-group>
+            <attribute-group group-id="Stripe Card Element and Payment Button Configs">
+                <display-name xml:lang="x-default">Stripe Card and Payment Request Button Configurations</display-name>
+               <attribute attribute-id="stripeCardElementCSSStyle"/>
+               <attribute attribute-id="stripeCustomCreditCardForm"/>
+            </attribute-group>
+
         </group-definitions>
     </type-extension>
 
