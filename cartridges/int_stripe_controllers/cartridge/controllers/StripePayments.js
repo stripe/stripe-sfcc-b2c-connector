@@ -1033,3 +1033,390 @@ function paymentElementSubmitOrder() {
 
 exports.PaymentElementSubmitOrder = paymentElementSubmitOrder;
 exports.PaymentElementSubmitOrder.public = true;
+
+/**
+ * Entry point for handling PaymentElementSubmitOrder.
+ */
+function expressCheckoutSubmitOrder() {
+    var responsePayload;
+    if (!CSRFProtection.validateRequest()) {
+        app.getModel('Customer').logout();
+        responsePayload = {
+            error: true
+        };
+        response.setStatus(500);
+        response.setContentType('application/json');
+        response.writer.print(JSON.stringify(responsePayload));
+        return;
+    }
+
+    var stripeCheckoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
+    var BasketMgr = require('dw/order/BasketMgr');
+    var currentBasket = BasketMgr.getCurrentOrNewBasket();
+
+    if (currentBasket) {
+        if (currentBasket.custom.stripePaymentIntentID) {
+            Transaction.wrap(function () {
+                currentBasket.custom.stripePaymentIntentID = null;
+            });
+        }
+
+        var cardPaymentInstrument = checkoutHelper.getStripePaymentInstrument(currentBasket);
+        if (cardPaymentInstrument && cardPaymentInstrument.paymentTransaction && cardPaymentInstrument.paymentTransaction.getTransactionID()) {
+            Transaction.wrap(function () {
+                cardPaymentInstrument.paymentTransaction.setTransactionID(null);
+            });
+        }
+    }
+
+    /*
+     * I. Create SFCC Order
+     */
+    session.privacy.stripeOrderNumber = null;
+    delete session.privacy.stripeOrderNumber;
+
+    if (!empty(request.httpParameterMap.pid) && !empty(request.httpParameterMap.pid.stringValue)) {
+        currentBasket = checkoutHelper.retrieveTemporaryOrCurrentBasket(currentBasket);
+    }
+
+    var cart = Cart.get(currentBasket);
+
+    if (!empty(request.httpParameterMap.pid) && !empty(request.httpParameterMap.pid.stringValue)) {
+        Transaction.wrap(function () {
+            var productToAdd = app.getModel('Product').get(request.httpParameterMap.pid.stringValue);
+            var productOptionModel = productToAdd.updateOptionSelection(request.httpParameterMap);
+            cart.addProductItem(productToAdd.object, request.httpParameterMap.Quantity.doubleValue, productOptionModel);
+        });
+    }
+
+    var COShipping = app.getController('COShipping');
+
+    // Clean shipments.
+    COShipping.PrepareShipments(cart);
+
+    var stripeShippingAddress = JSON.parse(request.httpParameterMap.shippingAddress.value);
+    var shippingName = request.httpParameterMap.shippingName.value.split(' ');
+    var shippingFirstName = shippingName[0];
+    var shippingLastname = shippingName[1];
+
+    var shipment = cart.object.defaultShipment;
+
+    Transaction.wrap(function () {
+        cart.updateShipmentShippingMethod(shipment.ID, request.httpParameterMap.selectedShippingRateId.stringValue);
+        cart.calculate();
+    });
+
+    // Check to make sure there is a shipping address
+    if (cart.object.defaultShipment.shippingAddress === null) {
+        var shipment = cart.object.defaultShipment;
+        var shippingAddress = shipment.shippingAddress;
+
+        Transaction.wrap(function () {
+            if (shippingAddress === null) {
+                shippingAddress = shipment.createShippingAddress();
+            }
+
+            shippingAddress.setFirstName(shippingFirstName);
+            shippingAddress.setLastName(shippingLastname);
+            shippingAddress.setAddress1(stripeShippingAddress.line1);
+            shippingAddress.setAddress2(stripeShippingAddress.line1);
+            shippingAddress.setCity(stripeShippingAddress.city);
+            shippingAddress.setPostalCode(stripeShippingAddress.postal_code);
+            shippingAddress.setCountryCode(stripeShippingAddress.country);
+    
+            if (!empty(stripeShippingAddress.state)) {
+                shippingAddress.setStateCode(stripeShippingAddress.state);
+            }
+            if (!shippingAddress.phone) {
+                shippingAddress.setPhone(request.httpParameterMap.phone.value);
+            }
+        });
+    }
+
+    var stripeBillingAddress = JSON.parse(request.httpParameterMap.billingAddress.value);
+    var billingName = request.httpParameterMap.billingName.value.split(' ');
+    var billingFirstName = billingName[0];
+    var billingLastName = billingName[1];
+    // Check to make sure billing address exists
+    if (!cart.object.billingAddress) {
+        var billingAddress = cart.object.billingAddress;
+
+        Transaction.wrap(function () {
+            if (!billingAddress) {
+                billingAddress = cart.object.createBillingAddress();
+            }
+
+            billingAddress.setFirstName(billingFirstName);
+            billingAddress.setLastName(billingFirstName);
+            billingAddress.setAddress1(stripeBillingAddress.line1);
+            billingAddress.setAddress2(stripeBillingAddress.line1);
+            billingAddress.setCity(stripeBillingAddress.city);
+            billingAddress.setPostalCode(stripeBillingAddress.postal_code);
+
+            if (!empty(stripeBillingAddress.state)) {
+                billingAddress.setStateCode(stripeBillingAddress.state);
+            }
+            billingAddress.setCountryCode(stripeBillingAddress.country);
+            if (!billingAddress.phone) {
+                billingAddress.setPhone(request.httpParameterMap.phone.value);
+            }
+        });
+    }
+
+    Transaction.wrap(function () {
+        if (customer.authenticated && customer.registered) {
+            cart.object.customerEmail = customer.profile.email;
+            cart.object.customerNo = customer.profile.customerNo;
+        } else {
+            cart.object.customerEmail = req.httpParameterMap.email.value;
+        }
+    });
+
+    Transaction.wrap(function () {
+        cart.calculate();
+    });
+
+    var COBilling = app.getController('COBilling');
+
+    Transaction.wrap(function () {
+        checkoutHelper.createStripePaymentInstrument(cart.object, 'STRIPE_PAYMENT_ELEMENT', {});
+    });
+
+    // Recalculate the payments. If there is only gift certificates, make sure it covers the order total, if not
+    // back to billing page.
+    Transaction.wrap(function () {
+        if (!cart.calculatePaymentTransactionTotal()) {
+            responsePayload = {
+                error: true
+            };
+            response.setContentType('application/json');
+            response.writer.print(JSON.stringify(responsePayload));
+        }
+    });
+
+    // Handle used addresses and credit cards.
+    var saveCCResult = COBilling.SaveCreditCard();
+
+    if (!saveCCResult) {
+        responsePayload = {
+            error: true,
+            errorMessage: Resource.msg('confirm.error.technical', 'checkout', null)
+        };
+        response.setContentType('application/json');
+        response.writer.print(JSON.stringify(responsePayload));
+        return;
+    }
+
+    // Creates a new order. This will internally ReserveInventoryForOrder and will create a new Order with status
+    // 'Created'.
+    // Stripe changes BEGIN
+    var isBasketPaymentIntentValid = stripeCheckoutHelper.isBasketPaymentIntentValid();
+    if (cart.object.custom.stripePaymentIntentID && !isBasketPaymentIntentValid) {
+        // detach the associated payment intent id from the basket
+        Transaction.wrap(function () {
+            cart.object.custom.stripePaymentIntentID = '';
+        });
+
+        responsePayload = {
+            error: true,
+            errorMessage: Resource.msg('confirm.error.technical', 'checkout', null)
+        };
+        response.setContentType('application/json');
+        response.writer.print(JSON.stringify(responsePayload));
+        return;
+    }
+
+    Transaction.wrap(function () {
+        cart.calculate();
+    });
+
+    var order = stripeCheckoutHelper.createOrder(cart.object);
+    // Stripe changes END
+
+    if (!order) {
+        responsePayload = {
+            error: true,
+            errorMessage: Resource.msg('confirm.error.technical', 'checkout', null)
+        };
+        response.setContentType('application/json');
+        response.writer.print(JSON.stringify(responsePayload));
+        return;
+    }
+
+    session.privacy.stripeOrderNumber = order.orderNo;
+
+    var handlePaymentsResult = handlePayments(order);
+
+    if (handlePaymentsResult.error) {
+        Transaction.wrap(function () {
+            OrderMgr.failOrder(order, true);
+        });
+        responsePayload = {
+            error: true,
+            errorMessage: Resource.msg('confirm.error.technical', 'checkout', null)
+        };
+        response.setContentType('application/json');
+        response.writer.print(JSON.stringify(responsePayload));
+        return;
+    }
+
+    if (handlePaymentsResult.missingPaymentInfo) {
+        Transaction.wrap(function () {
+            OrderMgr.failOrder(order, true);
+        });
+        responsePayload = {
+            error: true,
+            errorMessage: Resource.msg('confirm.error.technical', 'checkout', null)
+        };
+        response.setContentType('application/json');
+        response.writer.print(JSON.stringify(responsePayload));
+        return;
+    }
+
+    /*
+     * II. Create Payment Intent
+     */
+    var stripePaymentInstrument = checkoutHelper.getStripePaymentInstrument(order);
+
+    if (!stripePaymentInstrument || stripePaymentInstrument.paymentMethod !== 'STRIPE_PAYMENT_ELEMENT') {
+        responsePayload = {
+            error: true,
+            errorMessage: Resource.msg('confirm.error.technical', 'checkout', null)
+        };
+        response.setContentType('application/json');
+        response.writer.print(JSON.stringify(responsePayload));
+
+        stripePaymentsHelper.LogStripeErrorMessage('StripePayments.PaymentElementSubmitOrder Create Payment Intent: Error on paymentMethod is STRIPE_PAYMENT_ELEMENT check');
+        Transaction.wrap(function () {
+            order.addNote('Stripe Error', 'Try to process Order as STRIPE_PAYMENT_ELEMENT for a different payment method');
+        });
+        return;
+    }
+
+    // So far, we have created an SFCC order and return order datails to be used for Checkout Summary Page
+    responsePayload = {
+        error: false,
+        orderID: order.orderNo,
+        orderToken: order.orderToken,
+        continueUrl: URLUtils.url('Order-Confirm').toString()
+    };
+
+    try {
+        var orderCurrencyCode = order.getCurrencyCode();
+        var orderTotal = order.getTotalGrossPrice();
+
+        var orderCurency = dw.util.Currency.getCurrency(orderCurrencyCode);
+        var multiplier = Math.pow(10, orderCurency.getDefaultFractionDigits());
+
+        // Iterates over the list of gift certificate payment instruments
+        // and updates the total redemption amount.
+        var gcPaymentInstrs = order.getGiftCertificatePaymentInstruments().iterator();
+        var orderPI = null;
+        var giftCertTotal = new Money(0.0, order.getCurrencyCode());
+
+        while (gcPaymentInstrs.hasNext()) {
+            orderPI = gcPaymentInstrs.next();
+            giftCertTotal = giftCertTotal.add(orderPI.getPaymentTransaction().getAmount());
+        }
+
+        var totalAmount = orderTotal.subtract(giftCertTotal);
+
+        var amount = Math.round(totalAmount.getValue() * multiplier);
+
+        var shippingAddress = null;
+        var shipments = order.getShipments();
+        var iter = shipments.iterator();
+        while (iter != null && iter.hasNext()) {
+            var shipment = iter.next();
+            shippingAddress = shipment.getShippingAddress();
+            if (shippingAddress) {
+                break;
+            }
+        }
+
+        var createPaymentIntentPayload = null;
+
+        var stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
+        createPaymentIntentPayload = {
+            amount: amount,
+            currency: orderCurrencyCode,
+            automatic_payment_methods: {
+                enabled: true
+            },
+            capture_method: stripeChargeCapture ? 'automatic' : 'manual'
+        };
+
+        if (request.httpCookies['stripe.link.persistent_token'] && request.httpCookies['stripe.link.persistent_token'].value) {
+            createPaymentIntentPayload.payment_method_options = {
+                link: {
+                    persistent_token: request.httpCookies['stripe.link.persistent_token'].value
+                }
+            };
+        }
+
+        if (customer.authenticated && customer.profile && customer.profile.email) {
+            /*
+             * Check if registered customer has an associated Stripe customer ID
+             * if not, make a call to Stripe to create such id and save it as customer profile custom attribute
+             */
+            if (!customer.profile.custom.stripeCustomerID) {
+                var newStripeCustomer = stripeService.customers.create({
+                    email: customer.profile.email,
+                    name: customer.profile.firstName + ' ' + customer.profile.lastName
+                });
+
+                Transaction.wrap(function () {
+                    customer.profile.custom.stripeCustomerID = newStripeCustomer.id;
+                });
+            }
+
+            createPaymentIntentPayload.customer = customer.profile.custom.stripeCustomerID;
+        }
+
+        if (!createPaymentIntentPayload.metadata) {
+            createPaymentIntentPayload.metadata = {};
+        }
+
+        createPaymentIntentPayload.metadata.order_id = order.orderNo;
+        createPaymentIntentPayload.metadata.site_id = dw.system.Site.getCurrent().getID();
+
+        var paymentIntent = stripeService.paymentIntents.create(createPaymentIntentPayload);
+        var paymentTransaction = stripePaymentInstrument.paymentTransaction;
+        Transaction.wrap(function () {
+            order.custom.stripePaymentIntentID = paymentIntent.id;
+            order.custom.stripePaymentSourceID = '';
+
+            if (paymentIntent.charges && paymentIntent.charges.data && paymentIntent.charges.data.length > 0 && paymentIntent.charges.data[0].outcome) {
+                order.custom.stripeRiskLevel = paymentIntent.charges.data[0].outcome.risk_level;
+                order.custom.stripeRiskScore = paymentIntent.charges.data[0].outcome.risk_score;
+            }
+
+            paymentTransaction.setTransactionID(paymentIntent.id);
+            paymentTransaction.setType(stripeChargeCapture ? dw.order.PaymentTransaction.TYPE_CAPTURE : dw.order.PaymentTransaction.TYPE_AUTH);
+        });
+
+        responsePayload.clientSecret = paymentIntent.client_secret;
+    } catch (e) {
+        Transaction.wrap(function () {
+            var noteMessage = e.message.length > 1000 ? e.message.substring(0, 1000) : e.message;
+            order.addNote('Error When Create Stripe Payment Intent', noteMessage);
+            OrderMgr.failOrder(order, true);
+        });
+
+        responsePayload.error = true;
+        responsePayload.errorMessage = Resource.msg('confirm.error.technical', 'checkout', null);
+
+        response.setContentType('application/json');
+        response.writer.print(JSON.stringify(responsePayload));
+        return;
+    }
+
+    var jsonResponse = JSON.stringify(responsePayload);
+    response.setContentType('application/json');
+    response.writer.print(jsonResponse);
+    return;
+}
+
+exports.StripeQuickCheckout = expressCheckoutSubmitOrder;
+exports.StripeQuickCheckout.public = true;
+

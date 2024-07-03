@@ -5,7 +5,7 @@
 var server = require('server');
 
 server.get('GetShippingOptions', function (req, res, next) {
-    res.json({ shippingOptions: require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getShippingOptions() });
+    res.json(require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getShippingOptionsSFRA(req.querystring));
     next();
 });
 

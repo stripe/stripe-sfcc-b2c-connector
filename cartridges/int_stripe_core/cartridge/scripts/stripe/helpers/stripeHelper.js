@@ -214,6 +214,46 @@ exports.getStripePaymentElementStyle = function () {
 };
 
 /**
+ * Checks if Stripe Express Checkout on Product page is Enabled from site preferences
+ *
+ * @returns {boolean} - True if Express Checkout is enabled
+ */
+exports.getStripeExpressCheckoutProductPageEnabled = function () {
+    return require('dw/system/Site').current.getCustomPreferenceValue('stripeExpressCheckoutProductPageEnabled');
+};
+
+/**
+ * Checks if Stripe Express Checkout on Cart Page is Enabled from site preferences
+ *
+ * @returns {boolean} - True if Express Checkout is enabled
+ */
+exports.getStripeExpressCheckoutCartPageEnabled = function () {
+    return require('dw/system/Site').current.getCustomPreferenceValue('stripeExpressCheckoutCartPageEnabled');
+};
+
+/**
+ * Get stripe Express Checkout buttons style from Site Preferences.
+ * @returns {Object} - Stripe Express Checkout style or default value if not configured.
+ */
+exports.getStripeExpressCheckoutAppearance = function () {
+    const expressCheckoutStyle = require('dw/system/Site').current.getCustomPreferenceValue('stripeExpressCheckoutStyle');
+    try {
+        if (expressCheckoutStyle) {
+            return JSON.parse(expressCheckoutStyle);
+        }
+    } catch (error) {
+        const Logger = require('dw/system/Logger');
+        Logger.error('Failed to parse stripeExpressCheckoutStyle from site preference value as JSON');
+    }
+
+    return {
+        theme: 'stripe',
+        variables: {
+            borderRadius: '36px'
+        }
+    };
+};
+/**
  * Checks if Stripe Payment Element: Enable Save Payment Method for Future Purchases is enabled.
  *
  * @return {boolean} - True if stripePaymentElementsSavePayments is set to true.
