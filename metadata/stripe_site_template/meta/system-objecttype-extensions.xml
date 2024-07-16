@@ -369,8 +369,7 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <attribute attribute-id="includeShippingDetailsInPaymentIntentPayload"/>
             </attribute-group>
             <attribute-group group-id="Stripe APM Configurations">
-                <display-name xml:lang="x-default">Stripe APM Configurations</display-name>
-                <attribute attribute-id="stripePaymentRequestButtonStyle"/>
+                <display-name xml:lang="x-default">Stripe Payment Element And Express Checkout Configurations</display-name>
                 <attribute attribute-id="stripeAllowedAPMMethods"/>
                 <attribute attribute-id="stripePaymentMethodsInBeta"/>
                 <attribute attribute-id="stripePaymentElementStyle"/>
@@ -381,8 +380,9 @@ See more here:  https://stripe.com/docs/sources&#13;
             </attribute-group>
             <attribute-group group-id="Stripe Card Element and Payment Button Configs">
                 <display-name xml:lang="x-default">Stripe Card and Payment Request Button Configurations</display-name>
-               <attribute attribute-id="stripeCardElementCSSStyle"/>
-               <attribute attribute-id="stripeCustomCreditCardForm"/>
+                <attribute attribute-id="stripePaymentRequestButtonStyle"/>
+                <attribute attribute-id="stripeCardElementCSSStyle"/>
+                <attribute attribute-id="stripeCustomCreditCardForm"/>
             </attribute-group>
 
         </group-definitions>
