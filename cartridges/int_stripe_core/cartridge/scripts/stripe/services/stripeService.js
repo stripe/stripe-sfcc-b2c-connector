@@ -137,7 +137,7 @@ function getStripeServiceDefinition() {
                     name: 'Stripe SFCCB2C',
                     partner_id: 'pp_partner_Fs71dOwRYXhmze',
                     url: 'https://stripe.com/docs/plugins/salesforce-commerce-cloud',
-                    version: '23.5.0'
+                    version: '23.6.0'
                 }
             };
 
@@ -348,7 +348,7 @@ exports.paymentMethods = {
 
         return callService(requestObject);
     },
-    list: function (customerId, type) {
+    list: function (customerId, type, expandArray) {
         var requestObject = {
             endpoint: '/payment_methods',
             queryString: {
@@ -357,6 +357,10 @@ exports.paymentMethods = {
             },
             httpMethod: 'GET'
         };
+
+        if (expandArray && expandArray.length) {
+            requestObject.queryString.expand = expandArray;
+        }
 
         return callService(requestObject);
     },

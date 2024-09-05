@@ -46,15 +46,14 @@ function fetchSavedPaymentInstruments(stripeCustomerId) {
         try {
             const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
-            const stripeCustomer = stripeService.customers.retrieve(stripeCustomerId);
-            const defaultPaymentMethodId = stripeCustomer.invoice_settings && stripeCustomer.invoice_settings.default_payment_method;
-            const defaultSourceId = stripeCustomer.default_source;
-            const defaultCardId = defaultPaymentMethodId || defaultSourceId;
-
-            const stripePaymentInstrumentsResponse = stripeService.paymentMethods.list(stripeCustomerId, 'card');
+            const stripePaymentInstrumentsResponse = stripeService.paymentMethods.list(stripeCustomerId, 'card', ['data.customer']);
             const stripePaymentInstruments = stripePaymentInstrumentsResponse && stripePaymentInstrumentsResponse.data;
 
             if (stripePaymentInstruments && stripePaymentInstruments.length) {
+                const stripeCustomer = stripePaymentInstruments[0].customer;
+                const defaultPaymentMethodId = stripeCustomer.invoice_settings && stripeCustomer.invoice_settings.default_payment_method;
+                const defaultSourceId = stripeCustomer.default_source;
+                const defaultCardId = defaultPaymentMethodId || defaultSourceId;
                 const CustomerPaymentInstrument = require('./customerPaymentInstrument');
 
                 stripePaymentInstruments.forEach(function (stripePaymentMethod) {
