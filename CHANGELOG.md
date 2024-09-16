@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 23.6.0 (2024-09-05)
+* Reduced number of API calls by merging and using expand option to include customer data in the stripeService.paymentMethods.list method from stripeWallet.js -> fetchSavedPaymentInstruments()  
+
 ## 23.5.0 (2024-07-01)
 * Express Checkout for SFRA and Site Genesis
 
