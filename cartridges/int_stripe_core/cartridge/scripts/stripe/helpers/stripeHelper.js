@@ -67,30 +67,6 @@ exports.getStripeApiVersion = function () {
 };
 
 /**
- * Gets Stripe payment request button style from Site Preferences.
- *
- * @return {Object} - Stripe payment request button style or default if not configured.
- */
-exports.getPaymentRequestButtonStyle = function () {
-    const stylePreferences = require('dw/system/Site').current.getCustomPreferenceValue('stripePaymentRequestButtonStyle');
-
-    try {
-        if (stylePreferences) {
-            return JSON.parse(stylePreferences);
-        }
-    } catch (e) {
-        const Logger = require('dw/system/Logger');
-        Logger.error('Failed to parse stripePaymentRequestButtonStyle site preference value as JSON');
-    }
-
-    return {
-        type: 'default',
-        theme: 'light',
-        height: '40px'
-    };
-};
-
-/**
  * Gets Stripe card form style from Site Preferences.
  *
  * @return {Object} - Stripe card form style or default if not configured.

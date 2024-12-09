@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 23.7.0 (2024-12-09)
+* Removed PRB related functonality
+* Payment element now creates confirmation token before initalizing the payment. PaymentIntent creation now takes the Confirmation Token as a parameter and automatically confirms it.
+
 ## 23.6.0 (2024-09-05)
 * Reduced number of API calls by merging and using expand option to include customer data in the stripeService.paymentMethods.list method from stripeWallet.js -> fetchSavedPaymentInstruments()  
 

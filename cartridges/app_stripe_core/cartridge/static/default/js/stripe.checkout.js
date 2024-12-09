@@ -20,7 +20,6 @@ var elements = stripe.elements();
 
 var newCardFormContainer = document.getElementById('new-card-form-container');
 var savedCardsFormContainer = document.getElementById('saved-cards-container');
-var prbPlaceholder = document.getElementById('payment-request-button');
 var paymentMethodOptions = document.querySelectorAll('input[name$="_selectedPaymentMethodID"]');
 
 var submitBillingFormButton = document.querySelector('button[name=dwfrm_billing_save]');
@@ -215,71 +214,6 @@ function populateBillingData(pr) {
     stateElement.value = pr.paymentMethod.billing_details.address.state;
 }
 
-
-function initPRB() {
-    var stripeOrderAmountInput = document.getElementById('stripe_order_amount');
-    var stripeOrderCurrencyInput = document.getElementById('stripe_order_currency');
-    var amountToPay = parseFloat(stripeOrderAmountInput.value);
-    var currencyCode = stripeOrderCurrencyInput.value && stripeOrderCurrencyInput.value.toLowerCase();
-
-    var paymentRequest = stripe.paymentRequest({
-        country: document.getElementById('stripeAccountCountry').value,
-        currency: currencyCode,
-        total: {
-            label: 'Order Total',
-            amount: amountToPay
-        },
-        requestPayerName: true,
-        requestPayerEmail: true,
-        requestPayerPhone: true
-    });
-
-    var prButton = elements.create('paymentRequestButton', {
-        paymentRequest: paymentRequest,
-        style: {
-            paymentRequestButton: JSON.parse(document.getElementById('stripePaymentButtonStyle').value)
-        }
-    });
-
-    // Check the availability of the Payment Request API first.
-    paymentRequest.canMakePayment().then(function (result) {
-        if (result) {
-            prButton.mount('#payment-request-button');
-        } else {
-            document.getElementById('payment-request-button').style.display = 'none';
-        }
-    });
-
-    paymentRequest.on('paymentmethod', function (ev) {
-        try {
-            // v1
-            // eslint-disable-next-line no-use-before-define
-            populateBillingData(ev);
-            copyNewCardDetails(ev.paymentMethod);
-
-            if ($('#dwfrm_billing').validate().form()) {
-                prUsed = true;
-                prUsedInput.value = 'true';
-                document.querySelector('input[name$="_billing_save"]').disabled = false;
-                document.getElementById('is-CREDIT_CARD').click();
-                document.getElementById('dwfrm_billing').submit();
-
-                ev.complete('success');
-            } else {
-                prUsed = false;
-                prUsedInput.value = '';
-
-                ev.complete('fail');
-            }
-        } catch (e) {
-            prUsed = false;
-            prUsedInput.value = '';
-
-            ev.complete('fail');
-        }
-    });
-}
-
 function getOwnerDetails() {
     var stateElement = document.querySelector('select[name$="_state"]') || document.querySelector('input[name$="_state"]');
     return {
@@ -354,10 +288,6 @@ function init() {
     if (savedCardsFormContainer) {
         newCardFormContainer.style.display = 'none';
         initSavedCards();
-    }
-
-    if (prbPlaceholder) {
-        initPRB();
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -528,58 +458,99 @@ function onSubmitStripePaymentElement(event) {
                     return;
                 }
                 
-                $.ajax({
-                    url: document.getElementById('paymentElementSubmitOrderURL').value,
-                    method: 'POST',
-                    data: {
-                        csrf_token: $('[name="csrf_token"]').val()
-                    },
-                    success: function (data) {
-                    	
-                    	stripe.confirmPayment({
-                            elements: window.stripePaymentElements,
-                            clientSecret: data.clientSecret,
-                            confirmParams: {
-                                // Make sure to change this to your payment completion page
-                                return_url: stripeReturnURL
+                stripe.createConfirmationToken({
+                    elements: window.stripePaymentElements,
+                    params: {
+                        return_url: stripeReturnURL
+                    }
+                }).then(function (createConfirmationTokenResult) {
+                    if (createConfirmationTokenResult.error) {
+                        $.ajax({
+                            url: document.getElementById('logStripeErrorMessageURL').value,
+                            method: 'POST',
+                            dataType: 'json',
+                            data: {
+                                csrf_token: $('[name="csrf_token"]').val(),
+                                msg: 'UPE stripe.confirmPayment Error ' + JSON.stringify(result.error)
                             }
-                        }).then(function (result) {
-                            if (result.error) {
+                        });
+                        alert($('#payment-element').data('errormsg'));
+                        window.location.replace(document.getElementById('billingPageUrl').value);
+                        return;
+                    } 
+                    $.ajax({
+                        url: document.getElementById('paymentElementSubmitOrderURL').value,
+                        method: 'POST',
+                        data: {
+                            csrf_token: $('[name="csrf_token"]').val(),
+                            confirmationToken: JSON.stringify(createConfirmationTokenResult.confirmationToken)
+                        },
+                        success: function (data) {
+                            if (data.error) {
                                 $.ajax({
-                                    url: document.getElementById('logStripeErrorMessageURL').value,
+                                    url: document.getElementById('stripeFailOrderURL').value,
                                     method: 'POST',
                                     dataType: 'json',
                                     data: {
-                                        csrf_token: $('[name="csrf_token"]').val(),
-                                        msg: 'UPE stripe.confirmPayment Error ' + JSON.stringify(result.error)
+                                        csrf_token: $('[name="csrf_token"]').val()
+                                    },
+                                    success: function (result) {
+                                        if (result.success === false) {
+                                            window.location.replace(result.redirectUrl);
+                                        } else {
+                                            alert($('#payment-element').data('errormsg'));
+                                            window.location.replace(document.getElementById('billingPageUrl').value);
+                                        }
                                     }
-                                }).done(function () {
-                                    $.spinner().start();
-
-                                    $.ajax({
-                                        url: document.getElementById('stripeFailOrderURL').value,
-                                        method: 'POST',
-                                        dataType: 'json',
-                                        data: {
-                                            csrf_token: $('[name="csrf_token"]').val()
-                                        },
-                                        success: function (result) {
-                                            if (result.success === false) {
-                                                window.location.replace(result.redirectUrl);
-                                            } else {
-                                                alert($('#payment-element').data('errormsg'));
-                                                window.location.replace(document.getElementById('billingPageUrl').value);
-                                            }
+                                });
+                            } else {
+                                if (data.status === 'requires_action') {
+                                    stripe.handleNextAction({
+                                        clientSecret: data.clientSecret
+                                    }).then(function (handleNextActionResult) {
+                                        if (handleNextActionResult.error) {
+                                            $.ajax({
+                                                url: document.getElementById('logStripeErrorMessageURL').value,
+                                                method: 'POST',
+                                                dataType: 'json',
+                                                data: {
+                                                    csrf_token: $('[name="csrf_token"]').val(),
+                                                    msg: 'UPE stripe.confirmPayment Error ' + JSON.stringify(result.error)
+                                                }
+                                            }).done(function () {
+                                                $.spinner().start();
+            
+                                                $.ajax({
+                                                    url: document.getElementById('stripeFailOrderURL').value,
+                                                    method: 'POST',
+                                                    dataType: 'json',
+                                                    data: {
+                                                        csrf_token: $('[name="csrf_token"]').val()
+                                                    },
+                                                    success: function (result) {
+                                                        if (result.success === false) {
+                                                            window.location.replace(result.redirectUrl);
+                                                        } else {
+                                                            alert($('#payment-element').data('errormsg'));
+                                                            window.location.replace(document.getElementById('billingPageUrl').value);
+                                                        }
+                                                    }
+                                                });
+                                            });
+                                        } else {
+                                            window.location.replace(document.getElementById('stripeCardOrderPlacedURL').value);
                                         }
                                     });
-                                });
+                                } else {
+                                    window.location.replace(document.getElementById('stripeCardOrderPlacedURL').value);
+                                }
                             }
-                        });
-                    },
-                    error: function () {
-                        // enable the placeOrder button here
-                        $('body').trigger('checkout:enableButton', $('.next-step-button button'));
-                    }
+                        },
+                        error: function () {
+                            // enable the placeOrder button here
+                            $('body').trigger('checkout:enableButton', $('.next-step-button button'));
+                        }
+                    });
                 });
             });
         }

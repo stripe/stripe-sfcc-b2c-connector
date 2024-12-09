@@ -6,7 +6,6 @@
 <isset name="stripeCheckoutHelper" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper')}" scope="page" />
 <isset name="stripeAccountCountry" value="${stripeCheckoutHelper.getPRCountry()}" scope="page" />
 <isset name="stripeCardFormStyle" value="${stripeHelper.getStripeCardFormStyle()}" scope="page" />
-<isset name="stripePaymentButtonStyle" value="${stripeHelper.getPaymentRequestButtonStyle()}" scope="page" />
 <isset name="stripePaymentElementStyle" value="${stripeHelper.getStripePaymentElementStyle()}" scope="page" />
 
 <isif condition="${stripeEnabled}">

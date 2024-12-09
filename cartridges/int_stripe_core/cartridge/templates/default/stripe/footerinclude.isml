@@ -13,7 +13,6 @@
 		<input type="hidden" id="stripeApiVersion" value="${stripeApiVersion}" />
 		<isif condition="${pageContext.ns === 'checkout'}">
 			<input type="hidden" id="stripeCardFormStyle" value="${JSON.stringify(stripeHelper.getStripeCardFormStyle())}" />
-			<input type="hidden" id="stripePaymentButtonStyle" value="${JSON.stringify(stripeHelper.getPaymentRequestButtonStyle())}" />
 			<input type="hidden" id="stripeAccountCountry" value="${stripeCheckoutHelper.getPRCountry()}" />
 			<input type="hidden" id="cardPaymentSubmitOrderURL" value="${URLUtils.https('StripePayments-CardPaymentSubmitOrder')}" />
 			<input type="hidden" id="cardPaymentHandleRequiresActionURL" value="${URLUtils.https('StripePayments-CardPaymentHandleRequiresAction')}" />
@@ -29,10 +28,6 @@
 
             <input type="hidden" id="stripe_return_url" value="${URLUtils.https("StripePayments-HandleAPM")}">
 			<script src="${URLUtils.staticURL('/js/stripe.checkout.js')}" ></script>
-		</isif>
-		<isif condition="${pageContext.ns === 'cart'}">
-			<input type="hidden" id="stripeAccountCountry" value="${stripeCheckoutHelper.getPRCountry()}" />
-			<script src="${URLUtils.staticURL('/js/stripe.cart.js')}" ></script>
 		</isif>
 		<script src="${URLUtils.staticURL('/js/stripe.expressCheckout.js')}" ></script>
 	</isif>

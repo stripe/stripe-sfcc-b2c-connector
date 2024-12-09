@@ -21,18 +21,6 @@ exports.WebHook = webHook;
 exports.WebHook.public = true;
 
 /**
- * Handle Payment request button action
- */
-function paymentRequestButtonHandler() {
-    // v1
-    // eslint-disable-next-line no-unused-vars
-    const payload = JSON.parse(request.httpParameterMap.requestBodyAsString);
-}
-
-exports.PaymentRequestButtonHandler = paymentRequestButtonHandler;
-exports.PaymentRequestButtonHandler.public = true;
-
-/**
  * Return shipping options used for payment request button
  */
 function getShippingOptions() {
