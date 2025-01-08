@@ -929,6 +929,7 @@ function paymentElementSubmitOrder() {
 
         var stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
         createPaymentIntentPayload = {
+            confirm: true,
             amount: amount,
             currency: orderCurrencyCode,
             automatic_payment_methods: {
@@ -960,6 +961,12 @@ function paymentElementSubmitOrder() {
                     persistent_token: request.httpCookies['stripe.link.persistent_token'].value
                 }
             };
+        }
+
+        var confirmationToken = JSON.parse(request.httpParameterMap.confirmationToken.value);
+
+        if (!empty(confirmationToken)) {
+            createPaymentIntentPayload.confirmation_token = confirmationToken.id;
         }
 
         if (customer.authenticated && customer.profile && customer.profile.email) {
@@ -1011,6 +1018,8 @@ function paymentElementSubmitOrder() {
         });
 
         responsePayload.clientSecret = paymentIntent.client_secret;
+        responsePayload.status = paymentIntent.status;
+
     } catch (e) {
         Transaction.wrap(function () {
             var noteMessage = e.message.length > 1000 ? e.message.substring(0, 1000) : e.message;

@@ -893,6 +893,7 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
 
         var stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
         createPaymentIntentPayload = {
+            confirm: true,
             amount: amount,
             currency: orderCurrencyCode,
             automatic_payment_methods: {
@@ -914,7 +915,7 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
                 name: shippingAddress.fullName,
                 phone: shippingAddress.phone,
                 tracking_number: !empty(shipment) && !empty(shipment.trackingNumber) ? shipment.trackingNumber : '',
-                carrier: !empty(shipment) && !empty(shipment.shippingMethod) ? shipment.shippingMethod.displayName : ''
+                carrier: !empty(shipment) && !empty(shipment.shippingMethod) ? shipment.shippingMethod.displayName : '',
             };
         }
 
@@ -924,6 +925,12 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
                     persistent_token: request.httpCookies['stripe.link.persistent_token'].value
                 }
             };
+        }
+
+        var confirmationToken = JSON.parse(req.form.confirmationToken);
+
+        if (!empty(confirmationToken)) {
+            createPaymentIntentPayload.confirmation_token = confirmationToken.id;
         }
 
         if (customer.authenticated && customer.profile && customer.profile.email) {
@@ -975,6 +982,7 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
         });
 
         responsePayload.clientSecret = paymentIntent.client_secret;
+        responsePayload.status = paymentIntent.status;
     } catch (e) {
         Transaction.wrap(function () {
             var noteMessage = e.message.length > 1000 ? e.message.substring(0, 1000) : e.message;
