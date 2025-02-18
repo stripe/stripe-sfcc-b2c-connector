@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 23.8.0 (2025-02-18)
+* Added Multi Capture Option as a configuration
+* Card payment refactoring and JS updated to use handleNextAction instead of handleCardAction
+
 ## 23.7.0 (2024-12-09)
 * Removed PRB related functonality
 * Payment element now creates confirmation token before initalizing the payment. PaymentIntent creation now takes the Confirmation Token as a parameter and automatically confirms it.

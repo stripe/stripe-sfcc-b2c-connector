@@ -650,7 +650,7 @@ function initNewStripePaymentIntent() {
         amount: parseInt(stripeOrderAmountInput.value, 10),
         currency: stripeOrderCurrencyInput.value,
         appearance: appearance,
-        capture_method: document.getElementById('stripeCaptureMethod').value
+        capture_method: document.getElementById('stripeCaptureMethod').value,
     };
 
     if (document.getElementById('isStripePaymentElementsSavePaymentsEnabled').value === 'true') {
@@ -660,7 +660,6 @@ function initNewStripePaymentIntent() {
     window.stripePaymentElements = stripe.elements(options);
 
     initStripePaymentElement();
-    initStripePaymentElementListener();
 }
 
 /* Stripe Payment Element */
@@ -755,45 +754,43 @@ ready(() => {
 });
 
 function handleStripeRequiresActionResponse(response) {
-	if (response.error) {
-        stripeFailOrder();
-        if (response.error.message) {
-            alert(response.error.message);
-        }
-        window.location.replace(document.getElementById('billingPageUrl').value);
-    } else if (response.requires_action) {
         // Use Stripe.js to handle required card action
-        stripe.handleCardAction(response.payment_intent_client_secret).then(function (result) {
-            if (result.error) {
-                stripeFailOrder();
-                alert(result.error.message);
-                window.location.replace(document.getElementById('billingPageUrl').value);
-            } else {
-                // The card action has been handled
-                // The PaymentIntent can be confirmed again on the server
-                $.ajax({
-                    url: document.getElementById('cardPaymentHandleRequiresActionURL').value,
-                    method: 'POST',
-                    dataType: 'json',
-                    data: {
-                        csrf_token: $('[name="csrf_token"]').val()
-                    }
-                }).done(function (json) {
-                    handleStripeRequiresActionResponse(json);
-                }).fail(function (msg) {
+    stripe.handleNextAction({clientSecret: response.payment_intent_client_secret}).then(function (result) {
+        if (result.error) {
+            stripeFailOrder();
+            alert(result.error.message);
+            window.location.replace(document.getElementById('billingPageUrl').value);
+        } else {
+            // The card action has been handled
+            // The PaymentIntent can be confirmed again on the server
+            $.ajax({
+                url: document.getElementById('cardPaymentHandleRequiresActionURL').value,
+                method: 'POST',
+                dataType: 'json',
+                data: {
+                    csrf_token: $('[name="csrf_token"]').val()
+                }
+            }).done(function (json) {
+                if (json.error) {
                     stripeFailOrder();
-                    if (msg.responseJSON.redirectUrl) {
-                        window.location.href = msg.responseJSON.redirectUrl;
-                    } else {
-                        alert(msg);
+                    if (json.error.message) {
+                        alert(json.error.message);
                     }
-                });
-            }
-        });
-    } else {
-        forceSubmit = true;
-        redirectToCheckoutSummaryPage();
-    }
+                    window.location.replace(document.getElementById('billingPageUrl').value);
+                } else {
+                    forceSubmit = true;
+                    redirectToCheckoutSummaryPage();
+                }
+            }).fail(function (msg) {
+                stripeFailOrder();
+                if (msg.responseJSON.redirectUrl) {
+                    window.location.href = msg.responseJSON.redirectUrl;
+                } else {
+                    alert(msg);
+                }
+            });
+        }
+    });
 }
 
 // eslint-disable-next-line

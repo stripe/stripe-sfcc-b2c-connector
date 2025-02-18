@@ -164,6 +164,14 @@
                 <externally-managed-flag>false</externally-managed-flag>
                 <default-value>true</default-value>
             </attribute-definition>
+            <attribute-definition attribute-id="stripeMultiCaptureEnabled">
+                <display-name xml:lang="x-default">Multi Capture Enabled</display-name>
+                <description xml:lang="x-default">Enable or Disable Multi Capture for payments</description>
+                <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <default-value>false</default-value>
+            </attribute-definition>
             <attribute-definition attribute-id="stripeSaveCustomerCards">
                 <display-name xml:lang="x-default">Save Customer Cards</display-name>
                 <description xml:lang="x-default">Save Guest Customer Cards on Stripe side for re-Authorization</description>
@@ -343,6 +351,7 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <attribute attribute-id="stripePublicKey"/>
                 <attribute attribute-id="stripeIsSFRA"/>
                 <attribute attribute-id="stripeChargeCapture"/>
+                <attribute attribute-id="stripeMultiCaptureEnabled"/>
                 <attribute attribute-id="stripeApiURL"/>
                 <attribute attribute-id="applePayVerificationString"/>
                 <attribute attribute-id="stripeAccountCountryCode"/>
