@@ -272,6 +272,16 @@ exports.createPaymentIntent = function (paymentInstrument, orderShipments) {
         createPaymentIntentPayload.setup_future_usage = 'off_session';
     }
 
+    var multicaptureEnabled = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeMultiCaptureEnabled');
+
+    if (multicaptureEnabled) {
+        createPaymentIntentPayload.payment_method_options = {
+            card: {
+                request_multicapture: 'if_available'
+            }
+        };
+    }
+
     if (session.privacy.stripeOrderNumber) {
         createPaymentIntentPayload.metadata = {};
         createPaymentIntentPayload.metadata.order_id = session.privacy.stripeOrderNumber;

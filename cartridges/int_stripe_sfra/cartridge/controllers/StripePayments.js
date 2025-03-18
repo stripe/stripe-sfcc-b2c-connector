@@ -8,6 +8,8 @@ var server = require('server');
 var stripePaymentsHelper = require('*/cartridge/scripts/stripe/helpers/controllers/stripePaymentsHelper');
 var csrfProtection = require('*/cartridge/scripts/middleware/csrf');
 
+var stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
+
 /**
  * An entry point to handle returns from alternative payment methods.
  */
@@ -82,7 +84,6 @@ server.post('FailOrder', csrfProtection.validateAjaxRequest, function (req, res,
         var paymentIntentId = order ? order.getPaymentInstruments()[0].getPaymentTransaction().transactionID : null;
 
         if (!empty(paymentIntentId)) {
-            var stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
             var paymentIntent = stripeService.paymentIntents.retrieve(paymentIntentId);
 
             // Set a cookie to authenticate customers for Link
@@ -385,37 +386,8 @@ server.post('CardPaymentSubmitOrder', csrfProtection.validateAjaxRequest, functi
         }
     });
 
-    if (paymentIntent.status === 'requires_capture' && !stripeChargeCapture) {
+    if ((paymentIntent.status === 'requires_capture' && !stripeChargeCapture) || paymentIntent.status === 'succeeded') {
         // The payment requires capture which will be made later
-        try {
-            Transaction.wrap(function () {
-                var placeOrderStatus = OrderMgr.placeOrder(order);
-                if (placeOrderStatus.isError()) {
-                    throw new Error();
-                }
-
-                order.setConfirmationStatus(Order.CONFIRMATION_STATUS_CONFIRMED);
-                order.setExportStatus(Order.EXPORT_STATUS_READY);
-
-                session.privacy.stripeOrderNumber = null;
-                delete session.privacy.stripeOrderNumber;
-            });
-            COHelpers.sendConfirmationEmail(order, req.locale.id);
-            responsePayload.success = true;
-        } catch (e) {
-            stripePaymentsHelper.LogStripeErrorMessage('StripePayments.CardPaymentSubmitOrder Create Payment Intent: Error on paymentIntent.status === requires_capture && !stripeChargeCapture');
-            responsePayload.error = true;
-        }
-    } else if (paymentIntent.status === 'requires_action' || paymentIntent.status === 'requires_source_action') {
-        // Tell the client to handle the action
-        Transaction.wrap(function () {
-            order.addNote('Stripe 3DS', 'requires_action: Pending');
-        });
-        responsePayload.requires_action = true;
-        responsePayload.payment_intent_client_secret = paymentIntent.client_secret;
-    } else if (paymentIntent.status === 'succeeded' || paymentIntent.status === 'requires_confirmation') {
-        // The payment didn’t need any additional actions and completed!
-        // Handle post-payment fulfilment
         try {
             Transaction.wrap(function () {
                 var placeOrderStatus = OrderMgr.placeOrder(order);
@@ -436,9 +408,16 @@ server.post('CardPaymentSubmitOrder', csrfProtection.validateAjaxRequest, functi
             COHelpers.sendConfirmationEmail(order, req.locale.id);
             responsePayload.success = true;
         } catch (e) {
-            stripePaymentsHelper.LogStripeErrorMessage('StripePayments.CardPaymentSubmitOrder Create Payment Intent: Error on paymentIntent.status === succeeded || paymentIntent.status === requires_confirmation');
+            stripePaymentsHelper.LogStripeErrorMessage('StripePayments.CardPaymentSubmitOrder Create Payment Intent: Error on paymentIntent.status === requires_capture && !stripeChargeCapture');
             responsePayload.error = true;
         }
+    } else if (paymentIntent.status === 'requires_action' || paymentIntent.status === 'requires_source_action') {
+        // Tell the client to handle the action
+        Transaction.wrap(function () {
+            order.addNote('Stripe 3DS', 'requires_action: Pending');
+        });
+        responsePayload.requires_action = true;
+        responsePayload.payment_intent_client_secret = paymentIntent.client_secret;
     } else {
         // Invalid status
         Transaction.wrap(function () {
@@ -471,8 +450,6 @@ server.post('CardPaymentHandleRequiresAction', csrfProtection.validateAjaxReques
     var paymentIntent;
     var paymentIntentId;
     var stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
-    var stripeAccountId = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeAccountId');
-    var stripeAccountType = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeAccountType');
     var COHelpers = require('*/cartridge/scripts/checkout/checkoutHelpers');
 
     try {
@@ -511,23 +488,11 @@ server.post('CardPaymentHandleRequiresAction', csrfProtection.validateAjaxReques
          */
         paymentIntentId = (stripePaymentInstrument.paymentTransaction)
             ? stripePaymentInstrument.paymentTransaction.getTransactionID() : null;
-        if (paymentIntentId) {
+
+        paymentIntent = stripeService.paymentIntents.retrieve(paymentIntentId);
+
+        if (paymentIntent.status === 'requires_confirmation') {
             paymentIntent = checkoutHelper.confirmPaymentIntent(paymentIntentId, stripePaymentInstrument);
-        } else {
-            paymentIntent = checkoutHelper.createPaymentIntent(stripePaymentInstrument, order.getShipments());
-
-            Transaction.wrap(function () {
-                stripePaymentInstrument.paymentTransaction.setTransactionID(paymentIntent.id);
-                stripePaymentInstrument.paymentTransaction.setType(stripeChargeCapture ? dw.order.PaymentTransaction.TYPE_CAPTURE : dw.order.PaymentTransaction.TYPE_AUTH);
-
-                if (!empty(stripeAccountId)) {
-                    stripePaymentInstrument.paymentTransaction.custom.stripeAccountId = stripeAccountId;
-                }
-
-                if (!empty(stripeAccountType) && 'value' in stripeAccountType && !empty(stripeAccountType.value)) {
-                    stripePaymentInstrument.paymentTransaction.custom.stripeAccountType = stripeAccountType.value;
-                }
-            });
         }
 
         Transaction.wrap(function () {
@@ -543,38 +508,8 @@ server.post('CardPaymentHandleRequiresAction', csrfProtection.validateAjaxReques
             }
         });
 
-        if (paymentIntent.status === 'requires_capture' && !stripeChargeCapture) {
+        if ((paymentIntent.status === 'requires_capture' && !stripeChargeCapture) || paymentIntent.status === 'succeeded') {
             // The payment requires capture which will be made later
-            try {
-                Transaction.wrap(function () {
-                    order.addNote('Stripe 3DS', 'requires_action: Confirmed');
-                    var placeOrderStatus = OrderMgr.placeOrder(order);
-                    if (placeOrderStatus.isError()) {
-                        throw new Error();
-                    }
-
-                    order.setConfirmationStatus(Order.CONFIRMATION_STATUS_CONFIRMED);
-                    order.setExportStatus(Order.EXPORT_STATUS_READY);
-
-                    session.privacy.stripeOrderNumber = null;
-                    delete session.privacy.stripeOrderNumber;
-                });
-                COHelpers.sendConfirmationEmail(order, req.locale.id);
-                responsePayload.success = true;
-            } catch (e) {
-                stripePaymentsHelper.LogStripeErrorMessage('StripePayments.CardPaymentSubmitOrder Create Payment Intent: Error on paymentIntent.status === requires_capture && !stripeChargeCapture');
-                responsePayload.error = true;
-            }
-        } else if (paymentIntent.status === 'requires_action' || paymentIntent.status === 'requires_source_action') {
-            Transaction.wrap(function () {
-                order.addNote('Stripe 3DS', 'requires_action: Pending');
-            });
-            // Tell the client to handle the action
-            responsePayload.requires_action = true;
-            responsePayload.payment_intent_client_secret = paymentIntent.client_secret;
-        } else if (paymentIntent.status === 'succeeded' || paymentIntent.status === 'requires_confirmation') {
-            // The payment didn’t need any additional actions and completed!
-            // Handle post-payment fulfilment
             try {
                 Transaction.wrap(function () {
                     order.addNote('Stripe 3DS', 'requires_action: Confirmed');
@@ -596,7 +531,7 @@ server.post('CardPaymentHandleRequiresAction', csrfProtection.validateAjaxReques
                 COHelpers.sendConfirmationEmail(order, req.locale.id);
                 responsePayload.success = true;
             } catch (e) {
-                stripePaymentsHelper.LogStripeErrorMessage('StripePayments.CardPaymentSubmitOrder Confirm Payment Intent: Error on paymentIntent.status === succeeded || paymentIntent.status === requires_confirmation');
+                stripePaymentsHelper.LogStripeErrorMessage('StripePayments.CardPaymentHandleRequiresAction: Error on placeOrder');
                 responsePayload.error = true;
             }
         } else {
@@ -647,7 +582,6 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
     var validationHelpers = require('*/cartridge/scripts/helpers/basketValidationHelpers');
     var checkoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
     var Money = require('dw/value/Money');
-    var stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
     var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
 
     session.privacy.stripeOrderNumber = null;
@@ -919,11 +853,18 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
             };
         }
 
+        createPaymentIntentPayload.payment_method_options = {};
+        var multicaptureEnabled = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeMultiCaptureEnabled');
+
+        if (multicaptureEnabled) {
+            createPaymentIntentPayload.payment_method_options.card = {
+                    request_multicapture: "if_available"
+            };
+        }
+
         if (request.httpCookies['stripe.link.persistent_token'] && request.httpCookies['stripe.link.persistent_token'].value) {
-            createPaymentIntentPayload.payment_method_options = {
-                link: {
-                    persistent_token: request.httpCookies['stripe.link.persistent_token'].value
-                }
+            createPaymentIntentPayload.payment_method_options.link = {
+                persistent_token: request.httpCookies['stripe.link.persistent_token'].value
             };
         }
 
@@ -1019,7 +960,6 @@ server.post('StripeQuickCheckout', csrfProtection.validateAjaxRequest, function 
     var validationHelpers = require('*/cartridge/scripts/helpers/basketValidationHelpers');
     var checkoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
     var Money = require('dw/value/Money');
-    var stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
     var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
     var cartHelper = require('*/cartridge/scripts/cart/cartHelpers');
 
