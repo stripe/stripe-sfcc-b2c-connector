@@ -207,6 +207,14 @@ exports.getStripeExpressCheckoutCartPageEnabled = function () {
     return require('dw/system/Site').current.getCustomPreferenceValue('stripeExpressCheckoutCartPageEnabled');
 };
 
+exports.isStripeExpressCheckoutMinicartEnabled = function() {
+    return require('dw/system/Site').current.getCustomPreferenceValue('stripeExpressCheckoutMinicartEnabled');
+};
+
+exports.isCVCRecollectionEnabled = function() {
+    return require('dw/system/Site').current.getCustomPreferenceValue('cvcRecollectionEnabled');
+};
+
 /**
  * Get stripe Express Checkout buttons style from Site Preferences.
  * @returns {Object} - Stripe Express Checkout style or default value if not configured.

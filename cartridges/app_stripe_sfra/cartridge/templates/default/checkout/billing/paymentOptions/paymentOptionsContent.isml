@@ -8,22 +8,22 @@
         assets.addJs('/js/stripe.checkout.js');
     </isscript>
 </isif>
+<input type="hidden" id="getPaymentElementOptions" value="${URLUtils.https('StripePaymentsAPM-GetPaymentElementOptions')}" />
 <input type="hidden" id="stripeCardFormStyle" value="${JSON.stringify(stripeHelper.getStripeCardFormStyle())}" />
 <input type="hidden" id="stripeAccountCountry" value="${stripeCheckoutHelper.getPRCountry()}" />
-<input type="hidden" id="cardPaymentSubmitOrderURL" value="${URLUtils.https('StripePayments-CardPaymentSubmitOrder')}" />
-<input type="hidden" id="cardPaymentHandleRequiresActionURL" value="${URLUtils.https('StripePayments-CardPaymentHandleRequiresAction')}" />
-<input type="hidden" id="getStripeOrderItemsURL" value="${URLUtils.https('StripePayments-GetStripeOrderItems')}" />
+<input type="hidden" id="cardPaymentSubmitOrderURL" value="${URLUtils.https('StripePaymentsCard-CardPaymentSubmitOrder')}" />
+<input type="hidden" id="cardPaymentHandleRequiresActionURL" value="${URLUtils.https('StripePaymentsCard-CardPaymentHandleRequiresAction')}" />
+<input type="hidden" id="getStripeOrderItemsURL" value="${URLUtils.https('StripePaymentsAPM-GetStripeOrderItems')}" />
 <input type="hidden" id="billingPageUrl" value="${URLUtils.url('Checkout-Begin', 'stage', 'payment')}" />
-<input type="hidden" id="getCustomerEmailURL" value="${URLUtils.https('StripePayments-GetCustomerEmail')}" />
-<input type="hidden" id="stripePaymentElementStyle" value="${JSON.stringify(stripeHelper.getStripePaymentElementStyle())}" />
+<input type="hidden" id="getCustomerEmailURL" value="${URLUtils.https('StripePaymentsAPM-GetCustomerEmail')}" />
 
-<input type="hidden" id="paymentElementSubmitOrderURL" value="${URLUtils.https('StripePayments-PaymentElementSubmitOrder')}" />
+<input type="hidden" id="paymentElementSubmitOrderURL" value="${URLUtils.https('StripePaymentsAPM-PaymentElementSubmitOrder')}" />
 <input type="hidden" id="isStripePaymentElementsSavePaymentsEnabled" value="${customer.authenticated && customer.profile && customer.profile.email && stripeHelper.isStripePaymentElementsSavePaymentsEnabled()}" />
 <input type="hidden" id="stripeCaptureMethod" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture') ? 'automatic' : 'manual'}" />
 
-<input type="hidden" id="logStripeErrorMessageURL" value="${URLUtils.https('StripePayments-LogStripeErrorMessage')}" />
+<input type="hidden" id="logStripeErrorMessageURL" value="${URLUtils.https('StripePaymentsAPM-LogStripeErrorMessage')}" />
 
-<input type="hidden" id="stripeFailOrderURL" value="${URLUtils.https('StripePayments-FailOrder')}" />
+<input type="hidden" id="stripeFailOrderURL" value="${URLUtils.https('StripePaymentsAPM-FailOrder')}" />
 
 <input type="hidden" name="stripe_source_client_secret" id="stripe_source_client_secret">
 <input type="hidden" name="stripe_redirect_url" id="stripe_redirect_url">
@@ -34,7 +34,7 @@
 <input type="hidden" id="stripe_order_currency" value="${stripeOrder.currency}">
 <input type="hidden" id="stripe_site_id" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getSiteID()}">
 <input type="hidden" id="stripe_order_number" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getNewStripeOrderNumber()}">
-<input type="hidden" id="stripe_return_url" value="${URLUtils.https("StripePayments-HandleAPM")}">
+<input type="hidden" id="stripe_return_url" value="${URLUtils.https("StripePaymentsAPM-HandleAPM")}">
 
 <input type="hidden" id="stripe_purchase_country" value="${stripeOrder.purchase_country}">
 <input type="hidden" id="stripe_order_items" value="${stripeOrder.order_items}">
@@ -48,19 +48,7 @@
 <isloop items="${pdict.order.billing.payment.applicablePaymentMethods}" var="paymentOption">
     <isif condition="${paymentOption.ID === 'CREDIT_CARD'}">
         <isif condition="${stripeEnabled}">
-            <iscomment>
-				When Stripe Payment Element is Enabled we hide CREDIT_CARD form when there are No saved cards because credit card template is used to display saved cards only in that case
-			</iscomment>
-        	<isif condition="${isStripePaymentElementEnabled && !hasSavedCards}">
-        		<iscontinue/>
-        	</isif>
-
-			<isif condition="${!isStripePaymentElementEnabled}">
-            	<div class="tab-pane ${paymentOption.ID}-content active" id="${paymentOption.ID}-content" role="tabpanel">
-            <iselse/>
-            	<div class="tab-pane ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">
-            </isif>
-            
+            <div class="tab-pane ${paymentOption.ID}-content active" id="${paymentOption.ID}-content" role="tabpanel">
                 <fieldset class="payment-form-fields">
 
                     <!--- payment method is credit card --->
@@ -76,8 +64,8 @@
         <iselse/>
             <isinclude template="checkout/billing/paymentOptions/creditCardContent" />
         </isif>
-   	<iselseif condition="${paymentOption.ID === 'STRIPE_PAYMENT_ELEMENT'}"/>
-   		<isinclude template="checkout/billing/paymentOptions/stripePaymentElementContent" />
+    <iselseif condition="${paymentOption.ID === 'STRIPE_PAYMENT_ELEMENT'}"/>
+        <isinclude template="checkout/billing/paymentOptions/stripePaymentElementContent" />
     <iselse/>
 
         <div class="tab-pane ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">

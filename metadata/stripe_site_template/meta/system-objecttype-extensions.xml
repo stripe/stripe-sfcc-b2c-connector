@@ -335,9 +335,27 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <default-value>false</default-value>
             </attribute-definition>
 
+             <attribute-definition attribute-id="stripeExpressCheckoutMinicartEnabled">
+                <display-name xml:lang="x-default">Express Checkout Enabled On Minicart</display-name>
+                <description xml:lang="x-default">Enables/Disables Express Checkout Functionality On Minicart</description>
+                <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <default-value>false</default-value>
+            </attribute-definition>
+
             <attribute-definition attribute-id="stripeExpressCheckoutCartPageEnabled">
                 <display-name xml:lang="x-default">Express Checkout Enabled On Cart Page</display-name>
                 <description xml:lang="x-default">Enables/Disables Express Checkout Functionality On Cart Page</description>
+                <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <default-value>false</default-value>
+            </attribute-definition>
+
+            <attribute-definition attribute-id="cvcRecollectionEnabled">
+                <display-name xml:lang="x-default">CVC Recollection Enabled</display-name>
+                <description xml:lang="x-default">Enables/Disables CVC Recollection</description>
                 <type>boolean</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
@@ -371,8 +389,10 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <attribute attribute-id="stripeAllowedAPMMethods"/>
                 <attribute attribute-id="stripePaymentMethodsInBeta"/>
                 <attribute attribute-id="stripePaymentElementStyle"/>
+                <attribute attribute-id="cvcRecollectionEnabled"/>
                 <attribute attribute-id="stripePaymentElementsSavePayments"/>
                 <attribute attribute-id="stripeExpressCheckoutProductPageEnabled"/>
+                <attribute attribute-id="stripeExpressCheckoutMinicartEnabled"/>
                 <attribute attribute-id="stripeExpressCheckoutCartPageEnabled"/>
                 <attribute attribute-id="stripeExpressCheckoutStyle"/>
             </attribute-group>

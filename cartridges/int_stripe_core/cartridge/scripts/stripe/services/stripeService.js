@@ -254,6 +254,19 @@ function callService(requestObject) {
 
 exports.call = callService;
 
+// https://stripe.com/docs/api/customer_sessions
+exports.customerSessions = {
+    create: function (customerSessionPayload) {
+        var requestObject = {
+            endpoint: '/customer_sessions',
+            httpMethod: 'POST',
+            payload: customerSessionPayload
+        };
+
+        return callService(requestObject);
+    }
+};
+
 // https://stripe.com/docs/api/customers
 exports.customers = {
     create: function (createCustomerPayload) {

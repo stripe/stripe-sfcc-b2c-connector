@@ -405,14 +405,11 @@ exports.createOrder = function (currentBasket) {
     var order;
     try {
         order = Transaction.wrap(function () {
-            var newOrder;
             if (stripeOrderNumber) {
-                newOrder = OrderMgr.createOrder(currentBasket, stripeOrderNumber);
-            } else {
-                newOrder = OrderMgr.createOrder(currentBasket);
+                return OrderMgr.createOrder(currentBasket, stripeOrderNumber);
             }
 
-            return newOrder;
+            return OrderMgr.createOrder(currentBasket);
         });
     } catch (error) {
         if (order) {
@@ -420,6 +417,7 @@ exports.createOrder = function (currentBasket) {
                 order.addNote('Error Create Order', error.message);
             });
         }
+        require('*/cartridge/scripts/stripe/helpers/controllers/stripePaymentsHelper').LogStripeErrorMessage(error.message);
     }
 
     return order;

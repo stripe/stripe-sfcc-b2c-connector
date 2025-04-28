@@ -11,12 +11,6 @@
         <processor-id>STRIPE_CREDIT</processor-id>
     </payment-method>
 
-    <payment-method method-id="STRIPE_PAYMENT_REQUEST_BTN">
-        <name xml:lang="x-default">STRIPE_PAYMENT_REQUEST_BTN</name>
-        <enabled-flag>false</enabled-flag>
-        <processor-id>STRIPE_CREDIT</processor-id>
-    </payment-method>
-
     <payment-method method-id="STRIPE_PAYMENT_ELEMENT">
         <name xml:lang="x-default">New Payment Method</name>
         <enabled-flag>true</enabled-flag>
