@@ -55,6 +55,6 @@
   },
   "packageName": "app_stripe_sfra",
   "paths": {
-    "base": "../../storefront-reference-architecture-master/cartridges/app_storefront_base/"
+    "base": "../storefront-reference-architecture/cartridges/app_storefront_base/"
   }
 }

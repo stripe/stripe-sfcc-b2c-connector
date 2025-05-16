@@ -335,9 +335,18 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <default-value>false</default-value>
             </attribute-definition>
 
-             <attribute-definition attribute-id="stripeExpressCheckoutMinicartEnabled">
+            <attribute-definition attribute-id="stripeExpressCheckoutMinicartEnabled">
                 <display-name xml:lang="x-default">Express Checkout Enabled On Minicart</display-name>
                 <description xml:lang="x-default">Enables/Disables Express Checkout Functionality On Minicart</description>
+                <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <default-value>false</default-value>
+            </attribute-definition>
+
+            <attribute-definition attribute-id="stripeCollectBillingDetailsOnPaymentElement">
+                <display-name xml:lang="x-default">Display Billing Details Fields On Payment Element</display-name>
+                <description xml:lang="x-default">Sets paymentElement-fields-billingDetails to Auto if Enabled and to Never if Disabled</description>
                 <type>boolean</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
@@ -383,6 +392,7 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <attribute attribute-id="stripeAccountType"/>
                 <attribute attribute-id="stripeDisplayRiskScoreData"/>
                 <attribute attribute-id="includeShippingDetailsInPaymentIntentPayload"/>
+                <attribute attribute-id="stripeCollectBillingDetailsOnPaymentElement"/>
             </attribute-group>
             <attribute-group group-id="Stripe APM Configurations">
                 <display-name xml:lang="x-default">Stripe Payment Element And Express Checkout Configurations</display-name>
