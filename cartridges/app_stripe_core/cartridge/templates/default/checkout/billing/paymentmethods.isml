@@ -28,18 +28,6 @@
 		</legend>
 
 		<div class="payment-method-options form-indent">
-			<iscomment>
-				Stripe changes BEGIN
-			</iscomment>
-			<isloop items="${pdict.CurrentForms.billing.paymentMethods.selectedPaymentMethodID.options}" var="paymentMethodType">
-				<isif condition="${paymentMethodType.value.equals('STRIPE_PAYMENT_REQUEST_BTN')}">
-					<div id="payment-request-button"><!-- A Stripe Element will be inserted here. --></div>
-					<isbreak/>
-				</isif>
-			</isloop>
-			<iscomment>
-				Stripe changes END
-			</iscomment>
 		
 			<isloop items="${pdict.CurrentForms.billing.paymentMethods.selectedPaymentMethodID.options}" var="paymentMethodType">
 
@@ -49,7 +37,6 @@
 				<iscomment>
 					Stripe changes BEGIN
 				</iscomment>
-				<isif condition="${paymentMethodType.value.equals('STRIPE_PAYMENT_REQUEST_BTN')}"><iscontinue/></isif>
 				<isset name="paymentMethod" value="${dw.order.PaymentMgr.getPaymentMethod(paymentMethodType.value)}" scope="page"/>
 				<isif condition="${!stripeEnabled && (paymentMethod.paymentProcessor.ID === 'STRIPE_APM' || paymentMethod.paymentProcessor.ID === 'STRIPE_CREDIT')}"><iscontinue/></isif>
 				<iscomment>

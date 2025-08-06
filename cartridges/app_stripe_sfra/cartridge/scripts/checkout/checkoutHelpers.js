@@ -246,10 +246,6 @@ if (stripeHelper.isStripeEnabled()) {
         createPaymentIntentPayload.payment_method_options.card = {};
         var multicaptureEnabled = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeMultiCaptureEnabled');
 
-        if (stripeHelper.isCVCRecollectionEnabled()) {
-            createPaymentIntentPayload.payment_method_options.card.require_cvc_recollection = true;
-        }
-
         if (multicaptureEnabled) {
             createPaymentIntentPayload.payment_method_options.card.request_multicapture = "if_available";
         }
@@ -279,6 +275,10 @@ if (stripeHelper.isStripeEnabled()) {
                 Transaction.wrap(function () {
                     customer.profile.custom.stripeCustomerID = newStripeCustomer.id;
                 });
+            }
+
+            if (stripeHelper.isCVCRecollectionEnabled()) {
+                createPaymentIntentPayload.payment_method_options.card.require_cvc_recollection = true;
             }
 
             createPaymentIntentPayload.customer = customer.profile.custom.stripeCustomerID;

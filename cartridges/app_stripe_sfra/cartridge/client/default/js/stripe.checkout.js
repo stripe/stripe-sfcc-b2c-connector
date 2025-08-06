@@ -329,8 +329,6 @@ document.querySelector('button.submit-payment').addEventListener('click', functi
 
     if ($('#dwfrm_billing .' + $('.tab-pane.active').attr('id') + ' .payment-form-fields input.form-control').val() === 'CREDIT_CARD') {
         window.localStorage.setItem('stripe_payment_method', 'CREDIT_CARD');
-    } else if ($('#dwfrm_billing .' + $('.tab-pane.active').attr('id') + ' .payment-form-fields input.form-control').val() === 'STRIPE_PAYMENT_REQUEST_BTN') {
-        window.localStorage.setItem('stripe_payment_method', 'STRIPE_PAYMENT_REQUEST_BTN');
     } else {
         window.localStorage.setItem('stripe_payment_method', '');
         return;
@@ -796,7 +794,7 @@ function handleStripeCardSubmitOrder() {
 // v1
 // eslint-disable-next-line consistent-return
 document.querySelector('button.place-order').addEventListener('click', function (event) {
-    if (window.localStorage.getItem('stripe_payment_method') !== 'STRIPE_PAYMENT_ELEMENT' && window.localStorage.getItem('stripe_payment_method') !== 'CREDIT_CARD' && window.localStorage.getItem('stripe_payment_method') !== 'STRIPE_PAYMENT_REQUEST_BTN') {
+    if (window.localStorage.getItem('stripe_payment_method') !== 'STRIPE_PAYMENT_ELEMENT' && window.localStorage.getItem('stripe_payment_method') !== 'CREDIT_CARD') {
         return true;
     }
 

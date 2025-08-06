@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 23.9.0 (2025-08-06)
+* Controllers and client side js refactoring and optimization
+* Customer sessions Implementation (replacing old saved cards tab that was using Card Payment Logic)
+* APM cvc recollection 
+* Minicart ECE 
+
 ## 23.8.0 (2025-02-18)
 * Added Multi Capture Option as a configuration
 * Card payment refactoring and JS updated to use handleNextAction instead of handleCardAction
