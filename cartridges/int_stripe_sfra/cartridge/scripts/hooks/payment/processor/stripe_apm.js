@@ -16,14 +16,6 @@ var Transaction = require('dw/system/Transaction');
 var StripeAPMHelper = require('*/cartridge/scripts/stripe/helpers/paymentprocessors/stripeApmHelper');
 
 /**
- * Creates a token. This should be replaced by utilizing a tokenization provider
- * @returns {string} a token
- */
-function createToken() {
-    return Math.random().toString(36).substr(2);
-}
-
-/**
  * Verifies that entered credit card information is a valid card. If the information is valid a
  * credit card payment instrument is created
  * @param {dw.order.Basket} basket Current users's basket
@@ -63,7 +55,6 @@ function Authorize(orderNumber, paymentInstrument, paymentProcessor) {
 
 exports.Handle = Handle;
 exports.Authorize = Authorize;
-exports.createToken = createToken;
 
 /**
  * Verifies the required information for billing form is provided.

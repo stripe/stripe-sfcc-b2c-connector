@@ -28,12 +28,6 @@ function getStripePaymentMethodDefinitions() {
             payment_processor: 'STRIPE_CREDIT'
         },
         {
-            id: 'STRIPE_PAYMENT_REQUEST_BTN',
-            name: 'Stripe Payment Request',
-            currencies: {},
-            payment_processor: 'STRIPE_CREDIT'
-        },
-        {
             id: 'STRIPE_PAYMENT_ELEMENT',
             name: 'Stripe Payment Element',
             currencies: {},

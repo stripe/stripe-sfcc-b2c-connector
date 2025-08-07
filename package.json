@@ -1,6 +1,6 @@
 {
   "name": "int_stripe_sfra",
-  "version": "23.8.0",
+  "version": "23.9.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -41,12 +41,12 @@
     "moment": "^2.29.1",
     "moment-jdateformatparser": "^1.2.1",
     "node-fetch": "^2.6.1",
-    "node-sass": "^4.0.0",
+    "sass": "^1.69.7",
     "postcss-loader": "^2.1.5",
     "protractor": "^7.0.0",
     "proxyquire": "2.1.3",
     "sandboxed-module": "^2.0.4",
-    "sass-loader": "^7.0.3",
+    "sass-loader": "^13.3.2",
     "sgmf-scripts": "^2.0.0",
     "sinon": "^11.1.1",
     "stylelint": "^13.13.1",
@@ -55,6 +55,6 @@
   },
   "packageName": "app_stripe_sfra",
   "paths": {
-    "base": "../storefront-reference-architecture/cartridges/app_storefront_base/"
+    "base": "../../storefront-reference-architecture-master/cartridges/app_storefront_base/"
   }
 }

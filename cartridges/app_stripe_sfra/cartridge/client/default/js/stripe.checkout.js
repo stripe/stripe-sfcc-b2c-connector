@@ -329,8 +329,6 @@ document.querySelector('button.submit-payment').addEventListener('click', functi
 
     if ($('#dwfrm_billing .' + $('.tab-pane.active').attr('id') + ' .payment-form-fields input.form-control').val() === 'CREDIT_CARD') {
         window.localStorage.setItem('stripe_payment_method', 'CREDIT_CARD');
-    } else if ($('#dwfrm_billing .' + $('.tab-pane.active').attr('id') + ' .payment-form-fields input.form-control').val() === 'STRIPE_PAYMENT_REQUEST_BTN') {
-        window.localStorage.setItem('stripe_payment_method', 'STRIPE_PAYMENT_REQUEST_BTN');
     } else {
         window.localStorage.setItem('stripe_payment_method', '');
         return;
@@ -563,7 +561,21 @@ function handleStripePaymentElementSubmitOrder() {
     });
 }
 
-function initStripePaymentElement() {
+function getBillingDetails(ownerEmail) {
+    return {
+        billingDetails: {
+            email: ownerEmail,
+            name: (document.querySelector('#dwfrm_billing input[name$="_firstName"]') && document.querySelector('#dwfrm_billing input[name$="_lastName"]')) ? document.querySelector('#dwfrm_billing input[name$="_firstName"]').value + ' ' + document.querySelector('#dwfrm_billing input[name$="_lastName"]').value : '',
+            phone: document.querySelector('#dwfrm_billing input[name$="_phone"]') ? document.querySelector('#dwfrm_billing input[name$="_phone"]').value : '',
+            address: {
+                postal_code: document.querySelector('#dwfrm_billing input[name$="_postalCode"]') ? document.querySelector('#dwfrm_billing input[name$="_postalCode"]').value : '',
+                country: document.querySelector('#dwfrm_billing select[name$="_country"]') ? document.querySelector('#dwfrm_billing select[name$="_country"]').value : ''
+            }
+        }
+    };
+}
+
+function initStripePaymentElement(customerEmail) {
     var ownerEmail = '';
     if ($('.customer-summary-email').length && $('.customer-summary-email').text()) {
         ownerEmail = $('.customer-summary-email').text();
@@ -581,85 +593,32 @@ function initStripePaymentElement() {
 
         if (window.stripePaymentElements) {
             window.paymentElementInstance = window.stripePaymentElements.create('payment', {
-                defaultValues: {
-                    billingDetails: {
-                        email: ownerEmail,
-                        name: (document.querySelector('#dwfrm_billing input[name$="_firstName"]') && document.querySelector('#dwfrm_billing input[name$="_lastName"]')) ? document.querySelector('#dwfrm_billing input[name$="_firstName"]').value + ' ' + document.querySelector('#dwfrm_billing input[name$="_lastName"]').value : '',
-                        phone: document.querySelector('#dwfrm_billing input[name$="_phone"]') ? document.querySelector('#dwfrm_billing input[name$="_phone"]').value : '',
-                        address: {
-                            postal_code: document.querySelector('#dwfrm_billing input[name$="_postalCode"]') ? document.querySelector('#dwfrm_billing input[name$="_postalCode"]').value : '',
-                            country: document.querySelector('#dwfrm_billing select[name$="_country"]') ? document.querySelector('#dwfrm_billing select[name$="_country"]').value : ''
-                        }
-                    }
-                }
+                defaultValues: getBillingDetails(ownerEmail)
             });
             window.paymentElementInstance.mount('#payment-element');
         }
     } else {
-        $.ajax({
-            url: document.getElementById('getCustomerEmailURL').value,
-            method: 'GET',
-            dataType: 'json',
-            async: false
-        }).done(function (json) {
-            ownerEmail = json.email;
-            if (ownerEmail && ownerEmail !== 'null') {
-                if (window.paymentElementInstance) {
-                    window.paymentElementInstance.destroy();
-                }
+        if (window.paymentElementInstance) {
+            window.paymentElementInstance.destroy();
+        }
 
-                window.paymentElementInstance = window.stripePaymentElements.create('payment', {
-                    defaultValues: {
-                        billingDetails: {
-                            email: ownerEmail,
-                            name: (document.querySelector('#dwfrm_billing input[name$="_firstName"]') && document.querySelector('#dwfrm_billing input[name$="_lastName"]')) ? document.querySelector('#dwfrm_billing input[name$="_firstName"]').value + ' ' + document.querySelector('#dwfrm_billing input[name$="_lastName"]').value : '',
-                            phone: document.querySelector('#dwfrm_billing input[name$="_phone"]') ? document.querySelector('#dwfrm_billing input[name$="_phone"]').value : '',
-                            address: {
-                                postal_code: document.querySelector('#dwfrm_billing input[name$="_postalCode"]') ? document.querySelector('#dwfrm_billing input[name$="_postalCode"]').value : '',
-                                country: document.querySelector('#dwfrm_billing select[name$="_country"]') ? document.querySelector('#dwfrm_billing select[name$="_country"]').value : ''
-                            }
-                        }
-                    }
-                });
-                window.paymentElementInstance.mount('#payment-element');
-            }
+        window.paymentElementInstance = window.stripePaymentElements.create('payment', {
+            defaultValues: getBillingDetails(customerEmail)
         });
+        window.paymentElementInstance.mount('#payment-element');
     }
 }
 
 function initNewStripePaymentIntent() {
-    var stripeOrderAmountInput = document.getElementById('stripe_order_amount');
-    if (!stripeOrderAmountInput || !stripeOrderAmountInput.value) {
-        return;
-    }
+    $.ajax({
+        url: document.getElementById('getPaymentElementOptions').value,
+        method: 'GET',
+        dataType: 'json',
+    }).done(function (response) {
+        window.stripePaymentElements = stripe.elements(response.paymentElementOptions);
 
-    var stripeOrderCurrencyInput = document.getElementById('stripe_order_currency');
-    if (!stripeOrderCurrencyInput || !stripeOrderCurrencyInput.value) {
-        return;
-    }
-
-    const appearance = {
-        theme: 'stripe'
-    };
-
-    const stripePaymentElementStyleObject = JSON.parse(document.getElementById('stripePaymentElementStyle').value);
-    appearance.variables = stripePaymentElementStyleObject.variables;
-
-    const options = {
-        mode: 'payment',
-        amount: parseInt(stripeOrderAmountInput.value, 10),
-        currency: stripeOrderCurrencyInput.value,
-        appearance: appearance,
-        capture_method: document.getElementById('stripeCaptureMethod').value,
-    };
-
-    if (document.getElementById('isStripePaymentElementsSavePaymentsEnabled').value === 'true') {
-        options.setup_future_usage = 'off_session';
-    }
-
-    window.stripePaymentElements = stripe.elements(options);
-
-    initStripePaymentElement();
+        initStripePaymentElement(response.customerEmail);
+    });
 }
 
 /* Stripe Payment Element */
@@ -835,7 +794,7 @@ function handleStripeCardSubmitOrder() {
 // v1
 // eslint-disable-next-line consistent-return
 document.querySelector('button.place-order').addEventListener('click', function (event) {
-    if (window.localStorage.getItem('stripe_payment_method') !== 'STRIPE_PAYMENT_ELEMENT' && window.localStorage.getItem('stripe_payment_method') !== 'CREDIT_CARD' && window.localStorage.getItem('stripe_payment_method') !== 'STRIPE_PAYMENT_REQUEST_BTN') {
+    if (window.localStorage.getItem('stripe_payment_method') !== 'STRIPE_PAYMENT_ELEMENT' && window.localStorage.getItem('stripe_payment_method') !== 'CREDIT_CARD') {
         return true;
     }
 

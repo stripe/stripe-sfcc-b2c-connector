@@ -226,6 +226,7 @@ function initStripeCheckoutExpress() {
                                 }).done(function () {
                                     window.location.reload();
                                 });
+                                $.spinner().stop();
                             });
                         }
                     });

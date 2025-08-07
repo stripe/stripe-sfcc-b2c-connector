@@ -1,7 +1,5 @@
 <isloop items="${pdict.order.billing.payment.applicablePaymentMethods}" var="paymentOption">
 
-<isif condition="${paymentOption.ID.equals('STRIPE_PAYMENT_REQUEST_BTN')}"><iscontinue/></isif>
-
 <iscomment>
 	When Stripe Payment Element is Enabled we hide CREDIT_CARD form when there are No saved cards because credit card template is used to display saved cards only in that case
 </iscomment>
