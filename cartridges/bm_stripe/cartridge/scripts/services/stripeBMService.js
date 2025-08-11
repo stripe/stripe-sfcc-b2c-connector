@@ -138,7 +138,6 @@ function getStripeServiceDefinition(apiKey) {
                 }
             };
 
-            svc.addHeader('apiKey', apiKey);
             svc.addHeader('Authorization', 'Bearer ' + apiKey);
             svc.addHeader('X-Stripe-Client-User-Agent', JSON.stringify(stripeHeader));
 
