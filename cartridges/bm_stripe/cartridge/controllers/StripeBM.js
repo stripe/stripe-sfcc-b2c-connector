@@ -84,6 +84,7 @@ server.post('HandleStripeQuickSetup', function (req, res, next) {
             // get country code
             var stripeAccount = stripeBMService.account.get(stripePrivateKey);
             var countryCode = stripeAccount.country;
+            var accountId = stripeAccount.id;
 
             // Get site web hook URL
             var urlAction = new URLAction('Stripe-WebHook', siteID);
@@ -128,6 +129,7 @@ server.post('HandleStripeQuickSetup', function (req, res, next) {
                 site.setCustomPreferenceValue('stripeAllowedWebHookStatuses', enabledEvents);
                 site.setCustomPreferenceValue('stripeIsSFRA', isSFRA);
                 site.setCustomPreferenceValue('stripeAccountCountryCode', countryCode);
+                site.setCustomPreferenceValue('stripeAccountId', accountId);
             });
 
             resultOutput = resultOutput.concat('<br>Updated: stripeEnabled = ' + true);
@@ -137,6 +139,7 @@ server.post('HandleStripeQuickSetup', function (req, res, next) {
             resultOutput = resultOutput.concat('<br>Updated: stripeAllowedWebHookStatuses = ' + enabledEvents);
             resultOutput = resultOutput.concat('<br>Updated: stripeIsSFRA = ' + isSFRA);
             resultOutput = resultOutput.concat('<br>Updated: stripeAccountCountryCode = ' + countryCode);
+            resultOutput = resultOutput.concat('<br>Updated: stripeAccountId = ' + accountId);
         } catch (e) {
             res.json({
                 error: true,
