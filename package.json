@@ -1,6 +1,6 @@
 {
   "name": "int_stripe_sfra",
-  "version": "23.9.0",
+  "version": "23.9.1",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -55,6 +55,6 @@
   },
   "packageName": "app_stripe_sfra",
   "paths": {
-    "base": "../../storefront-reference-architecture-master/cartridges/app_storefront_base/"
+    "base": "../storefront-reference-architecture/cartridges/app_storefront_base/"
   }
 }
