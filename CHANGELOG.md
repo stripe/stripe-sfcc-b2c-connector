@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 23.9.1 (2025-08-11)
+* Removed duplicated API key from service headers
+* Populated stripeAccountID site preference within Quick Setup BM module
+
 ## 23.9.0 (2025-08-06)
 * Controllers and client side js refactoring and optimization
 * Customer sessions Implementation (replacing old saved cards tab that was using Card Payment Logic)
