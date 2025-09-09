@@ -64,7 +64,7 @@ function isStripePaymentInstrument(paymentInstrument) {
         return false;
     }
 
-    const stripePaymentInstrumentRegex = /(^CREDIT_CARD$|^STRIPE_.+)/i;
+    const stripePaymentInstrumentRegex = /(^BANK_TRANSFER$|^CREDIT_CARD$|^STRIPE_.+)/i;
     return stripePaymentInstrumentRegex.test(paymentInstrument.paymentMethod);
 }
 
@@ -583,6 +583,40 @@ exports.getShippingOptionsSFRA = function (params) {
 
     Transaction.begin();
 
+    if (params.shippingAddress) {
+
+        var stripeShippingAddress = JSON.parse(params.shippingAddress);
+        var shippingName = params.shippingName.split(' ');
+        var shippingFirstName = shippingName[0];
+        var shippingLastname = shippingName[1];
+        var shipment = currentBasket.defaultShipment;
+
+        // Check to make sure there is a shipping address
+        if (currentBasket.defaultShipment.shippingAddress === null) {
+            Transaction.wrap(function () {
+                var shippingAddress = shipment.shippingAddress;
+                if (shippingAddress === null) {
+                    shippingAddress = shipment.createShippingAddress();
+                }
+
+                shippingAddress.setFirstName(shippingFirstName);
+                shippingAddress.setLastName(shippingLastname);
+                shippingAddress.setAddress1(stripeShippingAddress.line1);
+                shippingAddress.setAddress2(stripeShippingAddress.line1);
+                shippingAddress.setCity(stripeShippingAddress.city);
+                shippingAddress.setPostalCode(stripeShippingAddress.postal_code);
+                shippingAddress.setCountryCode(stripeShippingAddress.country);
+
+                if (!empty(stripeShippingAddress.state)) {
+                    shippingAddress.setStateCode(stripeShippingAddress.state);
+                }
+                if (!shippingAddress.phone) {
+                    shippingAddress.setPhone(params.phone);
+                }
+            });
+        }
+    }
+
     if (params.pid) {
         var addToCartResult = cartHelper.addProductToCart(
             currentBasket,
@@ -789,4 +823,77 @@ exports.retrieveTemporaryOrCurrentBasket = function (basket) {
     var productLineItems = basket.getAllProductLineItems();
 
     return productLineItems.length ? require('dw/order/BasketMgr').createTemporaryBasket() : basket;
+}
+
+exports.getBankTransferPaymentMethodOptions =  function(billingAddress) {
+        var countryCode = billingAddress.countryCode.value;
+
+        if (empty(countryCode)) {
+            return null;
+        }
+
+        var bankTransfer;
+
+        switch (countryCode)
+        {
+            case "US":
+                bankTransfer = { 'type': 'us_bank_transfer' };
+                break;
+
+            case "GB":
+                bankTransfer = { 'type': 'gb_bank_transfer' };
+                break;
+
+            case "JP":
+                bankTransfer = { 'type': 'jp_bank_transfer' };
+                break;
+
+            case "MX": 
+                bankTransfer = { 'type': 'mx_bank_transfer' };
+                break;
+            case "BE": // Belgium
+            case "DE": // Germany
+            case "FR": // France
+            case "IE": // Ireland
+            case "NL": // Netherlands
+            case "AT": // Austria
+            case "BG": // Bulgaria
+            case "HR": // Croatia
+            case "CY": // Cyprus
+            case "CZ": // Czech Republic
+            case "DK": // Denmark
+            case "EE": // Estonia
+            case "ES": // Spain
+            case "FI": // Finland
+            case "GR": // Greece
+            case "HU": // Hungary
+            case "IT": // Italy
+            case "LV": // Latvia
+            case "LT": // Lithuania
+            case "LU": // Luxembourg
+            case "MT": // Malta
+            case "PL": // Poland
+            case "PT": // Portugal
+            case "RO": // Romania
+            case "SI": // Slovenia
+            case "SK": // Slovakia
+            case "SE": // Sweden
+            default:
+                bankTransfer = {
+                    'type': 'eu_bank_transfer',
+                    'eu_bank_transfer': {
+                        'country': countryCode
+                    }
+                };
+               
+                break;
+                return null;
+        }
+
+        return {
+            "customer_balance": {
+                'funding_type': 'bank_transfer',
+                'bank_transfer': bankTransfer
+            }
+        };
 }

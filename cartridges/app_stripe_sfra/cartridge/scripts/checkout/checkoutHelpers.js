@@ -181,8 +181,10 @@ if (stripeHelper.isStripeEnabled()) {
         return { error: false, currentBasket: currentBasket };
     };
 
-    COHelpers.buildPaymentIntentPayload = function buildPaymentIntentPayload(order, req, stripeChargeCapture) {
+    COHelpers.buildPaymentIntentPayload = function buildPaymentIntentPayload(order, req, stripeChargeCapture, stripePaymentInstrument) {
         var Money = require('dw/value/Money');
+        var checkoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
+        var stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
         var orderCurrencyCode = order.getCurrencyCode();
         var orderTotal = order.getTotalGrossPrice();
@@ -218,12 +220,23 @@ if (stripeHelper.isStripeEnabled()) {
         var createPaymentIntentPayload = {
             confirm: true,
             amount: amount,
-            currency: orderCurrencyCode,
-            automatic_payment_methods: {
-                enabled: true
-            },
-            capture_method: stripeChargeCapture ? 'automatic' : 'manual'
+            currency: orderCurrencyCode
         };
+
+        if (stripePaymentInstrument.paymentMethod !== 'BANK_TRANSFER') {
+            createPaymentIntentPayload.capture_method = stripeChargeCapture ? 'automatic' : 'manual';
+            createPaymentIntentPayload.automatic_payment_methods = {
+                enabled: true
+            };
+
+            createPaymentIntentPayload.payment_method_options = {};
+            createPaymentIntentPayload.payment_method_options.card = {};
+            var multicaptureEnabled = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeMultiCaptureEnabled');
+
+            if (multicaptureEnabled) {
+                createPaymentIntentPayload.payment_method_options.card.request_multicapture = "if_available";
+            }
+        }
 
         if (!empty(shippingAddress) && dw.system.Site.getCurrent().getCustomPreferenceValue('includeShippingDetailsInPaymentIntentPayload')) {
             createPaymentIntentPayload.shipping = {
@@ -242,22 +255,16 @@ if (stripeHelper.isStripeEnabled()) {
             };
         }
 
-        createPaymentIntentPayload.payment_method_options = {};
-        createPaymentIntentPayload.payment_method_options.card = {};
-        var multicaptureEnabled = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeMultiCaptureEnabled');
-
-        if (multicaptureEnabled) {
-            createPaymentIntentPayload.payment_method_options.card.request_multicapture = "if_available";
-        }
-
         if (request.httpCookies['stripe.link.persistent_token'] && request.httpCookies['stripe.link.persistent_token'].value) {
             createPaymentIntentPayload.payment_method_options.link = {
                 persistent_token: request.httpCookies['stripe.link.persistent_token'].value
             };
         }
 
-        var confirmationToken = JSON.parse(req.form.confirmationToken);
-        if (!empty(confirmationToken)) {
+        var confirmationToken = null;
+
+        if (!empty(req.form.confirmationToken)) {
+            confirmationToken = JSON.parse(req.form.confirmationToken);
             createPaymentIntentPayload.confirmation_token = confirmationToken.id;
         }
 
@@ -277,12 +284,32 @@ if (stripeHelper.isStripeEnabled()) {
                 });
             }
 
-            if (stripeHelper.isCVCRecollectionEnabled()) {
+            if (stripeHelper.isCVCRecollectionEnabled() && stripePaymentInstrument.paymentMethod !== 'BANK_TRANSFER') {
                 createPaymentIntentPayload.payment_method_options.card.require_cvc_recollection = true;
             }
 
             createPaymentIntentPayload.customer = customer.profile.custom.stripeCustomerID;
-            createPaymentIntentPayload.setup_future_usage = confirmationToken.setup_future_usage;
+
+            if (!empty(confirmationToken)) {
+                createPaymentIntentPayload.setup_future_usage = confirmationToken.setup_future_usage;
+            }
+        }
+
+        if (!empty(req.form.bankTransferPaymentMethod)) {
+            var billingAddress = order.getBillingAddress();
+            var bankTransferPaymentMethod = JSON.parse(req.form.bankTransferPaymentMethod);
+            createPaymentIntentPayload.payment_method = bankTransferPaymentMethod.id;
+            createPaymentIntentPayload.payment_method_types = ['customer_balance'];
+            createPaymentIntentPayload.payment_method_options = checkoutHelper.getBankTransferPaymentMethodOptions(billingAddress);
+
+            if (empty(createPaymentIntentPayload.customer)) {
+                var guestStripeCustomer = stripeService.customers.create({
+                    email: order.getCustomerEmail(),
+                    name: billingAddress.fullName
+                });
+
+                createPaymentIntentPayload.customer = guestStripeCustomer.id;
+            }
         }
 
         if (!createPaymentIntentPayload.metadata) {

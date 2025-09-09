@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 24.0.0 (2025-09-09)
+* Bank transfer implementation as a new payment method
+* Fixed an issue where changing the shipping address in the express checkout popup was not updating the shipping methods
+
 ## 23.9.1 (2025-08-11)
 * Removed duplicated API key from service headers
 * Populated stripeAccountID site preference within Quick Setup BM module
