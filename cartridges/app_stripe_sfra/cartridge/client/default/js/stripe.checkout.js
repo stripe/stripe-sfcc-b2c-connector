@@ -316,11 +316,21 @@ function updateUserProfileBillingAddress() {
 }
 
 document.querySelector('button.submit-payment').addEventListener('click', function (event) {
+    var paymentMethodName;
     // skip event handler for Stripe Payment Elements
     // eslint-disable-next-line
     if ($('#dwfrm_billing .' + $('.tab-pane.active').attr('id') + ' .payment-form-fields input.form-control').val() == 'STRIPE_PAYMENT_ELEMENT') {
         window.localStorage.setItem('stripe_payment_method', 'STRIPE_PAYMENT_ELEMENT');
-        var paymentMethodName = $('*[data-method-id="STRIPE_PAYMENT_ELEMENT"] > a').text();
+        paymentMethodName = $('*[data-method-id="STRIPE_PAYMENT_ELEMENT"] > a').text();
+        $('.payment-details').text(paymentMethodName);
+        $('.payment-details').removeClass('payment-details').addClass('payment-details-stripe');
+
+        return;
+    }
+
+    if ($('#dwfrm_billing .' + $('.tab-pane.active').attr('id') + ' .payment-form-fields input.form-control').val() == 'BANK_TRANSFER') {
+        window.localStorage.setItem('stripe_payment_method', 'BANK_TRANSFER');
+        paymentMethodName = $('*[data-method-id="BANK_TRANSFER"] > a').text();
         $('.payment-details').text(paymentMethodName);
         $('.payment-details').removeClass('payment-details').addClass('payment-details-stripe');
 
@@ -463,6 +473,98 @@ function stripeFailOrder() {
         data: {
             csrf_token: $('[name="csrf_token"]').val()
         }
+    });
+}
+
+function handleStripeBankTransferSubmitOrder() {
+    window.stripeBankTransferElements.submit().then(function (result) {
+        $('body').trigger('checkout:disableButton', '.next-step-button button');
+        $.spinner().start();
+
+        if (result.error) {
+            window.location.replace(document.getElementById('billingPageUrl').value);
+            return;
+        }
+
+        var customerName = (document.querySelector('.billing-address input[name$="_firstName"]') && document.querySelector('.billing-address input[name$="_lastName"]'))
+            ? document.querySelector('.billing-address input[name$="_firstName"]').value + ' ' + document.querySelector('.billing-address input[name$="_lastName"]').value
+            : document.querySelector('input[name$="_firstName"]').value + ' ' + document.querySelector('input[name$="_lastName"]').value;
+
+        var stripeBankTransferPaymentData = {
+            elements: window.stripeBankTransferElements,
+            params: {
+                billing_details: {
+                    name: customerName
+                }
+            }
+        }
+
+        stripe.createPaymentMethod(stripeBankTransferPaymentData).then(function(paymentMethodCreationResult) {
+            if (paymentMethodCreationResult.error) {
+                window.location.replace(document.getElementById('billingPageUrl').value);
+                return;
+            } else {
+                var stripeReturnURL = document.getElementById('stripe_return_url').value;
+
+                $.ajax({
+                    url: document.getElementById('paymentElementSubmitOrderURL').value,
+                    method: 'POST',
+                    data: {
+                        csrf_token: $('[name="csrf_token"]').val(),
+                        bankTransferPaymentMethod: JSON.stringify(paymentMethodCreationResult.paymentMethod)
+                    },
+                    success: function (data) {
+                        window.localStorage.setItem('stripe_pe_continueurl', data.continueUrl);
+                        window.localStorage.setItem('stripe_pe_orderid', data.orderID);
+                        window.localStorage.setItem('stripe_pe_ordertoken', data.orderToken);
+
+                        if (data.error) {
+                            if (data.errorMessage) {
+                                alert(data.errorMessage);
+                            }
+                            window.location.replace(document.getElementById('billingPageUrl').value);
+                        } else {
+                            if (data.status === 'requires_action') {
+                                stripe.handleNextAction({
+                                    clientSecret: data.clientSecret
+                                }).then(function (handleNextActionResult) {
+                                    if (handleNextActionResult.error) {
+                                        $.spinner().start();
+
+                                        $.ajax({
+                                            url: document.getElementById('stripeFailOrderURL').value,
+                                            method: 'POST',
+                                            dataType: 'json',
+                                            data: {
+                                                csrf_token: $('[name="csrf_token"]').val()
+                                            },
+                                            success: function (result) {
+                                                if (result.success === false) {
+                                                    window.location.replace(result.redirectUrl);
+                                                } else {
+                                                    alert($('#payment-element').data('errormsg'));
+                                                    window.location.replace(document.getElementById('billingPageUrl').value);
+                                                }
+                                            }
+                                        });
+                                    } else {
+                                        redirectToCheckoutSummaryPage();
+                                    }
+                                })
+                            } else {
+                                redirectToCheckoutSummaryPage();
+                            }
+                        }
+                        // enable the placeOrder button here
+                        $('body').trigger('checkout:enableButton', '.next-step-button button');
+                    },
+                    error: function () {
+                        // enable the placeOrder button here
+                        $('body').trigger('checkout:enableButton', $('.next-step-button button'));
+                    }
+                });
+            }
+        });
     });
 }
 
@@ -609,6 +711,49 @@ function initStripePaymentElement(customerEmail) {
     }
 }
 
+function initStripeBankTransferElement(customerEmail) {
+    var ownerEmail = '';
+    if ($('.customer-summary-email').length && $('.customer-summary-email').text()) {
+        ownerEmail = $('.customer-summary-email').text();
+    } else {
+        ownerEmail = document.querySelector('#dwfrm_billing input[name$="_email"]')
+            ? document.querySelector('#dwfrm_billing input[name$="_email"]').value
+            : document.querySelector('input[name$="_email"]').value;
+    }
+
+    if (ownerEmail && ownerEmail !== 'null') {
+        if (window.bankTransferElementInstance) {
+            window.bankTransferElementInstance.destroy();
+        }
+
+        if (window.stripeBankTransferElements) {
+            window.bankTransferElementInstance = window.stripeBankTransferElements.create('payment', {
+                defaultValues: getBillingDetails(ownerEmail)
+            });
+            window.bankTransferElementInstance.mount('#stripe-bank-transfer-element');
+        }
+    } else {
+        if (window.bankTransferElementInstance) {
+            window.bankTransferElementInstance.destroy();
+        }
+
+        window.bankTransferElementInstance = window.stripeBankTransferElements.create('payment', {
+            defaultValues: getBillingDetails(customerEmail)
+        });
+        window.bankTransferElementInstance.mount('#stripe-bank-transfer-element');
+    }
+}
+
+function initAvailableElements() {
+    if ($('#payment-element').length) {
+        initStripePaymentElement();
+    }
+
+    if ($('#stripe-bank-transfer-element').length) {
+        initStripeBankTransferElement();
+    }
+}
+
 function initNewStripePaymentIntent() {
     $.ajax({
         url: document.getElementById('getPaymentElementOptions').value,
@@ -621,10 +766,26 @@ function initNewStripePaymentIntent() {
     });
 }
 
+function initNewStripeBankTransferIntent() {
+    $.ajax({
+        url: document.getElementById('getBankTransferElementOptions').value,
+        method: 'GET',
+        dataType: 'json',
+    }).done(function (response) {
+        window.stripeBankTransferElements = stripe.elements(response.paymentElementOptions);
+
+        initStripeBankTransferElement(response.customerEmail);
+    });
+}
+
 /* Stripe Payment Element */
 ready(() => {
     if ($('#payment-element').length && !$('.payment-summary').is(':visible')) {
         initNewStripePaymentIntent();
+    }
+
+    if ($('#stripe-bank-transfer-element').length && !$('.payment-summary').is(':visible')) {
+        initNewStripeBankTransferIntent();
     }
 });
 
@@ -642,6 +803,12 @@ $('body').on('checkout:updateCheckoutView', function () {
         if (stripeOrderAmountInput && stripeOrderAmountInput.value != json.amount) {
             if ($('#payment-element').length) {
                 initNewStripePaymentIntent();
+            }
+        }
+
+        if (stripeOrderAmountInput && stripeOrderAmountInput.value != json.amount) {
+            if ($('#stripe-bank-transfer-element').length) {
+                initNewStripeBankTransferIntent();
             }
         }
 
@@ -684,31 +851,31 @@ $('body').on('checkout:updateCheckoutView', function () {
 ready(() => {
     // eslint-disable-next-line no-unused-vars
     document.querySelector('.submit-shipping').addEventListener('click', (e) => {
-        initStripePaymentElement();
+        initAvailableElements();
     });
 
     if (document.querySelector('#dwfrm_billing input[name$="_email"]')) {
-        document.querySelector('#dwfrm_billing input[name$="_email"]').addEventListener('change', initStripePaymentElement);
+        document.querySelector('#dwfrm_billing input[name$="_email"]').addEventListener('change', initAvailableElements);
     }
 
     if (document.querySelector('#dwfrm_billing input[name$="_firstName"]')) {
-        document.querySelector('#dwfrm_billing input[name$="_firstName"]').addEventListener('change', initStripePaymentElement);
+        document.querySelector('#dwfrm_billing input[name$="_firstName"]').addEventListener('change', initAvailableElements);
     }
 
     if (document.querySelector('#dwfrm_billing input[name$="_lastName"]')) {
-        document.querySelector('#dwfrm_billing input[name$="_lastName"]').addEventListener('change', initStripePaymentElement);
+        document.querySelector('#dwfrm_billing input[name$="_lastName"]').addEventListener('change', initAvailableElements);
     }
 
     if (document.querySelector('#dwfrm_billing input[name$="_phone"]')) {
-        document.querySelector('#dwfrm_billing input[name$="_phone"]').addEventListener('change', initStripePaymentElement);
+        document.querySelector('#dwfrm_billing input[name$="_phone"]').addEventListener('change', initAvailableElements);
     }
 
     if (document.querySelector('#dwfrm_billing input[name$="_postalCode"]')) {
-        document.querySelector('#dwfrm_billing input[name$="_postalCode"]').addEventListener('change', initStripePaymentElement);
+        document.querySelector('#dwfrm_billing input[name$="_postalCode"]').addEventListener('change', initAvailableElements);
     }
 
     if (document.querySelector('#dwfrm_billing input[name$="_country"]')) {
-        document.querySelector('#dwfrm_billing input[name$="_country"]').addEventListener('change', initStripePaymentElement);
+        document.querySelector('#dwfrm_billing input[name$="_country"]').addEventListener('change', initAvailableElements);
     }
 });
 
@@ -794,7 +961,7 @@ function handleStripeCardSubmitOrder() {
 // v1
 // eslint-disable-next-line consistent-return
 document.querySelector('button.place-order').addEventListener('click', function (event) {
-    if (window.localStorage.getItem('stripe_payment_method') !== 'STRIPE_PAYMENT_ELEMENT' && window.localStorage.getItem('stripe_payment_method') !== 'CREDIT_CARD') {
+    if (window.localStorage.getItem('stripe_payment_method') !== 'STRIPE_PAYMENT_ELEMENT' && window.localStorage.getItem('stripe_payment_method') !== 'CREDIT_CARD' && window.localStorage.getItem('stripe_payment_method') !== 'BANK_TRANSFER') {
         return true;
     }
 
@@ -806,6 +973,14 @@ document.querySelector('button.place-order').addEventListener('click', function 
 
         forceSubmit = true;
         handleStripePaymentElementSubmitOrder();
+        return false;
+    }
+
+    if (window.localStorage.getItem('stripe_payment_method') === 'BANK_TRANSFER') {
+         if (forceSubmit) return false;
+
+        forceSubmit = true;
+        handleStripeBankTransferSubmitOrder();
         return false;
     }
 

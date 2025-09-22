@@ -9,6 +9,7 @@
     </isscript>
 </isif>
 <input type="hidden" id="getPaymentElementOptions" value="${URLUtils.https('StripePaymentsAPM-GetPaymentElementOptions')}" />
+<input type="hidden" id="getBankTransferElementOptions" value="${URLUtils.https('StripePaymentsAPM-GetBankTransferElementOptions')}" />
 <input type="hidden" id="stripeCardFormStyle" value="${JSON.stringify(stripeHelper.getStripeCardFormStyle())}" />
 <input type="hidden" id="stripeAccountCountry" value="${stripeCheckoutHelper.getPRCountry()}" />
 <input type="hidden" id="cardPaymentSubmitOrderURL" value="${URLUtils.https('StripePaymentsCard-CardPaymentSubmitOrder')}" />
@@ -66,6 +67,8 @@
         </isif>
     <iselseif condition="${paymentOption.ID === 'STRIPE_PAYMENT_ELEMENT'}"/>
         <isinclude template="checkout/billing/paymentOptions/stripePaymentElementContent" />
+    <iselseif condition="${paymentOption.ID === 'BANK_TRANSFER'}"/>
+        <isinclude template="checkout/billing/paymentOptions/stripeBankTransferElementContent" />
     <iselse/>
 
         <div class="tab-pane ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">

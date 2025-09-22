@@ -49,6 +49,61 @@ server.get('GetStripeOrderItems', function (req, res, next) {
 /**
  * Get Stripe Payment Element Options
  */
+server.get('GetBankTransferElementOptions', function (req, res, next) {
+    var BasketMgr = require('dw/order/BasketMgr');
+    var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
+    var basket = BasketMgr.getCurrentBasket();
+
+    var stripeOrderDetails = basket ? checkoutHelper.getStripeOrderDetails(basket) : null;
+
+    var customerEmail;
+    var paymentElementOptions = {
+        mode: 'payment',
+        amount: parseInt(stripeOrderDetails.amount, 10),
+        locale: req.locale.id,
+        currency: stripeOrderDetails.currency,
+        appearance: {
+            theme: 'stripe',
+            variables: stripeHelper.getStripePaymentElementStyle().variables
+        },
+        paymentMethodCreation: 'manual',
+        payment_method_types: ['customer_balance']
+    };
+
+    if (customer.authenticated && customer.profile && customer.profile.email) {
+        /*
+            * Check if registered customer has an associated Stripe customer ID
+            * if not, make a call to Stripe to create such id and save it as customer profile custom attribute
+            */
+        if (!customer.profile.custom.stripeCustomerID) {
+            var newStripeCustomer = stripeService.customers.create({
+                email: customer.profile.email,
+                name: customer.profile.firstName + ' ' + customer.profile.lastName
+            });
+
+            Transaction.wrap(function () {
+                customer.profile.custom.stripeCustomerID = newStripeCustomer.id;
+            });
+        }
+
+        customerEmail = customer.profile.email;
+    }
+
+    if (empty(customerEmail)) {
+        customerEmail = basket ? basket.getCustomerEmail() : '';
+    }
+
+    res.json({
+        customerEmail: customerEmail,
+        paymentElementOptions: paymentElementOptions
+    });
+
+    next();
+});
+
+/**
+ * Get Stripe Payment Element Options
+ */
 server.get('GetPaymentElementOptions', function (req, res, next) {
     var BasketMgr = require('dw/order/BasketMgr');
     var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
@@ -223,7 +278,7 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
             error: true,
             errorMessage: Resource.msg('error.technical', 'checkout', null)
         });
-        stripePaymentsHelper.LogStripeErrorMessage('StripePayments.CardPaymentSubmitOrder Create SFCC Order: Error on COHelpers.createOrder');
+        stripePaymentsHelper.LogStripeErrorMessage('StripePayments.PaymentElementSubmitOrder Create SFCC Order: Error on COHelpers.createOrder');
         return next();
     }
 
@@ -240,7 +295,7 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
     var postAuthCustomizations = hooksHelper('app.post.auth', 'postAuthorization', handlePaymentResult, order, options, require('*/cartridge/scripts/hooks/postAuthorizationHandling').postAuthorization);
     if (postAuthCustomizations && Object.prototype.hasOwnProperty.call(postAuthCustomizations, 'error')) {
         res.json(postAuthCustomizations);
-        stripePaymentsHelper.LogStripeErrorMessage('StripePayments.CardPaymentSubmitOrder Create SFCC Order: Error on postAuthCustomizations');
+        stripePaymentsHelper.LogStripeErrorMessage('StripePayments.PaymentElementSubmitOrder Create SFCC Order: Error on postAuthCustomizations');
         return next();
     }
 
@@ -268,7 +323,7 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
             redirectUrl: URLUtils.url('Error-ErrorCode', 'err', fraudDetectionStatus.errorCode).toString(),
             errorMessage: Resource.msg('error.technical', 'checkout', null)
         });
-        stripePaymentsHelper.LogStripeErrorMessage('StripePayments.CardPaymentSubmitOrder Create SFCC Order: Error on fraudDetectionStatus.status');
+        stripePaymentsHelper.LogStripeErrorMessage('StripePayments.PaymentElementSubmitOrder Create SFCC Order: Error on fraudDetectionStatus.status');
         return next();
     }
 
@@ -277,7 +332,7 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
      */
     var stripePaymentInstrument = checkoutHelper.getStripePaymentInstrument(order);
 
-    if (!stripePaymentInstrument || stripePaymentInstrument.paymentMethod !== 'STRIPE_PAYMENT_ELEMENT') {
+    if (!stripePaymentInstrument || (stripePaymentInstrument.paymentMethod !== 'STRIPE_PAYMENT_ELEMENT' && stripePaymentInstrument.paymentMethod !== 'BANK_TRANSFER')) {
         res.json({
             error: true,
             cartError: true,
@@ -301,7 +356,7 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
 
     try {
         var stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
-        var paymentIntentPayload = COHelpers.buildPaymentIntentPayload(order, req, stripeChargeCapture);
+        var paymentIntentPayload = COHelpers.buildPaymentIntentPayload(order, req, stripeChargeCapture, stripePaymentInstrument);
         var paymentIntent = stripeService.paymentIntents.create(paymentIntentPayload);
         var paymentTransaction = stripePaymentInstrument.paymentTransaction;
 

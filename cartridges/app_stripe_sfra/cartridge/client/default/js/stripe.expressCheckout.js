@@ -169,6 +169,29 @@ function initStripeCheckoutExpress() {
         });
     });
 
+    expressCheckoutElement.on('shippingaddresschange', function (event) {
+        var bodyData = getProductData();
+        bodyData.shippingAddress = JSON.stringify(event.address);
+        bodyData.shippingName = event.name;
+        $.ajax({
+            url: $('#stripe_get_shipping_options').val(),
+            method: 'GET',
+            data: bodyData,
+            success: function(data) {
+                elements.update({
+                    mode: 'payment', amount: data.cartTotal
+                });
+
+                event.resolve({
+                    emailRequired: true,
+                    phoneNumberRequired: true,
+                    shippingAddressRequired: true,
+                    shippingRates: data.shippingMethods
+                });
+            }
+        });
+    });
+
     expressCheckoutElement.on('confirm', function (event) {
         var stripeReturnURLInput = $('#stripe_return_url');
         var stripeReturnURL = stripeReturnURLInput.val();
