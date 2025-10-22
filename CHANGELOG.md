@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 24.0.1 (2025-10-22)
+* Removed documentation from repository
+* Fixed an issue where the site preference for billing details collection on payment element was not working poperly
+* Removed code duplication on client side and refactored some functions
+
 ## 24.0.0 (2025-09-09)
 * Bank transfer implementation as a new payment method
 * Fixed an issue where changing the shipping address in the express checkout popup was not updating the shipping methods

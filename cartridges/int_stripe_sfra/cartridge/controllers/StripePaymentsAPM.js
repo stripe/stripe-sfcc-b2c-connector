@@ -95,7 +95,7 @@ server.get('GetBankTransferElementOptions', function (req, res, next) {
 
     res.json({
         customerEmail: customerEmail,
-        paymentElementOptions: paymentElementOptions
+        elementOptions: paymentElementOptions
     });
 
     next();
@@ -121,9 +121,6 @@ server.get('GetPaymentElementOptions', function (req, res, next) {
             variables: stripeHelper.getStripePaymentElementStyle().variables
         },
         capture_method: dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture') ? 'automatic' : 'manual',
-        fields: {
-            billingDetails: dw.system.Site.getCurrent().getCustomPreferenceValue('stripeCollectBillingDetailsOnPaymentElement') ? 'auto' : 'never'
-        }
     };
 
     if (customer.authenticated && customer.profile && customer.profile.email) {
@@ -179,7 +176,7 @@ server.get('GetPaymentElementOptions', function (req, res, next) {
 
     res.json({
         customerEmail: customerEmail,
-        paymentElementOptions: paymentElementOptions
+        elementOptions: paymentElementOptions
     });
 
     next();
