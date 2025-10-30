@@ -129,12 +129,14 @@ function getStripeServiceDefinition(apiKey) {
          * @returns {string} - The body of HTTP request
          */
         createRequest: function (svc, requestObject) {
+            const framework = require('*/cartridge/scripts/stripe/helpers/stripeHelper').isSFRA() ? 'SFRA' : 'SiteGenesis';
+
             var stripeHeader = {
                 application: {
                     name: 'Stripe SFCCB2C',
                     partner_id: 'pp_partner_Fs71dOwRYXhmze',
-                    url: 'https://stripe.com/docs/plugins/salesforce-commerce-cloud',
-                    version: '24.0.1'
+                    url: 'https://docs.stripe.com/use-stripe-apps/salesforce-commerce-cloud',
+                    version: '24.0.1.' + framework
                 }
             };
 
