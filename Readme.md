@@ -1,5 +1,5 @@
 # STRIPE Card Form
-23.7.0 - Starting with future releases Card Form will become depprecated, and card payments will be proccessed only through Stripe Payment Element.
+23.7.0 - Starting with future releases Card Form will become depprecated.
 
 # Stripe Salesforce Commerce Cloud Cartridge
 
@@ -9,11 +9,4 @@ This repository contains the Stripe integrations with the Salesforce Commerce Cl
 2. Alternative payment methods
 3. Customer wallet
 
-## SiteGenesis Javascript Controller (SGJC)
-
-For the manual, please see the `Controllers Stripe Documentation.pdf` file in the `documentation` directory.
-
-
-## Salesforce Reference Architecture (SFRA)
-
-For the manual, please see the `SFRA Stripe Documentation.pdf` file in the `documentation` directory.
+## Visit our [Documentation](https://docs.stripe.com/use-stripe-apps/salesforce-commerce-cloud) to start using the Stripe Salesforce B2C Connector.

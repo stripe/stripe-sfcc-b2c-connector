@@ -3,6 +3,8 @@
 
 'use strict';
 
+var Site = require('dw/system/Site');
+
 /**
  * Checks if the payment is a Stripe APM method
  *
@@ -26,7 +28,6 @@ function isStripeAPMPayment(paymentMethod) {
  * @return {boolean} - True if sitepreference is set to true.
  */
 exports.isStripeEnabled = function () {
-    var Site = require('dw/system/Site');
     return Site.getCurrent().getCustomPreferenceValue('stripeEnabled');
 };
 
@@ -36,7 +37,7 @@ exports.isStripeEnabled = function () {
 * @returns {string} Stripe secret API key.
 */
 exports.getApiKey = function () {
-    return require('dw/system/Site').current.getCustomPreferenceValue('stripeApiKey');
+    return Site.getCurrent().getCustomPreferenceValue('stripeApiKey');
 };
 
 /**
@@ -45,7 +46,7 @@ exports.getApiKey = function () {
 * @returns {string} Stripe.js URL
 */
 exports.getStripeScriptUrl = function () {
-    return require('dw/system/Site').current.getCustomPreferenceValue('stripeApiURL');
+    return Site.getCurrent().getCustomPreferenceValue('stripeApiURL');
 };
 
 /**
@@ -54,7 +55,7 @@ exports.getStripeScriptUrl = function () {
 * @returns {string} Stripe publishable API key
 */
 exports.getPublicApiKey = function () {
-    return require('dw/system/Site').current.getCustomPreferenceValue('stripePublicKey');
+    return Site.getCurrent().getCustomPreferenceValue('stripePublicKey');
 };
 
 /**
@@ -63,7 +64,7 @@ exports.getPublicApiKey = function () {
 * @returns {string} Stripe API version
 */
 exports.getStripeApiVersion = function () {
-    return require('dw/system/Site').current.getCustomPreferenceValue('stripeApiVersion');
+    return Site.getCurrent().getCustomPreferenceValue('stripeApiVersion');
 };
 
 /**
@@ -72,7 +73,7 @@ exports.getStripeApiVersion = function () {
  * @return {Object} - Stripe card form style or default if not configured.
  */
 exports.getStripeCardFormStyle = function () {
-    const cardFormStyle = require('dw/system/Site').current.getCustomPreferenceValue('stripeCardElementCSSStyle');
+    const cardFormStyle = Site.getCurrent().getCustomPreferenceValue('stripeCardElementCSSStyle');
 
     try {
         if (cardFormStyle) {
@@ -109,7 +110,7 @@ exports.getStripeWallet = function (apiCustomer) {
  * @return {dw.util.Collection} - filtered payment methods
  */
 exports.getStripePaymentMethods = function (applicablePaymentMethods, locale) {
-    const localeConfig = JSON.parse(require('dw/system/Site').current.getCustomPreferenceValue('stripeAllowedAPMMethods')) || {};
+    const localeConfig = JSON.parse(Site.getCurrent().getCustomPreferenceValue('stripeAllowedAPMMethods')) || {};
     const list = localeConfig[locale] != null ? localeConfig[locale] : localeConfig.default;
     const applicablePaymentMethodsIterator = applicablePaymentMethods.iterator();
 
@@ -137,8 +138,7 @@ exports.isStripeAPMPayment = isStripeAPMPayment;
  * @returns {boolean} True if SFRA
  */
 exports.isSFRA = function () {
-    var Site = require('dw/system/Site');
-    return Site.current.getCustomPreferenceValue('stripeIsSFRA');
+    return Site.getCurrent().getCustomPreferenceValue('stripeIsSFRA');
 };
 
 /**
@@ -146,8 +146,7 @@ exports.isSFRA = function () {
  * @returns {boolean} True if custom card form
  */
 exports.isCustomCardForm = function () {
-    var Site = require('dw/system/Site');
-    return Site.current.getCustomPreferenceValue('stripeCustomCreditCardForm');
+    return Site.getCurrent().getCustomPreferenceValue('stripeCustomCreditCardForm');
 };
 
 /**
@@ -156,7 +155,7 @@ exports.isCustomCardForm = function () {
 * @returns {string} Stripe payment methods in beta
 */
 exports.getPaymentMethodsInBeta = function () {
-    const paymentMethodsInBeta = require('dw/system/Site').getCurrent().getCustomPreferenceValue('stripePaymentMethodsInBeta');
+    const paymentMethodsInBeta = Site.getCurrent().getCustomPreferenceValue('stripePaymentMethodsInBeta');
 
     return (paymentMethodsInBeta && paymentMethodsInBeta.length) ? paymentMethodsInBeta.join(',') : '';
 };
@@ -166,7 +165,7 @@ exports.getPaymentMethodsInBeta = function () {
  * @returns {Object} - Stripe payment element style or default value if not configured.
  */
 exports.getStripePaymentElementStyle = function () {
-    const paymentElementStyle = require('dw/system/Site').current.getCustomPreferenceValue('stripePaymentElementStyle');
+    const paymentElementStyle = Site.getCurrent().getCustomPreferenceValue('stripePaymentElementStyle');
     try {
         if (paymentElementStyle) {
             return JSON.parse(paymentElementStyle);
@@ -195,7 +194,7 @@ exports.getStripePaymentElementStyle = function () {
  * @returns {boolean} - True if Express Checkout is enabled
  */
 exports.getStripeExpressCheckoutProductPageEnabled = function () {
-    return require('dw/system/Site').current.getCustomPreferenceValue('stripeExpressCheckoutProductPageEnabled');
+    return Site.getCurrent().getCustomPreferenceValue('stripeExpressCheckoutProductPageEnabled');
 };
 
 /**
@@ -204,15 +203,25 @@ exports.getStripeExpressCheckoutProductPageEnabled = function () {
  * @returns {boolean} - True if Express Checkout is enabled
  */
 exports.getStripeExpressCheckoutCartPageEnabled = function () {
-    return require('dw/system/Site').current.getCustomPreferenceValue('stripeExpressCheckoutCartPageEnabled');
+    return Site.getCurrent().getCustomPreferenceValue('stripeExpressCheckoutCartPageEnabled');
 };
 
+/**
+ * Checks if Stripe Express Checkout on Minicart is Enabled from site preferences
+ *
+ * @returns {boolean} - True if Express Checkout is enabled
+ */
 exports.isStripeExpressCheckoutMinicartEnabled = function() {
-    return require('dw/system/Site').current.getCustomPreferenceValue('stripeExpressCheckoutMinicartEnabled');
+    return Site.getCurrent().getCustomPreferenceValue('stripeExpressCheckoutMinicartEnabled');
 };
 
+/**
+ * Checks if Stripe Express Checkout on Cart Page is Enabled from site preferences
+ *
+ * @returns {boolean} - True if CVC recollection is enabled
+ */
 exports.isCVCRecollectionEnabled = function() {
-    return require('dw/system/Site').current.getCustomPreferenceValue('cvcRecollectionEnabled');
+    return Site.getCurrent().getCustomPreferenceValue('cvcRecollectionEnabled');
 };
 
 /**
@@ -220,7 +229,7 @@ exports.isCVCRecollectionEnabled = function() {
  * @returns {Object} - Stripe Express Checkout style or default value if not configured.
  */
 exports.getStripeExpressCheckoutAppearance = function () {
-    const expressCheckoutStyle = require('dw/system/Site').current.getCustomPreferenceValue('stripeExpressCheckoutStyle');
+    const expressCheckoutStyle = Site.getCurrent().getCustomPreferenceValue('stripeExpressCheckoutStyle');
     try {
         if (expressCheckoutStyle) {
             return JSON.parse(expressCheckoutStyle);
@@ -243,7 +252,6 @@ exports.getStripeExpressCheckoutAppearance = function () {
  * @return {boolean} - True if stripePaymentElementsSavePayments is set to true.
  */
 exports.isStripePaymentElementsSavePaymentsEnabled = function () {
-    var Site = require('dw/system/Site');
     return Site.getCurrent().getCustomPreferenceValue('stripePaymentElementsSavePayments');
 };
 

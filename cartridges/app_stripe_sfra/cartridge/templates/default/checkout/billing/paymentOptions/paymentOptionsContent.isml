@@ -21,6 +21,7 @@
 <input type="hidden" id="paymentElementSubmitOrderURL" value="${URLUtils.https('StripePaymentsAPM-PaymentElementSubmitOrder')}" />
 <input type="hidden" id="isStripePaymentElementsSavePaymentsEnabled" value="${customer.authenticated && customer.profile && customer.profile.email && stripeHelper.isStripePaymentElementsSavePaymentsEnabled()}" />
 <input type="hidden" id="stripeCaptureMethod" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture') ? 'automatic' : 'manual'}" />
+<input type="hidden" id="stripeCollectBillingDetailsOnPaymentElement" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('stripeCollectBillingDetailsOnPaymentElement') ? 'auto' : 'never'}" />
 
 <input type="hidden" id="logStripeErrorMessageURL" value="${URLUtils.https('StripePaymentsAPM-LogStripeErrorMessage')}" />
 
