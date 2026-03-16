@@ -514,7 +514,8 @@ function elementSubmitControllerCallback(data) {
                         method: 'POST',
                         dataType: 'json',
                         data: {
-                            csrf_token: $('[name="csrf_token"]').val()
+                            csrf_token: $('[name="csrf_token"]').val(),
+                            errorMessage: handleNextActionResult.error.message
                         },
                         success: function (result) {
                             if (result.success === false) {

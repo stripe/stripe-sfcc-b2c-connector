@@ -138,10 +138,13 @@ function getStripeServiceDefinition() {
                     name: 'Stripe SFCCB2C',
                     partner_id: 'pp_partner_Fs71dOwRYXhmze',
                     url: 'https://docs.stripe.com/use-stripe-apps/salesforce-commerce-cloud',
-                    version: '24.0.1.' + framework
+                    version: '24.0.2.' + framework
                 }
             };
 
+            session.privacy.idempotencyKey = require('dw/util/UUIDUtils').createUUID();
+
+            svc.addHeader('Idempotency-Key', session.privacy.idempotencyKey);
             svc.addHeader('Authorization', 'Bearer ' + apiKey);
             svc.addHeader('X-Stripe-Client-User-Agent', JSON.stringify(stripeHeader));
             svc.addHeader('Stripe-Version', apiVersion);
@@ -244,6 +247,8 @@ function callService(requestObject) {
     }
 
     const callResult = getStripeServiceDefinition().call(requestObject);
+
+    delete session.privacy.idempotencyKey;
 
     if (!callResult.ok) {
         throw new StripeServiceError(callResult);

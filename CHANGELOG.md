@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 24.0.2 (2026-03-16)
+* Implemented idempotency keys
+* Fixed an error where 3DS error message was empty and the order was failing(with successful payment) when users were closing the website
+
 ## 24.0.1 (2025-10-22)
 * Removed documentation from repository
 * Fixed an issue where the site preference for billing details collection on payment element was not working poperly
