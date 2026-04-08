@@ -226,7 +226,7 @@ server.post('FailOrder', csrfProtection.validateAjaxRequest, function (req, res,
         if (!empty(paymentIntentId)) {
             var paymentIntent = stripeService.paymentIntents.retrieve(paymentIntentId);
 
-            if (((paymentIntent.status === 'succeeded' || paymentIntent.status === 'processing' || paymentIntent.status === 'requires_capture') && paymentIntent.payment_method) || empty(req.form.errorMessage)) {
+            if (((paymentIntent.status === 'succeeded' || paymentIntent.status === 'processing' || paymentIntent.status === 'requires_capture') || empty(req.form.errorMessage)) && paymentIntent.payment_method) {
                 var paymentMethod = stripeService.paymentMethods.retrieve(paymentIntent.payment_method);
 
                 if (paymentMethod && paymentMethod.link && paymentMethod.link.persistent_token) {
