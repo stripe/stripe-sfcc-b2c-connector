@@ -226,9 +226,9 @@ server.post('FailOrder', csrfProtection.validateAjaxRequest, function (req, res,
         if (!empty(paymentIntentId)) {
             var paymentIntent = stripeService.paymentIntents.retrieve(paymentIntentId);
 
-            // Set a cookie to authenticate customers for Link
-            if ((paymentIntent.status === 'succeeded' || paymentIntent.status === 'processing' || paymentIntent.status === 'requires_capture') && paymentIntent.payment_method) {
+            if (((paymentIntent.status === 'succeeded' || paymentIntent.status === 'processing' || paymentIntent.status === 'requires_capture') || empty(req.form.errorMessage)) && paymentIntent.payment_method) {
                 var paymentMethod = stripeService.paymentMethods.retrieve(paymentIntent.payment_method);
+
                 if (paymentMethod && paymentMethod.link && paymentMethod.link.persistent_token) {
                     var stripeCookie = new dw.web.Cookie('stripe.link.persistent_token', paymentMethod.link.persistent_token);
                     stripeCookie.setSecure(true);

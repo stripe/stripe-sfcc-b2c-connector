@@ -138,10 +138,13 @@ function getStripeServiceDefinition() {
                     name: 'Stripe SFCCB2C',
                     partner_id: 'pp_partner_Fs71dOwRYXhmze',
                     url: 'https://docs.stripe.com/use-stripe-apps/salesforce-commerce-cloud',
-                    version: '24.0.1.' + framework
+                    version: '24.0.2.' + framework
                 }
             };
 
+            var idempotencyKey = require('dw/util/UUIDUtils').createUUID();
+
+            svc.addHeader('Idempotency-Key', idempotencyKey);
             svc.addHeader('Authorization', 'Bearer ' + apiKey);
             svc.addHeader('X-Stripe-Client-User-Agent', JSON.stringify(stripeHeader));
             svc.addHeader('Stripe-Version', apiVersion);
