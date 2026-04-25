@@ -37,7 +37,7 @@
     "istanbul": "^0.4.4",
     "jasmine-spec-reporter": "^7.0.0",
     "lint-staged": "^11.0.1",
-    "mocha": "^9.0.2",
+    "mocha": "^11.7.4",
     "moment": "^2.29.1",
     "moment-jdateformatparser": "^1.2.1",
     "node-fetch": "^2.6.1",
