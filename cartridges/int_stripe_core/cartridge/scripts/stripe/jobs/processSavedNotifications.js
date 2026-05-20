@@ -470,8 +470,9 @@ function processNotificationObject(stripeNotificationObject) {
     const stripeEventId = stripeNotificationObject.custom.stripeEventId;
 
     // Ensure Payment Intent ID or Source ID existing in Custom Object
-    const coStripePaymentIntentId = stripeNotificationObject.custom.stripePaymentIntentID;
+    const coStripePaymentIntentId = stripeNotificationObject.custom.stripePaymentIntentID || stripeNotificationObject.custom.stripeObjectId;
     const coStripeSourceId = stripeNotificationObject.custom.stripeSourceId;
+
     if (!coStripeSourceId && !coStripePaymentIntentId) {
         stripeLogger.info('\nBoth Payment Intent Id and Source id are empty, event id: {0}', stripeEventId);
         return;

@@ -29,11 +29,6 @@ if (betas) {
     stripeOptions.betas = betas.split(',');
 }
 
-var stripeApiVersion = document.getElementById('stripeApiVersion').value;
-if (stripeApiVersion) {
-    stripeOptions.apiVersion = stripeApiVersion;
-}
-
 var stripe = Stripe(document.getElementById('stripePublicKey').value, stripeOptions);
 var elements = stripe.elements();
 
@@ -699,9 +694,39 @@ function initNewStripeIntent(scope) {
         method: 'GET',
         dataType: 'json',
     }).done(function (response) {
-        window[STRIPE_CONSTANTS[scope].elementsName] = stripe.elements(response.elementOptions);
-        initStripeElement(response.customerEmail, scope);
+        if (scope === 'paymentElement' && response.useCheckoutSessions) {
+            initStripeCheckoutSession(response.checkoutSessionClientSecret, scope, response.customerEmail);
+        } else {
+            window.localStorage.removeItem('stripe_use_checkout_sessions');
+            window[STRIPE_CONSTANTS[scope].elementsName] = stripe.elements(response.elementOptions);
+            initStripeElement(response.customerEmail, scope);
+        }
     });
+}
+
+/**
+ * Initializes the Stripe Checkout Session flow.
+ * Called instead of mounting the Payment Element when stripeUseCheckoutSessions is enabled.
+ * Hides the payment element container and stores the mode flag so the place-order handler
+ * redirects to Stripe's hosted Checkout page instead of submitting via Payment Element.
+ */
+function initStripeCheckoutSession(checkoutSessionClientSecret, scope, customerEmail) {
+    window.localStorage.setItem('stripe_use_checkout_sessions', 'true');
+
+    window.stripeCheckoutSession = stripe.initCheckoutElementsSdk({
+        clientSecret: checkoutSessionClientSecret,
+        adaptivePricing: { allowed: true }
+    });
+    window.stripeCheckoutSession.loadActions().then(function(result) {
+        window.stripeCheckoutSessionActions = result.actions;
+        if (result.type === "success") {
+            // var session = result.actions.getSession();
+            var stripePaymentElement = window.stripeCheckoutSession.createPaymentElement();
+            stripePaymentElement.mount(STRIPE_CONSTANTS[scope].ismlElementID);
+        }
+        var email = getBillingDetails(customerEmail).billingDetails.email;
+        window.stripeCheckoutSessionActions.updateEmail(email);
+    }) 
 }
 
 /* Stripe Payment Element */
@@ -850,6 +875,42 @@ function handleStripeCardSubmitOrder() {
     });
 }
 
+/**
+ * Handles place-order submission when Stripe Checkout Sessions mode is active.
+ * Creates the SFCC order server-side, then redirects the browser to the
+ * Stripe-hosted Checkout page URL returned by the server.
+ */
+function handleStripeCheckoutSessionSubmitOrder() {
+    $('body').trigger('checkout:disableButton', '.next-step-button button');
+    $.spinner().start();
+
+    $.ajax({
+        url: document.getElementById('paymentElementSubmitOrderURL').value,
+        method: 'POST',
+        data: {
+            csrf_token: $('[name="csrf_token"]').val()
+        },
+        success: function (data) {
+            window.localStorage.setItem('stripe_pe_continueurl', data.continueUrl || '');
+            window.localStorage.setItem('stripe_pe_orderid', data.orderID || '');
+            window.localStorage.setItem('stripe_pe_ordertoken', data.orderToken || '');
+
+            if (data.error) {
+                if (data.errorMessage) {
+                    alert(data.errorMessage); // eslint-disable-line no-alert
+                }
+                window.location.replace(document.getElementById('billingPageUrl').value);
+            } else {
+                // Preference toggled mid-session — fall back to normal Payment Element flow
+                window.stripeCheckoutSessionActions.confirm();
+            }
+        },
+        error: function () {
+            $('body').trigger('checkout:enableButton', $('.next-step-button button'));
+        }
+    });
+}
+
 // v1
 // eslint-disable-next-line consistent-return
 document.querySelector('button.place-order').addEventListener('click', function (event) {
@@ -864,7 +925,11 @@ document.querySelector('button.place-order').addEventListener('click', function 
         if (forceSubmit) return false;
 
         forceSubmit = true;
-        handleStripePaymentElementSubmitOrder();
+        if (window.localStorage.getItem('stripe_use_checkout_sessions') === 'true') {
+            handleStripeCheckoutSessionSubmitOrder();
+        } else {
+            handleStripePaymentElementSubmitOrder();
+        }
         return false;
     }
 

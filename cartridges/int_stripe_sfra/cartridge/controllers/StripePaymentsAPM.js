@@ -108,6 +108,7 @@ server.get('GetPaymentElementOptions', function (req, res, next) {
     var BasketMgr = require('dw/order/BasketMgr');
     var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
     var basket = BasketMgr.getCurrentBasket();
+    var useCheckoutSessions = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeUseCheckoutSessions');
 
     var stripeOrderDetails = basket ? checkoutHelper.getStripeOrderDetails(basket) : null;
 
@@ -174,9 +175,15 @@ server.get('GetPaymentElementOptions', function (req, res, next) {
         customerEmail = basket ? basket.getCustomerEmail() : '';
     }
 
+    if (useCheckoutSessions) {
+        var checkoutSessionClientSecret = checkoutHelper.createCheckoutSession(basket);
+    }
+
     res.json({
         customerEmail: customerEmail,
-        elementOptions: paymentElementOptions
+        elementOptions: paymentElementOptions,
+        useCheckoutSessions: dw.system.Site.getCurrent().getCustomPreferenceValue('stripeUseCheckoutSessions'),
+        checkoutSessionClientSecret: checkoutSessionClientSecret
     });
 
     next();
@@ -350,6 +357,32 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
         orderToken: order.orderToken,
         continueUrl: URLUtils.url('Order-Confirm').toString()
     };
+
+    if (dw.system.Site.getCurrent().getCustomPreferenceValue('stripeUseCheckoutSessions')) {
+        try {
+            var checkoutSession = checkoutHelper.createCheckoutSession(order);
+            var csPaymentTransaction = stripePaymentInstrument.paymentTransaction;
+            var csStripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
+
+            Transaction.wrap(function () {
+                order.custom.stripeCheckoutSessionID = checkoutSession.id;
+                csPaymentTransaction.setTransactionID(checkoutSession.id);
+                csPaymentTransaction.setType(csStripeChargeCapture ? dw.order.PaymentTransaction.TYPE_CAPTURE : dw.order.PaymentTransaction.TYPE_AUTH);
+            });
+        } catch (e) {
+            Transaction.wrap(function () {
+                var noteMessage = e.message.length > 1000 ? e.message.substring(0, 1000) : e.message;
+                order.addNote('Error When Create Stripe Checkout Session', noteMessage);
+                OrderMgr.failOrder(order, true);
+            });
+
+            responsePayload.error = true;
+            responsePayload.errorMessage = Resource.msg('error.technical', 'checkout', null);
+        }
+
+        res.json(responsePayload);
+        return next();
+    }
 
     try {
         var stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
@@ -536,7 +569,7 @@ server.post('StripeQuickCheckout', csrfProtection.validateAjaxRequest, function 
             billingAddress.setFirstName(billingFirstName);
             billingAddress.setLastName(billingLastName);
             billingAddress.setAddress1(stripeBillingAddress.line1);
-            billingAddress.setAddress2(stripeBillingAddress.line1);
+            billingAddress.setAddress2(stripeBillingAddress.line2);
             billingAddress.setCity(stripeBillingAddress.city);
             billingAddress.setPostalCode(stripeBillingAddress.postal_code);
 

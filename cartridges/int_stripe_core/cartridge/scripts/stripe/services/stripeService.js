@@ -20,7 +20,8 @@ const LocalServiceRegistry = require('dw/svc/LocalServiceRegistry');
 function collectParams(collector, payload, prefix) {
     if (payload && typeof payload === 'object') {
         Object.keys(payload).forEach(function (key) {
-            let paramName = prefix && prefix.length ? prefix + '[' + (Array.isArray(payload) ? '' : key) + ']' : key;
+            // let paramName = prefix && prefix.length ? prefix + '[' + (Array.isArray(payload) ? '' : key) + ']' : key;
+            let paramName = prefix && prefix.length ? prefix + '[' + key + ']' : key;
             let paramValue = payload[key];
 
             if (paramValue === null || typeof paramValue === 'undefined') {
@@ -553,6 +554,27 @@ exports.charges = {
             endpoint: ['/charges', chargeId, 'capture'].join('/'),
             httpMethod: 'POST',
             payload: captureChargePayload
+        };
+
+        return callService(requestObject);
+    }
+};
+
+// https://stripe.com/docs/api/checkout/sessions
+exports.checkoutSessions = {
+    create: function (createCheckoutSessionPayload) {
+        var requestObject = {
+            endpoint: '/checkout/sessions',
+            httpMethod: 'POST',
+            payload: createCheckoutSessionPayload
+        };
+
+        return callService(requestObject);
+    },
+    retrieve: function (sessionId) {
+        var requestObject = {
+            endpoint: '/checkout/sessions/' + sessionId,
+            httpMethod: 'GET'
         };
 
         return callService(requestObject);

@@ -174,6 +174,30 @@ exports.processIncomingNotification = function () {
                             stripeNotification.custom.stripePaymentIntentID = json.data.object.payment_intent
                                 ? json.data.object.payment_intent : '';
                             break;
+                        case 'payment_intent' : 
+                            stripeNotification.custom.stripeSourceId = json.data.object.id;
+
+                            stripeNotification.custom.siteId = (json.data.object.metadata && json.data.object.metadata.site_id)
+                                ? json.data.object.metadata.site_id : '';
+
+                            stripeNotification.custom.orderId = (json.data.object.metadata && json.data.object.metadata.order_id)
+                                ? json.data.object.metadata.order_id : '';
+
+                            stripeNotification.custom.stripePaymentIntentID = json.data.object.payment_intent
+                                ? json.data.object.payment_intent : '';
+                            break;
+                        case 'checkout.session':
+                            stripeNotification.custom.stripeSourceId = json.data.object.id;
+
+                            stripeNotification.custom.siteId = (json.data.object.metadata && json.data.object.metadata.site_id)
+                                ? json.data.object.metadata.site_id : '';
+
+                            stripeNotification.custom.orderId = (json.data.object.metadata && json.data.object.metadata.order_id)
+                                ? json.data.object.metadata.order_id : '';
+
+                            stripeNotification.custom.stripePaymentIntentID = json.data.object.payment_intent
+                                ? json.data.object.payment_intent : '';
+                            break;
                         default:
                             stripeNotification.custom.stripeSourceId = '';
                             break;
@@ -193,6 +217,7 @@ exports.processIncomingNotification = function () {
                         case 'charge.refunded':
                         case 'payment_intent.succeeded':
                         case 'payment_intent.payment_failed':
+                        case 'checkout.session.completed':
                             stripeNotification.custom.processingStatus = 'PROCESS';
                             break;
                         default:
@@ -211,6 +236,38 @@ exports.processIncomingNotification = function () {
         if (!success) {
             response.setStatus(500);
             return false;
+        }
+
+        // Fulfillment fallback: place order when checkout.session.completed arrives
+        // before (or instead of) the customer returning via success_url.
+        if (json.type === 'checkout.session.completed') {
+            try {
+                var OrderMgr = require('dw/order/OrderMgr');
+                var Order = require('dw/order/Order');
+                var COHelpers = require('*/cartridge/scripts/checkout/checkoutHelpers');
+                var sessionMeta = json.data.object.metadata;
+                var fulfillOrderId = sessionMeta ? sessionMeta.order_id : null;
+
+                if (fulfillOrderId) {
+                    var fulfillOrder = OrderMgr.getOrder(fulfillOrderId);
+                    if (fulfillOrder && fulfillOrder.status.value === Order.ORDER_STATUS_NEW) {
+                        Transaction.wrap(function () {
+                            fulfillOrder.custom.stripeCheckoutSessionID = json.data.object.id;
+                            fulfillOrder.custom.stripePaymentIntentID = json.data.object.payment_intent || '';
+
+                            var placeOrderStatus = OrderMgr.placeOrder(fulfillOrder);
+                            if (!placeOrderStatus.isError()) {
+                                fulfillOrder.setConfirmationStatus(Order.CONFIRMATION_STATUS_CONFIRMED);
+                                fulfillOrder.setExportStatus(Order.EXPORT_STATUS_READY);
+                                fulfillOrder.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
+                            }
+                        });
+                        COHelpers.sendConfirmationEmail(fulfillOrder, fulfillOrder.customerLocaleID);
+                    }
+                }
+            } catch (fulfillErr) {
+                Logger.error('Checkout Session webhook fulfillment error: {0}', fulfillErr.message);
+            }
         }
     } catch (e) {
         Logger.error(e);
