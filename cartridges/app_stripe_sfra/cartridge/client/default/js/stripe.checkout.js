@@ -697,7 +697,6 @@ function initNewStripeIntent(scope) {
         if (scope === 'paymentElement' && response.useCheckoutSessions) {
             initStripeCheckoutSession(response.checkoutSessionClientSecret, scope, response.customerEmail);
         } else {
-            window.localStorage.removeItem('stripe_use_checkout_sessions');
             window[STRIPE_CONSTANTS[scope].elementsName] = stripe.elements(response.elementOptions);
             initStripeElement(response.customerEmail, scope);
         }
@@ -720,13 +719,14 @@ function initStripeCheckoutSession(checkoutSessionClientSecret, scope, customerE
     window.stripeCheckoutSession.loadActions().then(function(result) {
         window.stripeCheckoutSessionActions = result.actions;
         if (result.type === "success") {
-            // var session = result.actions.getSession();
             var stripePaymentElement = window.stripeCheckoutSession.createPaymentElement();
             stripePaymentElement.mount(STRIPE_CONSTANTS[scope].ismlElementID);
+            var currencySelector = window.stripeCheckoutSession.createCurrencySelectorElement();
+            currencySelector.mount('#stripe-currency-selector-container');
+        } else {
+            alert(result.error.message || 'Payment initialization failed. Please refresh.');
         }
-        var email = getBillingDetails(customerEmail).billingDetails.email;
-        window.stripeCheckoutSessionActions.updateEmail(email);
-    }) 
+    });
 }
 
 /* Stripe Payment Element */
@@ -901,8 +901,11 @@ function handleStripeCheckoutSessionSubmitOrder() {
                 }
                 window.location.replace(document.getElementById('billingPageUrl').value);
             } else {
+                var customerEmail = getBillingDetails().billingDetails.email;
                 // Preference toggled mid-session — fall back to normal Payment Element flow
-                window.stripeCheckoutSessionActions.confirm();
+                window.stripeCheckoutSessionActions.confirm({
+                    email: customerEmail
+                });
             }
         },
         error: function () {

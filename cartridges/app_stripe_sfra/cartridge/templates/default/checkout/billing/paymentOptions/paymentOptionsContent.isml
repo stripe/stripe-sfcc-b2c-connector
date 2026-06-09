@@ -27,25 +27,25 @@
 
 <input type="hidden" id="stripeFailOrderURL" value="${URLUtils.https('StripePaymentsAPM-FailOrder')}" />
 
-<input type="hidden" name="stripe_source_client_secret" id="stripe_source_client_secret">
-<input type="hidden" name="stripe_redirect_url" id="stripe_redirect_url">
+<input type="hidden" name="stripe_source_client_secret" id="stripe_source_client_secret"/>
+<input type="hidden" name="stripe_redirect_url" id="stripe_redirect_url"/>
 
 <isset name="stripeOrder" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getStripeOrderDetails(dw.order.BasketMgr.getCurrentBasket())}" scope="page" />
 
-<input type="hidden" id="stripe_order_amount" value="${stripeOrder.amount}">
-<input type="hidden" id="stripe_order_currency" value="${stripeOrder.currency}">
-<input type="hidden" id="stripe_site_id" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getSiteID()}">
-<input type="hidden" id="stripe_order_number" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getNewStripeOrderNumber()}">
-<input type="hidden" id="stripe_return_url" value="${URLUtils.https("StripePaymentsAPM-HandleAPM")}">
+<input type="hidden" id="stripe_order_amount" value="${stripeOrder.amount}"/>
+<input type="hidden" id="stripe_order_currency" value="${stripeOrder.currency}"/>
+<input type="hidden" id="stripe_site_id" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getSiteID()}"/>
+<input type="hidden" id="stripe_order_number" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getNewStripeOrderNumber()}"/>
+<input type="hidden" id="stripe_return_url" value="${URLUtils.https("StripePaymentsAPM-HandleAPM")}"/>
 
-<input type="hidden" id="stripe_purchase_country" value="${stripeOrder.purchase_country}">
-<input type="hidden" id="stripe_order_items" value="${stripeOrder.order_items}">
-<input type="hidden" id="stripe_order_shipping" value="${stripeOrder.order_shipping}">
-<input type="hidden" id="stripe_shipping_first_name" value="${stripeOrder.shipping_first_name}">
+<input type="hidden" id="stripe_purchase_country" value="${stripeOrder.purchase_country}"/>
+<input type="hidden" id="stripe_order_items" value="${stripeOrder.order_items}"/>
+<input type="hidden" id="stripe_order_shipping" value="${stripeOrder.order_shipping}"/>
+<input type="hidden" id="stripe_shipping_first_name" value="${stripeOrder.shipping_first_name}"/>
 
-<input type="hidden" id="stripe_shipping_last_name" value="${stripeOrder.shipping_last_name}">
+<input type="hidden" id="stripe_shipping_last_name" value="${stripeOrder.shipping_last_name}"/>
 
-<input type="hidden" id="stripe_site_locale" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getSiteLocale()}">
+<input type="hidden" id="stripe_site_locale" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getSiteLocale()}"/>
 
 <isloop items="${pdict.order.billing.payment.applicablePaymentMethods}" var="paymentOption">
     <isif condition="${paymentOption.ID === 'CREDIT_CARD'}">

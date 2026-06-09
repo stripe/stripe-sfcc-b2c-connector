@@ -578,6 +578,15 @@ exports.checkoutSessions = {
         };
 
         return callService(requestObject);
+    },
+    update: function (sessionId, updateObject) {
+        var requestObject = {
+            endpoint: '/checkout/sessions/' + sessionId,
+            httpMethod: 'POST',
+            payload: updateObject
+        };
+
+        return callService(requestObject);
     }
 };
 

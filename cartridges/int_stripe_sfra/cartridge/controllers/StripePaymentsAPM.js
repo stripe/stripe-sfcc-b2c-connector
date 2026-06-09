@@ -109,26 +109,30 @@ server.get('GetPaymentElementOptions', function (req, res, next) {
     var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
     var basket = BasketMgr.getCurrentBasket();
     var useCheckoutSessions = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeUseCheckoutSessions');
+    var responseObject = {};
 
     var stripeOrderDetails = basket ? checkoutHelper.getStripeOrderDetails(basket) : null;
 
     var customerEmail;
-    var paymentElementOptions = {
-        mode: 'payment',
-        amount: parseInt(stripeOrderDetails.amount, 10),
-        currency: stripeOrderDetails.currency,
-        appearance: {
-            theme: 'stripe',
-            variables: stripeHelper.getStripePaymentElementStyle().variables
-        },
-        capture_method: dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture') ? 'automatic' : 'manual',
-    };
+
+    if (!useCheckoutSessions) {
+        responseObject.paymentElementOptions = {
+            mode: 'payment',
+            amount: parseInt(stripeOrderDetails.amount, 10),
+            currency: stripeOrderDetails.currency,
+            appearance: {
+                theme: 'stripe',
+                variables: stripeHelper.getStripePaymentElementStyle().variables
+            },
+            capture_method: dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture') ? 'automatic' : 'manual',
+        };
+    }
 
     if (customer.authenticated && customer.profile && customer.profile.email) {
         /*
             * Check if registered customer has an associated Stripe customer ID
             * if not, make a call to Stripe to create such id and save it as customer profile custom attribute
-            */
+        */
         if (!customer.profile.custom.stripeCustomerID) {
             var newStripeCustomer = stripeService.customers.create({
                 email: customer.profile.email,
@@ -140,51 +144,50 @@ server.get('GetPaymentElementOptions', function (req, res, next) {
             });
         }
 
-        var customerSession = stripeService.customerSessions.create({
-            customer: customer.profile.custom.stripeCustomerID,
-            components: {
-                payment_element: {
-                    enabled: true,
-                    features: {
-                        payment_method_redisplay: 'enabled',
-                        payment_method_save: 'enabled',
-                        payment_method_save_usage: 'on_session',
-                        payment_method_remove: 'enabled'
+        responseObject.customerEmail = customer.profile.email;
+
+        if (!useCheckoutSessions) {
+            var customerSession = stripeService.customerSessions.create({
+                customer: customer.profile.custom.stripeCustomerID,
+                components: {
+                    payment_element: {
+                        enabled: true,
+                        features: {
+                            payment_method_redisplay: 'enabled',
+                            payment_method_save: 'enabled',
+                            payment_method_save_usage: 'on_session',
+                            payment_method_remove: 'enabled'
+                        }
                     }
                 }
+            });
+
+            responseObject.paymentElementOptions.customerSessionClientSecret = customerSession.client_secret;
+
+            if (stripeHelper.isStripePaymentElementsSavePaymentsEnabled()) {
+                responseObject.paymentElementOptions.setup_future_usage = 'off_session';
             }
-        });
 
-        paymentElementOptions.customerSessionClientSecret = customerSession.client_secret;
-        if (stripeHelper.isStripePaymentElementsSavePaymentsEnabled()) {
-            paymentElementOptions.setup_future_usage = 'off_session';
+            if (stripeHelper.isCVCRecollectionEnabled()) {
+                responseObject.paymentElementOptions.paymentMethodOptions = {
+                    card: {
+                        require_cvc_recollection: true
+                    }
+                };
+            }
         }
-
-        if (stripeHelper.isCVCRecollectionEnabled()) {
-            paymentElementOptions.paymentMethodOptions = {
-                card: {
-                    require_cvc_recollection: true
-                }
-            };
-        }
-
-        customerEmail = customer.profile.email;
     }
 
-    if (empty(customerEmail)) {
-        customerEmail = basket ? basket.getCustomerEmail() : '';
+    if (empty(responseObject.customerEmail)) {
+        responseObject.customerEmail = basket ? basket.getCustomerEmail() : '';
     }
 
     if (useCheckoutSessions) {
-        var checkoutSessionClientSecret = checkoutHelper.createCheckoutSession(basket);
+        responseObject.checkoutSessionClientSecret = checkoutHelper.createCheckoutSession(basket);
     }
 
-    res.json({
-        customerEmail: customerEmail,
-        elementOptions: paymentElementOptions,
-        useCheckoutSessions: dw.system.Site.getCurrent().getCustomPreferenceValue('stripeUseCheckoutSessions'),
-        checkoutSessionClientSecret: checkoutSessionClientSecret
-    });
+    responseObject.useCheckoutSessions = useCheckoutSessions;
+    res.json(responseObject);
 
     next();
 });
@@ -360,26 +363,15 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
 
     if (dw.system.Site.getCurrent().getCustomPreferenceValue('stripeUseCheckoutSessions')) {
         try {
-            var checkoutSession = checkoutHelper.createCheckoutSession(order);
-            var csPaymentTransaction = stripePaymentInstrument.paymentTransaction;
-            var csStripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
-
-            Transaction.wrap(function () {
-                order.custom.stripeCheckoutSessionID = checkoutSession.id;
-                csPaymentTransaction.setTransactionID(checkoutSession.id);
-                csPaymentTransaction.setType(csStripeChargeCapture ? dw.order.PaymentTransaction.TYPE_CAPTURE : dw.order.PaymentTransaction.TYPE_AUTH);
+            var test = stripeService.checkoutSessions.update(order.custom.stripeCheckoutSessionID, {
+                metadata: {
+                    order_id: order.orderNo,
+                    site_id: dw.system.Site.getCurrent().getID()
+                }
             });
-        } catch (e) {
-            Transaction.wrap(function () {
-                var noteMessage = e.message.length > 1000 ? e.message.substring(0, 1000) : e.message;
-                order.addNote('Error When Create Stripe Checkout Session', noteMessage);
-                OrderMgr.failOrder(order, true);
-            });
-
+        } catch (error) {
             responsePayload.error = true;
-            responsePayload.errorMessage = Resource.msg('error.technical', 'checkout', null);
         }
-
         res.json(responsePayload);
         return next();
     }

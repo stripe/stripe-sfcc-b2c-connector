@@ -183,8 +183,7 @@ exports.processIncomingNotification = function () {
                             stripeNotification.custom.orderId = (json.data.object.metadata && json.data.object.metadata.order_id)
                                 ? json.data.object.metadata.order_id : '';
 
-                            stripeNotification.custom.stripePaymentIntentID = json.data.object.payment_intent
-                                ? json.data.object.payment_intent : '';
+                            stripeNotification.custom.stripePaymentIntentID = json.data.object.id || '';
                             break;
                         case 'checkout.session':
                             stripeNotification.custom.stripeSourceId = json.data.object.id;
@@ -238,37 +237,6 @@ exports.processIncomingNotification = function () {
             return false;
         }
 
-        // Fulfillment fallback: place order when checkout.session.completed arrives
-        // before (or instead of) the customer returning via success_url.
-        if (json.type === 'checkout.session.completed') {
-            try {
-                var OrderMgr = require('dw/order/OrderMgr');
-                var Order = require('dw/order/Order');
-                var COHelpers = require('*/cartridge/scripts/checkout/checkoutHelpers');
-                var sessionMeta = json.data.object.metadata;
-                var fulfillOrderId = sessionMeta ? sessionMeta.order_id : null;
-
-                if (fulfillOrderId) {
-                    var fulfillOrder = OrderMgr.getOrder(fulfillOrderId);
-                    if (fulfillOrder && fulfillOrder.status.value === Order.ORDER_STATUS_NEW) {
-                        Transaction.wrap(function () {
-                            fulfillOrder.custom.stripeCheckoutSessionID = json.data.object.id;
-                            fulfillOrder.custom.stripePaymentIntentID = json.data.object.payment_intent || '';
-
-                            var placeOrderStatus = OrderMgr.placeOrder(fulfillOrder);
-                            if (!placeOrderStatus.isError()) {
-                                fulfillOrder.setConfirmationStatus(Order.CONFIRMATION_STATUS_CONFIRMED);
-                                fulfillOrder.setExportStatus(Order.EXPORT_STATUS_READY);
-                                fulfillOrder.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
-                            }
-                        });
-                        COHelpers.sendConfirmationEmail(fulfillOrder, fulfillOrder.customerLocaleID);
-                    }
-                }
-            } catch (fulfillErr) {
-                Logger.error('Checkout Session webhook fulfillment error: {0}', fulfillErr.message);
-            }
-        }
     } catch (e) {
         Logger.error(e);
         response.setStatus(500);

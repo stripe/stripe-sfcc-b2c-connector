@@ -905,6 +905,7 @@ exports.getBankTransferPaymentMethodOptions =  function(billingAddress) {
  * @return {Object} - Stripe Checkout Session object
  */
 exports.createCheckoutSession = function (basket) {
+    const Transaction = require('dw/system/Transaction');
     const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
     const site = dw.system.Site.getCurrent();
     const stripeChargeCapture = site.getCustomPreferenceValue('stripeChargeCapture');
@@ -942,6 +943,10 @@ exports.createCheckoutSession = function (basket) {
     }
 
     const checkoutSession = stripeService.checkoutSessions.create(createCheckoutSessionPayload);
+
+    Transaction.wrap(function () {
+        basket.custom.stripeCheckoutSessionID = checkoutSession.id;
+    });
 
     return checkoutSession.client_secret;
 };
