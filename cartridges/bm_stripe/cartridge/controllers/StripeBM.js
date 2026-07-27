@@ -225,7 +225,14 @@ server.post('HandlePaymentsRefund', function (req, res, next) {
             return next();
         }
 
-        const amount = (amountToRefund * 100);
+        const amount = stripeBmHelper.toStripeMinorUnits(amountToRefund, order.getCurrencyCode());
+        if (amount === null) {
+            res.json({
+                error: true,
+                message: Resource.msg('paymentsrefund.invalidamount', 'stripebm', null)
+            });
+            return next();
+        }
 
         /*
          * check if stripePaymentIntentID is Not empty then refund by payment_intent
@@ -324,7 +331,14 @@ server.post('HandlePaymentsCapture', function (req, res, next) {
             return next();
         }
 
-        const amount = (amountToCapture * 100);
+        const amount = stripeBmHelper.toStripeMinorUnits(amountToCapture, order.getCurrencyCode());
+        if (amount === null) {
+            res.json({
+                error: true,
+                message: Resource.msg('paymentscapture.invalidamount', 'stripebm', null)
+            });
+            return next();
+        }
 
         /*
          * check if stripePaymentIntentID is Not empty then refund by payment_intent
