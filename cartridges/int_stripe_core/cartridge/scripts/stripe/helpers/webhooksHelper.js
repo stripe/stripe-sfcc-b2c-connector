@@ -219,6 +219,12 @@ exports.processIncomingNotification = function () {
                         case 'checkout.session.completed':
                             stripeNotification.custom.processingStatus = 'PROCESS';
                             break;
+                        case 'checkout.session.async_payment_succeeded':
+                            stripeNotification.custom.processingStatus = 'PROCESS';
+                            break;
+                        case 'checkout.session.async_payment_failed':
+                            stripeNotification.custom.processingStatus = 'PROCESS';
+                            break;
                         default:
                             stripeNotification.custom.processingStatus = 'UNKNOWN';
                     }

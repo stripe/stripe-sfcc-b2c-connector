@@ -82,7 +82,7 @@ function handleAPM(sfra) {
         }
 
         if (!empty(checkoutSessionId)) {
-            const checkoutSession = stripeService.paymentIntents.retrieve(checkoutSessionId);
+            const checkoutSession = stripeService.checkoutSessions.retrieve(checkoutSessionId);
             if (checkoutSession.status !== 'succeeded' || checkoutSession.status !== 'processing' || checkoutSession.status !== 'requires_capture') {
                 throw new Error('CheckoutSession Failed.');
             }

@@ -363,12 +363,17 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
 
     if (dw.system.Site.getCurrent().getCustomPreferenceValue('stripeUseCheckoutSessions')) {
         try {
-            var test = stripeService.checkoutSessions.update(order.custom.stripeCheckoutSessionID, {
+            var metadataUpdateObject = {
                 metadata: {
                     order_id: order.orderNo,
                     site_id: dw.system.Site.getCurrent().getID()
                 }
-            });
+            };
+            var checkoutSession = stripeService.checkoutSessions.update(order.custom.stripeCheckoutSessionID, metadataUpdateObject);
+
+            if (checkoutSession.payment_intent) {
+                stripeService.paymentIntents.update(checkoutSession.payment_intent, metadataUpdateObject);
+            }
         } catch (error) {
             responsePayload.error = true;
         }

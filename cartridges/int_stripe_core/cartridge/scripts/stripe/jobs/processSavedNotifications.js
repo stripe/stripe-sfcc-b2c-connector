@@ -553,6 +553,12 @@ function processNotificationObject(stripeNotificationObject) {
             break;
         case 'checkout.session.completed':
             placeOrder(stripeNotificationObject, order, stripePaymentInstrument);
+            break;
+        case 'checkout.session.async_payment_succeeded':
+            placeOrder(stripeNotificationObject, order, stripePaymentInstrument);
+            break
+        case 'checkout.session.async_payment_failed':
+            failOrder(stripeNotificationObject, order);
             break
         case 'charge.refunded':
             processChargeRefunded(stripeNotificationObject, order, stripePaymentInstrument);

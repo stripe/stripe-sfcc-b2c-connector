@@ -633,13 +633,15 @@ function handleStripePaymentElementSubmitOrder() {
 }
 
 function getBillingDetails(ownerEmail) {
-    if (!ownerEmail && $('.customer-summary-email').length && $('.customer-summary-email').text() && $('.customer-summary-email').text() !== 'null') {
-        ownerEmail = $('.customer-summary-email').text();
-    } else {
-        ownerEmail = document.querySelector('#dwfrm_billing input[name$="_email"]')
-            ? document.querySelector('#dwfrm_billing input[name$="_email"]').value
-            : document.querySelector('input[name$="_email"]').value;
-    }
+    if (!ownerEmail) {
+        if ($('.customer-summary-email').length && $('.customer-summary-email').text() && $('.customer-summary-email').text() !== 'null') {
+            ownerEmail = $('.customer-summary-email').text();
+        } else {
+            ownerEmail = document.querySelector('#dwfrm_billing input[name$="_email"]')
+                ? document.querySelector('#dwfrm_billing input[name$="_email"]').value
+                : document.querySelector('input[name$="_email"]').value;
+        }
+    } 
 
     return {
         billingDetails: {
@@ -709,13 +711,11 @@ function initNewStripeIntent(scope) {
  * Hides the payment element container and stores the mode flag so the place-order handler
  * redirects to Stripe's hosted Checkout page instead of submitting via Payment Element.
  */
-function initStripeCheckoutSession(checkoutSessionClientSecret, scope, customerEmail) {
-    window.localStorage.setItem('stripe_use_checkout_sessions', 'true');
-
+function initStripeCheckoutSession(checkoutSessionClientSecret, scope) {
     window.stripeCheckoutSession = stripe.initCheckoutElementsSdk({
         clientSecret: checkoutSessionClientSecret,
         adaptivePricing: { allowed: true }
-    });
+    })
     window.stripeCheckoutSession.loadActions().then(function(result) {
         window.stripeCheckoutSessionActions = result.actions;
         if (result.type === "success") {
@@ -726,7 +726,8 @@ function initStripeCheckoutSession(checkoutSessionClientSecret, scope, customerE
         } else {
             alert(result.error.message || 'Payment initialization failed. Please refresh.');
         }
-    });
+        
+    }) 
 }
 
 /* Stripe Payment Element */
@@ -901,11 +902,15 @@ function handleStripeCheckoutSessionSubmitOrder() {
                 }
                 window.location.replace(document.getElementById('billingPageUrl').value);
             } else {
-                var customerEmail = getBillingDetails().billingDetails.email;
-                // Preference toggled mid-session — fall back to normal Payment Element flow
-                window.stripeCheckoutSessionActions.confirm({
-                    email: customerEmail
-                });
+                var stripeCkeckoutSessionObject =  window.stripeCheckoutSessionActions.getSession();
+                if (!stripeCkeckoutSessionObject.email) {
+                    var customerEmail = getBillingDetails().billingDetails.email;
+                    window.stripeCheckoutSessionActions.confirm({
+                        email: customerEmail
+                    });
+                } else {
+                    window.stripeCheckoutSessionActions.confirm();
+                }
             }
         },
         error: function () {
@@ -928,7 +933,7 @@ document.querySelector('button.place-order').addEventListener('click', function 
         if (forceSubmit) return false;
 
         forceSubmit = true;
-        if (window.localStorage.getItem('stripe_use_checkout_sessions') === 'true') {
+        if (document.getElementById('stripeUseCheckoutSessions').value) {
             handleStripeCheckoutSessionSubmitOrder();
         } else {
             handleStripePaymentElementSubmitOrder();
