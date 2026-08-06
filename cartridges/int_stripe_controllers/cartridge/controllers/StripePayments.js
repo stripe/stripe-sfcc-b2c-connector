@@ -1098,7 +1098,7 @@ function expressCheckoutSubmitOrder() {
             billingAddress.setFirstName(billingFirstName);
             billingAddress.setLastName(billingFirstName);
             billingAddress.setAddress1(stripeBillingAddress.line1);
-            billingAddress.setAddress2(stripeBillingAddress.line1);
+            billingAddress.setAddress2(stripeBillingAddress.line2);
             billingAddress.setCity(stripeBillingAddress.city);
             billingAddress.setPostalCode(stripeBillingAddress.postal_code);
 

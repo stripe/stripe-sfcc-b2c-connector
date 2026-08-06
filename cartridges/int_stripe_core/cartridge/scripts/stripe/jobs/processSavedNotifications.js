@@ -470,8 +470,9 @@ function processNotificationObject(stripeNotificationObject) {
     const stripeEventId = stripeNotificationObject.custom.stripeEventId;
 
     // Ensure Payment Intent ID or Source ID existing in Custom Object
-    const coStripePaymentIntentId = stripeNotificationObject.custom.stripePaymentIntentID;
+    const coStripePaymentIntentId = stripeNotificationObject.custom.stripePaymentIntentID || stripeNotificationObject.custom.stripeObjectId;
     const coStripeSourceId = stripeNotificationObject.custom.stripeSourceId;
+
     if (!coStripeSourceId && !coStripePaymentIntentId) {
         stripeLogger.info('\nBoth Payment Intent Id and Source id are empty, event id: {0}', stripeEventId);
         return;
@@ -550,6 +551,15 @@ function processNotificationObject(stripeNotificationObject) {
         case 'payment_intent.succeeded':
             placeOrder(stripeNotificationObject, order, stripePaymentInstrument);
             break;
+        case 'checkout.session.completed':
+            placeOrder(stripeNotificationObject, order, stripePaymentInstrument);
+            break;
+        case 'checkout.session.async_payment_succeeded':
+            placeOrder(stripeNotificationObject, order, stripePaymentInstrument);
+            break
+        case 'checkout.session.async_payment_failed':
+            failOrder(stripeNotificationObject, order);
+            break
         case 'charge.refunded':
             processChargeRefunded(stripeNotificationObject, order, stripePaymentInstrument);
             break;

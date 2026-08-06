@@ -62,6 +62,8 @@ function handleAPM(sfra) {
     const paymentIntentId = paramsMap.payment_intent ? paramsMap.payment_intent.stringValue : null;
     const paymentIntentClientSecret = paramsMap.payment_intent_client_secret ? paramsMap.payment_intent_client_secret.stringValue : null;
 
+    const checkoutSessionId = paramsMap.session_id ? paramsMap.session_id.stringValue : null;
+
     var redirectUrl = '';
     try {
         const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
@@ -76,6 +78,13 @@ function handleAPM(sfra) {
 
             if (['chargeable', 'pending'].indexOf(source.status) < 0) {
                 throw new Error('Source not authorized.');
+            }
+        }
+
+        if (!empty(checkoutSessionId)) {
+            const checkoutSession = stripeService.checkoutSessions.retrieve(checkoutSessionId);
+            if (checkoutSession.status !== 'succeeded' || checkoutSession.status !== 'processing' || checkoutSession.status !== 'requires_capture') {
+                throw new Error('CheckoutSession Failed.');
             }
         }
 

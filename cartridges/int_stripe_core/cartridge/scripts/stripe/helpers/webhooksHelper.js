@@ -174,6 +174,29 @@ exports.processIncomingNotification = function () {
                             stripeNotification.custom.stripePaymentIntentID = json.data.object.payment_intent
                                 ? json.data.object.payment_intent : '';
                             break;
+                        case 'payment_intent' : 
+                            stripeNotification.custom.stripeSourceId = json.data.object.id;
+
+                            stripeNotification.custom.siteId = (json.data.object.metadata && json.data.object.metadata.site_id)
+                                ? json.data.object.metadata.site_id : '';
+
+                            stripeNotification.custom.orderId = (json.data.object.metadata && json.data.object.metadata.order_id)
+                                ? json.data.object.metadata.order_id : '';
+
+                            stripeNotification.custom.stripePaymentIntentID = json.data.object.id || '';
+                            break;
+                        case 'checkout.session':
+                            stripeNotification.custom.stripeSourceId = json.data.object.id;
+
+                            stripeNotification.custom.siteId = (json.data.object.metadata && json.data.object.metadata.site_id)
+                                ? json.data.object.metadata.site_id : '';
+
+                            stripeNotification.custom.orderId = (json.data.object.metadata && json.data.object.metadata.order_id)
+                                ? json.data.object.metadata.order_id : '';
+
+                            stripeNotification.custom.stripePaymentIntentID = json.data.object.payment_intent
+                                ? json.data.object.payment_intent : '';
+                            break;
                         default:
                             stripeNotification.custom.stripeSourceId = '';
                             break;
@@ -193,6 +216,13 @@ exports.processIncomingNotification = function () {
                         case 'charge.refunded':
                         case 'payment_intent.succeeded':
                         case 'payment_intent.payment_failed':
+                        case 'checkout.session.completed':
+                            stripeNotification.custom.processingStatus = 'PROCESS';
+                            break;
+                        case 'checkout.session.async_payment_succeeded':
+                            stripeNotification.custom.processingStatus = 'PROCESS';
+                            break;
+                        case 'checkout.session.async_payment_failed':
                             stripeNotification.custom.processingStatus = 'PROCESS';
                             break;
                         default:
@@ -212,6 +242,7 @@ exports.processIncomingNotification = function () {
             response.setStatus(500);
             return false;
         }
+
     } catch (e) {
         Logger.error(e);
         response.setStatus(500);

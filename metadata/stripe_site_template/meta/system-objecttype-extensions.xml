@@ -146,7 +146,7 @@
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
                 <min-length>0</min-length>
-                <default-value>https://js.stripe.com/v3/</default-value>
+                <default-value>https://js.stripe.com/dahlia/stripe.js</default-value>
             </attribute-definition>
             <attribute-definition attribute-id="stripeCardElementCSSStyle">
                 <display-name xml:lang="x-default">Stripe Card Element CSS Style</display-name>
@@ -306,7 +306,7 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
                 <min-length>0</min-length>
-                <default-value>2020-08-27</default-value>
+                <default-value>2026-04-22.dahlia</default-value>
             </attribute-definition>
             <attribute-definition attribute-id="stripePaymentElementsSavePayments">
                 <display-name xml:lang="x-default">Stripe Payment Element: Enable Save Payment Method for Future Purchases</display-name>
@@ -370,6 +370,15 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <externally-managed-flag>false</externally-managed-flag>
                 <default-value>false</default-value>
             </attribute-definition>
+
+            <attribute-definition attribute-id="stripeUseCheckoutSessions">
+                <display-name xml:lang="x-default">Use Stripe Checkout Sessions</display-name>
+                <description xml:lang="x-default">When enabled, STRIPE_PAYMENT_ELEMENT uses the embedded Payment Element with Checkout Sessions instead of the default Payment Element</description>
+                <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <default-value>false</default-value>
+            </attribute-definition>
         </custom-attribute-definitions>
         <group-definitions>
             <attribute-group group-id="Stripe Configs">
@@ -405,6 +414,7 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <attribute attribute-id="stripeExpressCheckoutMinicartEnabled"/>
                 <attribute attribute-id="stripeExpressCheckoutCartPageEnabled"/>
                 <attribute attribute-id="stripeExpressCheckoutStyle"/>
+                <attribute attribute-id="stripeUseCheckoutSessions"/>
             </attribute-group>
             <attribute-group group-id="Stripe Card Element and Payment Button Configs">
                 <display-name xml:lang="x-default">Stripe Card and Payment Request Button Configurations</display-name>
@@ -527,6 +537,14 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
             </attribute-definition>
+            <attribute-definition attribute-id="stripeCheckoutSessionID">
+                <display-name xml:lang="x-default">Stripe Checkout Session ID</display-name>
+                <description xml:lang="x-default">Stripe Checkout Session ID used when stripeUseCheckoutSessions is enabled</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
             <attribute-definition attribute-id="stripeRiskLevel">
                 <display-name xml:lang="x-default">Stripe Risk Level</display-name>
                 <description xml:lang="x-default">Stripe Risk Level</description>
@@ -588,6 +606,14 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>true</externally-managed-flag>
             </attribute-definition>
+            <attribute-definition attribute-id="stripeCheckoutSessionID">
+                <display-name xml:lang="x-default">Stripe Checkout Session ID</display-name>
+                <description xml:lang="x-default">Stripe Checkout Session ID used when stripeUseCheckoutSessions is enabled</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>true</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
         </custom-attribute-definitions>
         <group-definitions>
             <attribute-group group-id="Stripe Payment Intent">
@@ -598,6 +624,7 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <attribute attribute-id="stripePaymentIntentID"/>
                 <attribute attribute-id="stripeRiskLevel"/>
                 <attribute attribute-id="stripeRiskScore"/>
+                <attribute attribute-id="stripeCheckoutSessionID"/>
             </attribute-group>
         </group-definitions>
     </type-extension>

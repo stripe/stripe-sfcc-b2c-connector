@@ -306,7 +306,7 @@ exports.confirmPaymentIntent = function (paymentIntentId, paymentInstrument) {
 
     const paymentIntentPayload = {
         payment_method: paymentMethod,
-        return_url: dw.web.URLUtils.https('StripePayments-HandleAPM').toString()
+        return_url: dw.web.URLUtils.https('StripePaymentsAPM-HandleAPM').toString()
     };
 
     const paymentIntent = stripeService.paymentIntents.confirm(paymentIntentId, paymentIntentPayload);
@@ -602,7 +602,7 @@ exports.getShippingOptionsSFRA = function (params) {
                 shippingAddress.setFirstName(shippingFirstName);
                 shippingAddress.setLastName(shippingLastname);
                 shippingAddress.setAddress1(stripeShippingAddress.line1);
-                shippingAddress.setAddress2(stripeShippingAddress.line1);
+                shippingAddress.setAddress2(stripeShippingAddress.line2);
                 shippingAddress.setCity(stripeShippingAddress.city);
                 shippingAddress.setPostalCode(stripeShippingAddress.postal_code);
                 shippingAddress.setCountryCode(stripeShippingAddress.country);
@@ -887,7 +887,6 @@ exports.getBankTransferPaymentMethodOptions =  function(billingAddress) {
                 };
                
                 break;
-                return null;
         }
 
         return {
@@ -897,3 +896,69 @@ exports.getBankTransferPaymentMethodOptions =  function(billingAddress) {
             }
         };
 }
+
+/**
+ * Creates a Stripe Checkout Session for the given order.
+ * Used when stripeUseCheckoutSessions site preference is enabled.
+ *
+ * @param {dw.order.Order} order - The SFCC order
+ * @return {Object} - Stripe Checkout Session object
+ */
+exports.createCheckoutSession = function (basket) {
+    const Transaction = require('dw/system/Transaction');
+    const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
+    const site = dw.system.Site.getCurrent();
+    const stripeChargeCapture = site.getCustomPreferenceValue('stripeChargeCapture');
+
+    var basketDetails = exports.getStripeOrderDetails(basket);
+    var basketItems = JSON.parse(basketDetails.order_items);
+    var currency = basketDetails.currency;
+
+    var lineItems = basketItems.map(function (item) {
+        return {
+            price_data: {
+                currency: currency,
+                unit_amount: item.amount,
+                product_data: {
+                    name: item.description || item.type
+                }
+            },
+            quantity: item.quantity || 1
+        };
+    });
+
+    var createCheckoutSessionPayload = {
+        ui_mode: 'elements',
+        mode: 'payment',
+        line_items: lineItems,
+        return_url:  dw.web.URLUtils.https("StripePaymentsAPM-HandleAPM").toString(),
+        payment_intent_data: {
+            capture_method: stripeChargeCapture ? 'automatic' : 'manual',
+        },
+        adaptive_pricing: { enabled: true }
+    };
+
+    if (customer.authenticated && customer.profile && customer.profile.custom.stripeCustomerID) {
+        createCheckoutSessionPayload.customer = customer.profile.custom.stripeCustomerID;
+    }
+
+    const checkoutSession = stripeService.checkoutSessions.create(createCheckoutSessionPayload);
+
+    Transaction.wrap(function () {
+        basket.custom.stripeCheckoutSessionID = checkoutSession.id;
+    });
+
+    return checkoutSession.client_secret;
+};
+
+/**
+ * Retrieves a Stripe Checkout Session by ID.
+ *
+ * @param {string} sessionId - Stripe Checkout Session ID (cs_...)
+ * @return {Object} - Stripe Checkout Session object
+ */
+exports.retrieveCheckoutSession = function (sessionId) {
+    const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
+
+    return stripeService.checkoutSessions.retrieve(sessionId);
+};
