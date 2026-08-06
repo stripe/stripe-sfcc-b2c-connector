@@ -143,9 +143,9 @@ function getStripeServiceDefinition() {
                 }
             };
 
-            session.privacy.idempotencyKey = require('dw/util/UUIDUtils').createUUID();
+            var idempotencyKey = require('dw/util/UUIDUtils').createUUID();
 
-            svc.addHeader('Idempotency-Key', session.privacy.idempotencyKey);
+            svc.addHeader('Idempotency-Key', idempotencyKey);
             svc.addHeader('Authorization', 'Bearer ' + apiKey);
             svc.addHeader('X-Stripe-Client-User-Agent', JSON.stringify(stripeHeader));
             svc.addHeader('Stripe-Version', apiVersion);
