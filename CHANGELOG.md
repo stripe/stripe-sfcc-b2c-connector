@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 24.0.3 (2026-09-04) 
+* Fix BM refund/capture amount conversion for zero-decimal currencies- #31
+
 ## 24.0.2 (2026-03-16)
 * Implemented idempotency keys
 * Fixed an error where 3DS error message was empty and the order was failing(with successful payment) when users were closing the website
