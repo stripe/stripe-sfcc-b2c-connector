@@ -15,6 +15,33 @@ exports.getApiKey = function () {
 };
 
 /**
+ * Converts a Business Manager display amount (e.g. "10.99" or "500") into the
+ * amount expressed in the currency's minor unit, as required by the Stripe API.
+ *
+ * Uses the currency's default fraction digits so zero-decimal currencies
+ * (JPY, KRW, VND, XOF, XPF) are not incorrectly multiplied by 100. Mirrors the
+ * conversion already used at checkout time in int_stripe_core.
+ *
+ * @param {string|number} displayAmount amount entered by the BM operator
+ * @param {string} currencyCode ISO currency code of the order
+ * @returns {number|null} amount in minor units, or null when the input is not a positive number
+ */
+exports.toStripeMinorUnits = function (displayAmount, currencyCode) {
+    var Currency = require('dw/util/Currency');
+
+    var numericAmount = Number(displayAmount);
+    if (isNaN(numericAmount) || numericAmount <= 0) { // eslint-disable-line no-restricted-globals
+        return null;
+    }
+
+    var currency = Currency.getCurrency(currencyCode);
+    var fractionDigits = currency ? currency.getDefaultFractionDigits() : 2;
+    var multiplier = Math.pow(10, fractionDigits);
+
+    return Math.round(numericAmount * multiplier);
+};
+
+/**
  * Get Stripe Payment Method Definitions
  *
  * @return {Array} array with Stripe payment methods definitions
