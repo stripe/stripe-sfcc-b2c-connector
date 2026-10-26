@@ -4,6 +4,7 @@
             value="${paymentOption.ID}">
         <input type="hidden" name="stripe_source_id" id="stripe_source_id">
         <div class="row">
+            <div id="stripe-currency-selector-container"></div>
             <div id="payment-element" style="width:100%" data-errormsg="${Resource.msg('apm.error.fail','stripe',null)}">
             </div>
         </div>

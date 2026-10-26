@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 24.1.0
+* Checkout Sessions Implementation
+* Adaptive Pricing with Checkout Sessions
+* Improved localization logic
+* Webhooks: duplicate deliveries of an already stored event are acknowledged with HTTP 200 instead of 500, so Stripe stops retrying
+* Webhooks: the processing job no longer re-charges a source that already has a charge, and no longer marks failed / cancelled / already paid orders as paid again or moves exported orders back to export READY
+* Webhook cleanup job only removes custom objects older than `MinAgeInDays` (default 4) and `StripeWebhookNotifications` retention is raised to 7 days (re-import metadata)
+* Idempotency keys: money-moving calls use keys derived from the order / request and are retried once with the same key when the outcome is unknown
+* BM refund / capture: double submits can no longer refund or capture twice, amounts are converted using the currency's decimal digits
+* `StripeProfile` service timeout raised from 3s to 10s (update the service profile in BM on existing installations)
+* Removed the legacy card integration. Cards are paid through the Payment Element: before upgrading, make sure `STRIPE_PAYMENT_ELEMENT` is enabled and `CREDIT_CARD` is no longer assigned to `STRIPE_CREDIT`
+* Payment Element orders now store the card details correctly
+
 ## 24.0.3 (2026-09-04) 
 * Fix BM refund/capture amount conversion for zero-decimal currencies- #31
 

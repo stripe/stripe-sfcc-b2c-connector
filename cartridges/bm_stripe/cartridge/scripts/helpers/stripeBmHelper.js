@@ -49,12 +49,6 @@ exports.toStripeMinorUnits = function (displayAmount, currencyCode) {
 function getStripePaymentMethodDefinitions() {
     return [
         {
-            id: 'CREDIT_CARD',
-            name: 'Stripe Card',
-            currencies: {},
-            payment_processor: 'STRIPE_CREDIT'
-        },
-        {
             id: 'STRIPE_PAYMENT_ELEMENT',
             name: 'Stripe Payment Element',
             currencies: {},

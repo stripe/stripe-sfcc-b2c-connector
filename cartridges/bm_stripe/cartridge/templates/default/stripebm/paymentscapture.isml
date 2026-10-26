@@ -7,6 +7,9 @@
     <form class="stripe-payments-setup-form" id="stripe-payments-setup-form"
 		action="${URLUtils.url('StripeBM-HandlePaymentsCapture')}" method="POST">
 
+		<iscomment>Identifies this capture request: resubmits reuse it so Stripe cannot capture twice</iscomment>
+		<input type="hidden" name="stripe_request_nonce" value="${dw.util.UUIDUtils.createUUID()}" />
+
 	    <table width="100%" cellspacing="15" cellpadding="0" border="0">
 			<tbody>
 				<tr>
