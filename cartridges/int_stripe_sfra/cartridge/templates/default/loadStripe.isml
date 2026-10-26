@@ -13,10 +13,10 @@
 		<isset name="stripeApiVersion" value="${stripeHelper.getStripeApiVersion()}" scope="page" />
 		<isset name="stripeCheckoutHelper" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper')}" scope="page" />
 		<isset name="stripeAccountCountry" value="${stripeCheckoutHelper.getPRCountry()}" scope="page" />
-		<isset name="stripeCardFormStyle" value="${stripeHelper.getStripeCardFormStyle()}" scope="page" />
 
 		<input type="hidden" id="stripePublicKey" value="${stripePublicKey}" />
 		<input type="hidden" id="stripeApiVersion" value="${stripeApiVersion}" />
+		<input type="hidden" id="stripeLocale" value="${stripeCheckoutHelper.getSiteLocale()}" />
 	</isif>
 	<input type="hidden" id="stripePaymentMethodsInBeta" value="${stripeHelper.getPaymentMethodsInBeta()}" />
 </isif>

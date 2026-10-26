@@ -3,9 +3,13 @@
 var baseDetail = require('base/product/detail');
 var stripeOptions = {};
 var expressCheckoutElement;
-var stripeApiVersion = document.getElementById('stripeApiVersion').value;
 
-var stripe = Stripe(document.getElementById('stripePublicKey').value, stripeApiVersion);
+var stripeLocaleInput = document.getElementById('stripeLocale');
+if (stripeLocaleInput && stripeLocaleInput.value) {
+    stripeOptions.locale = stripeLocaleInput.value;
+}
+
+var stripe = Stripe(document.getElementById('stripePublicKey').value, stripeOptions);
 
 var stripeOrderCurrencyInput = document.getElementById('stripe_order_currency').value.toLowerCase();
 
@@ -40,7 +44,7 @@ function getAmountToDisplay(product, shippingCost) {
  * Mounts ECE Element
  */
 function mountExpressCheckoutButton() {
-    expressCheckoutElement = elements.create('expressCheckout', stripeOptions);
+    expressCheckoutElement = elements.create('expressCheckout');
     expressCheckoutElement.mount('#express-checkout-element');
 }
 
@@ -183,9 +187,6 @@ function initStripeCheckoutExpress() {
                 });
 
                 event.resolve({
-                    emailRequired: true,
-                    phoneNumberRequired: true,
-                    shippingAddressRequired: true,
                     shippingRates: data.shippingMethods
                 });
             }

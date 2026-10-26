@@ -10,10 +10,7 @@
 </isif>
 <input type="hidden" id="getPaymentElementOptions" value="${URLUtils.https('StripePaymentsAPM-GetPaymentElementOptions')}" />
 <input type="hidden" id="getBankTransferElementOptions" value="${URLUtils.https('StripePaymentsAPM-GetBankTransferElementOptions')}" />
-<input type="hidden" id="stripeCardFormStyle" value="${JSON.stringify(stripeHelper.getStripeCardFormStyle())}" />
 <input type="hidden" id="stripeAccountCountry" value="${stripeCheckoutHelper.getPRCountry()}" />
-<input type="hidden" id="cardPaymentSubmitOrderURL" value="${URLUtils.https('StripePaymentsCard-CardPaymentSubmitOrder')}" />
-<input type="hidden" id="cardPaymentHandleRequiresActionURL" value="${URLUtils.https('StripePaymentsCard-CardPaymentHandleRequiresAction')}" />
 <input type="hidden" id="getStripeOrderItemsURL" value="${URLUtils.https('StripePaymentsAPM-GetStripeOrderItems')}" />
 <input type="hidden" id="billingPageUrl" value="${URLUtils.url('Checkout-Begin', 'stage', 'payment')}" />
 <input type="hidden" id="getCustomerEmailURL" value="${URLUtils.https('StripePaymentsAPM-GetCustomerEmail')}" />
@@ -46,43 +43,14 @@
 
 <input type="hidden" id="stripe_shipping_last_name" value="${stripeOrder.shipping_last_name}"/>
 
-<input type="hidden" id="stripe_site_locale" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getSiteLocale()}"/>
-
 <isloop items="${pdict.order.billing.payment.applicablePaymentMethods}" var="paymentOption">
     <isif condition="${paymentOption.ID === 'CREDIT_CARD'}">
-        <isif condition="${stripeEnabled}">
-            <div class="tab-pane ${paymentOption.ID}-content active" id="${paymentOption.ID}-content" role="tabpanel">
-                <fieldset class="payment-form-fields">
-
-                    <!--- payment method is credit card --->
-                    <input type="hidden" class="form-control"
-                        name="${pdict.forms.billingForm.paymentMethod.htmlName}"
-                        value="${paymentOption.ID}"
-                    >
-                    <input type="hidden" name="cardNumber" value="" class="cardNumber" id="cardNumber">
-                    <input type="hidden" name="stripe_source_id" id="stripe_source_id">
-                    <isinclude template="stripe/checkout/billing/sfra_cardform" />
-                </fieldset>
-            </div>
-        <iselse/>
-            <isinclude template="checkout/billing/paymentOptions/creditCardContent" />
-        </isif>
+        <isinclude template="checkout/billing/paymentOptions/creditCardContent" />
     <iselseif condition="${paymentOption.ID === 'STRIPE_PAYMENT_ELEMENT'}"/>
         <isinclude template="checkout/billing/paymentOptions/stripePaymentElementContent" />
     <iselseif condition="${paymentOption.ID === 'BANK_TRANSFER'}"/>
         <isinclude template="checkout/billing/paymentOptions/stripeBankTransferElementContent" />
-    <iselse/>
-
-        <div class="tab-pane ${paymentOption.ID}-content" id="${paymentOption.ID}-content" role="tabpanel">
-            <fieldset class="payment-form-fields">
-
-                <!--- payment method is credit card --->
-                <input type="hidden" class="form-control"
-                    name="${pdict.forms.billingForm.paymentMethod.htmlName}"
-                    value="${paymentOption.ID}"
-                >
-                <input type="hidden" name="stripe_source_id" id="stripe_source_id">
-            </fieldset>
-        </div>
     </isif>
 </isloop>
+
+    

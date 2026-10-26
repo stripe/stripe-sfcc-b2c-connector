@@ -57,18 +57,20 @@ server.get('GetBankTransferElementOptions', function (req, res, next) {
     var stripeOrderDetails = basket ? checkoutHelper.getStripeOrderDetails(basket) : null;
 
     var customerEmail;
+    var appearanceOptions = stripeHelper.getStripePaymentElementAppearanceOptions();
     var paymentElementOptions = {
         mode: 'payment',
         amount: parseInt(stripeOrderDetails.amount, 10),
-        locale: req.locale.id,
+        locale: checkoutHelper.getSiteLocale(),
         currency: stripeOrderDetails.currency,
-        appearance: {
-            theme: 'stripe',
-            variables: stripeHelper.getStripePaymentElementStyle().variables
-        },
+        appearance: appearanceOptions.appearance,
         paymentMethodCreation: 'manual',
         payment_method_types: ['customer_balance']
     };
+
+    if (appearanceOptions.fonts) {
+        paymentElementOptions.fonts = appearanceOptions.fonts;
+    }
 
     if (customer.authenticated && customer.profile && customer.profile.email) {
         /*
@@ -76,10 +78,12 @@ server.get('GetBankTransferElementOptions', function (req, res, next) {
             * if not, make a call to Stripe to create such id and save it as customer profile custom attribute
             */
         if (!customer.profile.custom.stripeCustomerID) {
-            var newStripeCustomer = stripeService.customers.create({
+            var newStripeCustomerPayload = {
                 email: customer.profile.email,
                 name: customer.profile.firstName + ' ' + customer.profile.lastName
-            });
+            };
+            var newStripeCustomer = stripeService.customers.create(newStripeCustomerPayload,
+                require('*/cartridge/scripts/stripe/helpers/idempotencyHelper').buildKey('customer', customer.profile.customerNo, newStripeCustomerPayload));
 
             Transaction.wrap(function () {
                 customer.profile.custom.stripeCustomerID = newStripeCustomer.id;
@@ -95,7 +99,7 @@ server.get('GetBankTransferElementOptions', function (req, res, next) {
 
     res.json({
         customerEmail: customerEmail,
-        elementOptions: paymentElementOptions
+        paymentElementOptions: paymentElementOptions
     });
 
     next();
@@ -113,19 +117,19 @@ server.get('GetPaymentElementOptions', function (req, res, next) {
 
     var stripeOrderDetails = basket ? checkoutHelper.getStripeOrderDetails(basket) : null;
 
-    var customerEmail;
-
     if (!useCheckoutSessions) {
+        var appearanceOptions = stripeHelper.getStripePaymentElementAppearanceOptions();
         responseObject.paymentElementOptions = {
             mode: 'payment',
             amount: parseInt(stripeOrderDetails.amount, 10),
             currency: stripeOrderDetails.currency,
-            appearance: {
-                theme: 'stripe',
-                variables: stripeHelper.getStripePaymentElementStyle().variables
-            },
+            appearance: appearanceOptions.appearance,
             capture_method: dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture') ? 'automatic' : 'manual',
         };
+
+        if (appearanceOptions.fonts) {
+            responseObject.paymentElementOptions.fonts = appearanceOptions.fonts;
+        }
     }
 
     if (customer.authenticated && customer.profile && customer.profile.email) {
@@ -134,10 +138,12 @@ server.get('GetPaymentElementOptions', function (req, res, next) {
             * if not, make a call to Stripe to create such id and save it as customer profile custom attribute
         */
         if (!customer.profile.custom.stripeCustomerID) {
-            var newStripeCustomer = stripeService.customers.create({
+            var newStripeCustomerPayload = {
                 email: customer.profile.email,
                 name: customer.profile.firstName + ' ' + customer.profile.lastName
-            });
+            };
+            var newStripeCustomer = stripeService.customers.create(newStripeCustomerPayload,
+                require('*/cartridge/scripts/stripe/helpers/idempotencyHelper').buildKey('customer', customer.profile.customerNo, newStripeCustomerPayload));
 
             Transaction.wrap(function () {
                 customer.profile.custom.stripeCustomerID = newStripeCustomer.id;
@@ -154,7 +160,8 @@ server.get('GetPaymentElementOptions', function (req, res, next) {
                         enabled: true,
                         features: {
                             payment_method_redisplay: 'enabled',
-                            payment_method_save: 'enabled',
+                            // The site preference decides whether shoppers are offered to save the payment method
+                            payment_method_save: stripeHelper.isStripePaymentElementsSavePaymentsEnabled() ? 'enabled' : 'disabled',
                             payment_method_save_usage: 'on_session',
                             payment_method_remove: 'enabled'
                         }
@@ -349,6 +356,7 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
         stripePaymentsHelper.LogStripeErrorMessage('StripePayments.PaymentElementSubmitOrder Create Payment Intent: Error on paymentMethod is CREDIT_CARD check');
         Transaction.wrap(function () {
             order.addNote('Stripe Error', 'Try to process Order as STRIPE_PAYMENT_ELEMENT for a different payment method');
+            OrderMgr.failOrder(order, true);
         });
         return next();
     }
@@ -361,22 +369,47 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
         continueUrl: URLUtils.url('Order-Confirm').toString()
     };
 
-    if (dw.system.Site.getCurrent().getCustomPreferenceValue('stripeUseCheckoutSessions')) {
-        try {
-            var metadataUpdateObject = {
-                metadata: {
-                    order_id: order.orderNo,
-                    site_id: dw.system.Site.getCurrent().getID()
-                }
-            };
-            var checkoutSession = stripeService.checkoutSessions.update(order.custom.stripeCheckoutSessionID, metadataUpdateObject);
+    // Bank Transfer always uses its own Payment Intent flow below
+    if (dw.system.Site.getCurrent().getCustomPreferenceValue('stripeUseCheckoutSessions')
+        && stripePaymentInstrument.paymentMethod === 'STRIPE_PAYMENT_ELEMENT') {
+        var checkoutSessionError = null;
+        var checkoutSessionErrorMessage = Resource.msg('error.technical', 'checkout', null);
 
-            if (checkoutSession.payment_intent) {
-                stripeService.paymentIntents.update(checkoutSession.payment_intent, metadataUpdateObject);
+        try {
+            var checkoutSession = order.custom.stripeCheckoutSessionID
+                ? stripeService.checkoutSessions.retrieve(order.custom.stripeCheckoutSessionID) : null;
+
+            if (!checkoutSession || checkoutSession.status !== 'open') {
+                checkoutSessionError = 'Checkout Session ' + order.custom.stripeCheckoutSessionID + ' is missing or not open';
+            } else if (!checkoutHelper.isCheckoutSessionAmountValid(checkoutSession, order)) {
+                // The basket changed after the session was created (other tab, coupon, ...)
+                checkoutSessionError = 'Checkout Session ' + checkoutSession.id + ' amount does not match the order total';
+                checkoutSessionErrorMessage = Resource.msg('checkoutsession.error.amountchanged', 'stripe', null);
+            } else {
+                // The Payment Intent is created by Stripe when the session is confirmed, so it is linked
+                // to the order by the webhook job (checkout.session.completed), not here
+                stripeService.checkoutSessions.update(checkoutSession.id, {
+                    metadata: {
+                        order_id: order.orderNo,
+                        site_id: dw.system.Site.getCurrent().getID()
+                    }
+                });
             }
-        } catch (error) {
-            responsePayload.error = true;
+        } catch (e) {
+            checkoutSessionError = e.message;
         }
+
+        if (checkoutSessionError) {
+            Transaction.wrap(function () {
+                order.addNote('Stripe Checkout Session Error', checkoutSessionError.substring(0, 1000));
+                OrderMgr.failOrder(order, true);
+            });
+            stripePaymentsHelper.LogStripeErrorMessage('StripePaymentsAPM.PaymentElementSubmitOrder: ' + checkoutSessionError);
+
+            responsePayload.error = true;
+            responsePayload.errorMessage = checkoutSessionErrorMessage;
+        }
+
         res.json(responsePayload);
         return next();
     }
@@ -384,7 +417,13 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
     try {
         var stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
         var paymentIntentPayload = COHelpers.buildPaymentIntentPayload(order, req, stripeChargeCapture, stripePaymentInstrument);
-        var paymentIntent = stripeService.paymentIntents.create(paymentIntentPayload);
+        // Returns the payment method used, so the confirmation page can show it right away
+        paymentIntentPayload.expand = ['payment_method'];
+        var idempotencyHelper = require('*/cartridge/scripts/stripe/helpers/idempotencyHelper');
+        var paymentIntentIdempotencyKey = idempotencyHelper.buildKey('pi-create', order.orderNo, paymentIntentPayload);
+        var paymentIntent = idempotencyHelper.callWithRetry(function () {
+            return stripeService.paymentIntents.create(paymentIntentPayload, paymentIntentIdempotencyKey);
+        }, paymentIntentIdempotencyKey);
         var paymentTransaction = stripePaymentInstrument.paymentTransaction;
 
         Transaction.wrap(function () {
@@ -398,6 +437,11 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
 
             paymentTransaction.setTransactionID(paymentIntent.id);
             paymentTransaction.setType(stripeChargeCapture ? dw.order.PaymentTransaction.TYPE_CAPTURE : dw.order.PaymentTransaction.TYPE_AUTH);
+
+            if (paymentIntent.payment_method && typeof paymentIntent.payment_method === 'object') {
+                checkoutHelper.savePaymentMethodDetails(stripePaymentInstrument, paymentIntent.payment_method,
+                    paymentIntent.payment_method.billing_details && paymentIntent.payment_method.billing_details.name);
+            }
         });
 
         responsePayload.clientSecret = paymentIntent.client_secret;
@@ -605,7 +649,7 @@ server.post('StripeQuickCheckout', csrfProtection.validateAjaxRequest, function 
     });
 
     // Re-validates existing payment instruments
-    var validPayment = COHelpers.validatePayment(req, currentBasket);
+    var validPayment = COHelpers.validatePayment(req, currentBasket, true);
     if (validPayment.error) {
         res.json({
             error: true,
@@ -768,10 +812,12 @@ server.post('StripeQuickCheckout', csrfProtection.validateAjaxRequest, function 
              * if not, make a call to Stripe to create such id and save it as customer profile custom attribute
              */
             if (!customer.profile.custom.stripeCustomerID) {
-                var newStripeCustomer = stripeService.customers.create({
+                var newStripeCustomerPayload = {
                     email: customer.profile.email,
                     name: customer.profile.firstName + ' ' + customer.profile.lastName
-                });
+                };
+                var newStripeCustomer = stripeService.customers.create(newStripeCustomerPayload,
+                    require('*/cartridge/scripts/stripe/helpers/idempotencyHelper').buildKey('customer', customer.profile.customerNo, newStripeCustomerPayload));
 
                 Transaction.wrap(function () {
                     customer.profile.custom.stripeCustomerID = newStripeCustomer.id;
@@ -788,7 +834,11 @@ server.post('StripeQuickCheckout', csrfProtection.validateAjaxRequest, function 
         createPaymentIntentPayload.metadata.order_id = order.orderNo;
         createPaymentIntentPayload.metadata.site_id = dw.system.Site.getCurrent().getID();
 
-        var paymentIntent = stripeService.paymentIntents.create(createPaymentIntentPayload);
+        var idempotencyHelper = require('*/cartridge/scripts/stripe/helpers/idempotencyHelper');
+        var paymentIntentIdempotencyKey = idempotencyHelper.buildKey('pi-create', order.orderNo, createPaymentIntentPayload);
+        var paymentIntent = idempotencyHelper.callWithRetry(function () {
+            return stripeService.paymentIntents.create(createPaymentIntentPayload, paymentIntentIdempotencyKey);
+        }, paymentIntentIdempotencyKey);
         var paymentTransaction = stripePaymentInstrument.paymentTransaction;
         Transaction.wrap(function () {
             order.custom.stripePaymentIntentID = paymentIntent.id;

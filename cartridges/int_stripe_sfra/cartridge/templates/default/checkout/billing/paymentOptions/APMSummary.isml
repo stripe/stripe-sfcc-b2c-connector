@@ -1,4 +1,15 @@
 <div class="credit-card-type">
-    <span>${Resource.msg('payment.pay.with', 'stripe', null)}
-    ${dw.order.PaymentMgr.getPaymentMethod(payment.paymentMethod).name}</span>
+    <isif condition="${payment.stripeCardLastFour}">
+        <span class="text-capitalize">${payment.stripeCardBrand || ''}</span>
+        ${Resource.msgf('payment.card.ending', 'stripe', null, payment.stripeCardLastFour)}
+        <isif condition="${payment.stripePaymentMethodType !== 'card'}">
+            ${Resource.msgf('payment.card.wallet', 'stripe', null, Resource.msg('payment.method.type.' + payment.stripePaymentMethodType, 'stripe', payment.stripePaymentMethodType))}
+        </isif>
+    <iselseif condition="${payment.stripePaymentMethodType}" />
+        <span>${Resource.msg('payment.pay.with', 'stripe', null)}
+        ${Resource.msg('payment.method.type.' + payment.stripePaymentMethodType, 'stripe', payment.stripePaymentMethodType)}</span>
+    <iselse/>
+        <span>${Resource.msg('payment.pay.with', 'stripe', null)}
+        ${dw.order.PaymentMgr.getPaymentMethod(payment.paymentMethod).name}</span>
+    </isif>
 </div>

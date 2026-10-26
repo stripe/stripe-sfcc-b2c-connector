@@ -235,7 +235,11 @@ exports.processIncomingNotification = function () {
                 return true;
             }
 
-            return false;
+            // Event already stored: acknowledge it so Stripe stops redelivering. Returning a
+            // non-2xx here makes Stripe retry for up to 3 days, which outlives the stored
+            // custom object (retention / cleanup job) and leads to the event being re-processed.
+            Logger.info('Stripe webhook event {0} already received, acknowledging duplicate delivery.', json.id);
+            return true;
         });
 
         if (!success) {

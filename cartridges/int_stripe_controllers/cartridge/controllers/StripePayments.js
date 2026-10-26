@@ -9,7 +9,6 @@ var OrderMgr = require('dw/order/OrderMgr');
 var PaymentMgr = require('dw/order/PaymentMgr');
 var Transaction = require('dw/system/Transaction');
 var Resource = require('dw/web/Resource');
-var Order = require('dw/order/Order');
 var Money = require('dw/value/Money');
 
 var URLUtils = require('dw/web/URLUtils');
@@ -153,468 +152,6 @@ function handlePayments(order) {
 
     return {};
 }
-
-/**
- * Entry point for handling CardPaymentSubmitOrder.
- */
-function cardPaymentSubmitOrder() {
-    var responsePayload;
-    if (!CSRFProtection.validateRequest()) {
-        app.getModel('Customer').logout();
-        responsePayload = {
-            error: true
-        };
-        response.setStatus(500);
-        response.setContentType('application/json');
-        response.writer.print(JSON.stringify(responsePayload));
-        return;
-    }
-
-    var stripeCheckoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
-    var BasketMgr = require('dw/order/BasketMgr');
-    var currentBasket = BasketMgr.getCurrentBasket();
-    if (currentBasket) {
-        if (currentBasket.custom.stripePaymentIntentID) {
-            Transaction.wrap(function () {
-                currentBasket.custom.stripePaymentIntentID = null;
-            });
-        }
-
-        var cardPaymentInstrument = checkoutHelper.getStripePaymentInstrument(currentBasket);
-        if (cardPaymentInstrument && cardPaymentInstrument.paymentTransaction && cardPaymentInstrument.paymentTransaction.getTransactionID()) {
-            Transaction.wrap(function () {
-                cardPaymentInstrument.paymentTransaction.setTransactionID(null);
-            });
-        }
-    }
-
-    /*
-     * I. Create SFCC Order
-     */
-    session.privacy.stripeOrderNumber = null;
-    delete session.privacy.stripeOrderNumber;
-
-    var cart = Cart.get();
-    if (!cart) {
-        app.getController('Cart').Show();
-        responsePayload = {
-            error: true
-        };
-        response.setContentType('application/json');
-        response.writer.print(JSON.stringify(responsePayload));
-        return;
-    }
-
-    var COShipping = app.getController('COShipping');
-
-    // Clean shipments.
-    COShipping.PrepareShipments(cart);
-
-    // Make sure there is a valid shipping address, accounting for gift certificates that do not have one.
-    if (cart.getProductLineItems().size() > 0 && cart.getDefaultShipment().getShippingAddress() === null) {
-        COShipping.Start();
-        responsePayload = {
-            error: true
-        };
-        response.setContentType('application/json');
-        response.writer.print(JSON.stringify(responsePayload));
-        return;
-    }
-
-    // Make sure the billing step is fulfilled, otherwise restart checkout.
-    if (!session.forms.billing.fulfilled.value) {
-        app.getController('COCustomer').Start();
-        responsePayload = {
-            error: true
-        };
-        response.setContentType('application/json');
-        response.writer.print(JSON.stringify(responsePayload));
-        return;
-    }
-
-    Transaction.wrap(function () {
-        cart.calculate();
-    });
-
-    var COBilling = app.getController('COBilling');
-
-    Transaction.wrap(function () {
-        if (!COBilling.ValidatePayment(cart)) {
-            responsePayload = {
-                error: true
-            };
-            response.setContentType('application/json');
-            response.writer.print(JSON.stringify(responsePayload));
-        }
-    });
-
-    // Recalculate the payments. If there is only gift certificates, make sure it covers the order total, if not
-    // back to billing page.
-    Transaction.wrap(function () {
-        if (!cart.calculatePaymentTransactionTotal()) {
-            responsePayload = {
-                error: true
-            };
-            response.setContentType('application/json');
-            response.writer.print(JSON.stringify(responsePayload));
-        }
-    });
-
-    // Handle used addresses and credit cards.
-    var saveCCResult = COBilling.SaveCreditCard();
-
-    if (!saveCCResult) {
-        responsePayload = {
-            error: true,
-            errorMessage: Resource.msg('confirm.error.technical', 'checkout', null)
-        };
-        response.setContentType('application/json');
-        response.writer.print(JSON.stringify(responsePayload));
-        return;
-    }
-
-    // Creates a new order. This will internally ReserveInventoryForOrder and will create a new Order with status
-    // 'Created'.
-    // Stripe changes BEGIN
-    var isBasketPaymentIntentValid = stripeCheckoutHelper.isBasketPaymentIntentValid();
-    if (cart.object.custom.stripePaymentIntentID && !isBasketPaymentIntentValid) {
-        // detach the associated payment intent id from the basket
-        Transaction.wrap(function () {
-            cart.object.custom.stripePaymentIntentID = '';
-        });
-
-        responsePayload = {
-            error: true,
-            errorMessage: Resource.msg('confirm.error.technical', 'checkout', null)
-        };
-        response.setContentType('application/json');
-        response.writer.print(JSON.stringify(responsePayload));
-        return;
-    }
-
-    var order = stripeCheckoutHelper.createOrder(cart.object);
-    // Stripe changes END
-
-    if (!order) {
-        responsePayload = {
-            error: true,
-            errorMessage: Resource.msg('confirm.error.technical', 'checkout', null)
-        };
-        response.setContentType('application/json');
-        response.writer.print(JSON.stringify(responsePayload));
-        return;
-    }
-
-    session.privacy.stripeOrderNumber = order.orderNo;
-
-    var handlePaymentsResult = handlePayments(order);
-
-    if (handlePaymentsResult.error) {
-        Transaction.wrap(function () {
-            OrderMgr.failOrder(order, true);
-        });
-        responsePayload = {
-            error: true,
-            errorMessage: Resource.msg('confirm.error.technical', 'checkout', null)
-        };
-        response.setContentType('application/json');
-        response.writer.print(JSON.stringify(responsePayload));
-        return;
-    }
-
-    if (handlePaymentsResult.missingPaymentInfo) {
-        Transaction.wrap(function () {
-            OrderMgr.failOrder(order, true);
-        });
-        responsePayload = {
-            error: true,
-            errorMessage: Resource.msg('confirm.error.technical', 'checkout', null)
-        };
-        response.setContentType('application/json');
-        response.writer.print(JSON.stringify(responsePayload));
-        return;
-    }
-
-    /*
-     * II. Create Payment Intent
-     */
-    var stripePaymentInstrument = checkoutHelper.getStripePaymentInstrument(order);
-
-    if (!stripePaymentInstrument || stripePaymentInstrument.paymentMethod !== 'CREDIT_CARD') {
-        responsePayload = {
-            error: true,
-            errorMessage: Resource.msg('confirm.error.technical', 'checkout', null)
-        };
-        response.setContentType('application/json');
-        response.writer.print(JSON.stringify(responsePayload));
-
-        stripePaymentsHelper.LogStripeErrorMessage('StripePayments.CardPaymentSubmitOrder Create Payment Intent: Error on paymentMethod is CREDIT_CARD check');
-        Transaction.wrap(function () {
-            order.addNote('Stripe Error', 'Try to process Order as CREDIT_CARD for a different payment method');
-        });
-        return;
-    }
-
-    // So far, we have created an SFCC order and return order datails to be used for Checkout Summary Page
-    responsePayload = {
-        error: false,
-        orderID: order.orderNo,
-        orderToken: order.orderToken,
-        continueUrl: URLUtils.url('Order-Confirm').toString()
-    };
-
-    var paymentIntent = null;
-    try {
-        paymentIntent = checkoutHelper.createPaymentIntent(stripePaymentInstrument, order.getShipments());
-    } catch (e) {
-        Transaction.wrap(function () {
-            var noteMessage = e.message.length > 1000 ? e.message.substring(0, 1000) : e.message;
-            order.addNote('Error When Create Stripe Payment Intent', noteMessage);
-            OrderMgr.failOrder(order, true);
-        });
-
-        responsePayload.error = true;
-        responsePayload.errorMessage = Resource.msg('confirm.error.technical', 'checkout', null);
-
-        response.setContentType('application/json');
-        response.writer.print(JSON.stringify(responsePayload));
-        return;
-    }
-    var stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
-    var stripeAccountId = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeAccountId');
-    var stripeAccountType = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeAccountType');
-
-    Transaction.wrap(function () {
-        stripePaymentInstrument.paymentTransaction.setTransactionID(paymentIntent.id);
-        stripePaymentInstrument.paymentTransaction.setType(stripeChargeCapture ? dw.order.PaymentTransaction.TYPE_CAPTURE : dw.order.PaymentTransaction.TYPE_AUTH);
-
-        if (!empty(stripeAccountId)) {
-            stripePaymentInstrument.paymentTransaction.custom.stripeAccountId = stripeAccountId;
-        }
-
-        if (!empty(stripeAccountType) && 'value' in stripeAccountType && !empty(stripeAccountType.value)) {
-            stripePaymentInstrument.paymentTransaction.custom.stripeAccountType = stripeAccountType.value;
-        }
-    });
-
-    Transaction.wrap(function () {
-        if (paymentIntent.review) {
-            order.custom.stripeIsPaymentIntentInReview = true;
-        }
-        order.custom.stripePaymentIntentID = paymentIntent.id;
-        order.custom.stripePaymentSourceID = '';
-
-        if (paymentIntent.charges && paymentIntent.charges.data && paymentIntent.charges.data.length > 0 && paymentIntent.charges.data[0].outcome) {
-            order.custom.stripeRiskLevel = paymentIntent.charges.data[0].outcome.risk_level;
-            order.custom.stripeRiskScore = paymentIntent.charges.data[0].outcome.risk_score;
-        }
-    });
-
-    if ((paymentIntent.status === 'requires_capture' && !stripeChargeCapture) || paymentIntent.status === 'succeeded') {
-        // The payment requires capture which will be made later
-        try {
-            Transaction.wrap(function () {
-                var placeOrderStatus = OrderMgr.placeOrder(order);
-                if (placeOrderStatus.isError()) {
-                    throw new Error();
-                }
-
-                if (stripeChargeCapture) {
-                    order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
-                }
-
-                order.setConfirmationStatus(Order.CONFIRMATION_STATUS_CONFIRMED);
-                order.setExportStatus(Order.EXPORT_STATUS_READY);
-            });
-            app.getModel('Email').sendMail({
-                template: 'stripe/mail/orderreceived',
-                recipient: order.getCustomerEmail(),
-                subject: Resource.msg('order.ordercreceived-email.001', 'stripe', null),
-                context: {
-                    Order: order
-                }
-            });
-            responsePayload.success = true;
-        } catch (e) {
-            stripePaymentsHelper.LogStripeErrorMessage('StripePayments.CardPaymentSubmitOrder: Error on PlaceOrder');
-            responsePayload.error = true;
-        }
-    } else if (paymentIntent.status === 'requires_action' || paymentIntent.status === 'requires_source_action') {
-        // Tell the client to handle the action
-        Transaction.wrap(function () {
-            order.addNote('Stripe 3DS', 'requires_action: Pending');
-        });
-        responsePayload.requires_action = true;
-        responsePayload.payment_intent_client_secret = paymentIntent.client_secret;
-    } else {
-        // Invalid status
-        Transaction.wrap(function () {
-            order.addNote('Order Failed Reason', 'Invalid payment intent status: ' + paymentIntent.status);
-            OrderMgr.failOrder(order, true);
-        });
-        stripePaymentsHelper.LogStripeErrorMessage('StripePayments.CardPaymentSubmitOrder Create Payment Intent: Error on invalid payment intent status: ' + paymentIntent.status);
-        Transaction.wrap(function () {
-            order.addNote('Stripe Error', 'StripePayments.CardPaymentSubmitOrder Create Payment Intent: Error on invalid payment intent status: ' + paymentIntent.status);
-        });
-        responsePayload.error = true;
-        responsePayload.errorMessage = 'Invalid PaymentIntent status';
-    }
-
-    var jsonResponse = JSON.stringify(responsePayload);
-    response.setContentType('application/json');
-    response.writer.print(jsonResponse);
-}
-
-exports.CardPaymentSubmitOrder = cardPaymentSubmitOrder;
-exports.CardPaymentSubmitOrder.public = true;
-
-/**
- * Entry point for handling payment intent confirmation when requires action and confirmation AJAX calls.
- */
-function cardPaymentHandleRequiresAction() {
-    var responsePayload = {};
-    if (!CSRFProtection.validateRequest()) {
-        app.getModel('Customer').logout();
-        responsePayload = {
-            error: true
-        };
-        response.setStatus(500);
-        response.setContentType('application/json');
-        response.writer.print(JSON.stringify(responsePayload));
-        return;
-    }
-
-    var stripePaymentInstrument;
-    var paymentIntent;
-    var paymentIntentId;
-    var stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
-
-    try {
-        /*
-         * Handle the case when SFCC order is being created before making call to Stripe to create a Payment Intent and confirm the payment
-         */
-        if (!session || !session.privacy || !session.privacy.stripeOrderNumber) {
-            responsePayload = {
-                error: true
-            };
-            response.setContentType('application/json');
-            response.writer.print(JSON.stringify(responsePayload));
-            return;
-        }
-
-        var order = OrderMgr.getOrder(session.privacy.stripeOrderNumber);
-        if (!order) {
-            responsePayload = {
-                error: true
-            };
-            response.setContentType('application/json');
-            response.writer.print(JSON.stringify(responsePayload));
-            return;
-        }
-
-        stripePaymentInstrument = checkoutHelper.getStripePaymentInstrument(order);
-
-        if (!stripePaymentInstrument || stripePaymentInstrument.paymentMethod !== 'CREDIT_CARD') {
-            responsePayload = {
-                error: true
-            };
-            response.setContentType('application/json');
-            response.writer.print(JSON.stringify(responsePayload));
-            return;
-        }
-
-        /**
-         * I. Confirms the payment intent
-         */
-        paymentIntentId = (stripePaymentInstrument.paymentTransaction)
-            ? stripePaymentInstrument.paymentTransaction.getTransactionID() : null;
-
-        paymentIntent = stripeService.paymentIntents.retrieve(paymentIntentId);
-
-        if (paymentIntent.status === 'requires_confirmation') {
-            paymentIntent = checkoutHelper.confirmPaymentIntent(paymentIntentId, stripePaymentInstrument);
-        }
-
-        Transaction.wrap(function () {
-            if (paymentIntent.review) {
-                order.custom.stripeIsPaymentIntentInReview = true;
-            }
-            order.custom.stripePaymentIntentID = paymentIntent.id;
-            order.custom.stripePaymentSourceID = '';
-
-            if (paymentIntent.charges && paymentIntent.charges.data && paymentIntent.charges.data.length > 0 && paymentIntent.charges.data[0].outcome) {
-                order.custom.stripeRiskLevel = paymentIntent.charges.data[0].outcome.risk_level;
-                order.custom.stripeRiskScore = paymentIntent.charges.data[0].outcome.risk_score;
-            }
-        });
-
-        if ((paymentIntent.status === 'requires_capture' && !stripeChargeCapture) || paymentIntent.status === 'succeeded') {
-            // The payment requires capture which will be made later
-            try {
-                Transaction.wrap(function () {
-                    order.addNote('Stripe 3DS', 'requires_action: Confirmed');
-                    var placeOrderStatus = OrderMgr.placeOrder(order);
-                    if (placeOrderStatus.isError()) {
-                        throw new Error();
-                    }
-
-                    if (stripeChargeCapture) {
-                        order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
-                    }
-
-                    order.setConfirmationStatus(Order.CONFIRMATION_STATUS_CONFIRMED);
-                    order.setExportStatus(Order.EXPORT_STATUS_READY);
-                });
-                app.getModel('Email').sendMail({
-                    template: 'stripe/mail/orderreceived',
-                    recipient: order.getCustomerEmail(),
-                    subject: Resource.msg('order.ordercreceived-email.001', 'stripe', null),
-                    context: {
-                        Order: order
-                    }
-                });
-                responsePayload.success = true;
-            } catch (e) {
-                stripePaymentsHelper.LogStripeErrorMessage('StripePayments.CardPaymentSubmitOrder: Error on PlaceOrder');
-                responsePayload.error = true;
-            }
-        } else if (paymentIntent.status === 'requires_action' || paymentIntent.status === 'requires_source_action') {
-            Transaction.wrap(function () {
-                order.addNote('Stripe 3DS', 'requires_action: Pending');
-            });
-            // Tell the client to handle the action
-            responsePayload.requires_action = true;
-            responsePayload.payment_intent_client_secret = paymentIntent.client_secret;
-        } else {
-            // Invalid status
-            Transaction.wrap(function () {
-                order.addNote('Order Failed Reason', 'Invalid payment intent status: ' + paymentIntent.status);
-                OrderMgr.failOrder(order, true);
-            });
-            stripePaymentsHelper.LogStripeErrorMessage('StripePayments.CardPaymentSubmitOrder Confirm Payment Intent: Error on invalid payment intent status: ' + paymentIntent.status);
-            Transaction.wrap(function () {
-                order.addNote('Stripe Error', 'StripePayments.CardPaymentSubmitOrder Confirm Payment Intent: Error on invalid payment intent status: ' + paymentIntent.status);
-            });
-            responsePayload.error = true;
-            responsePayload.errorMessage = 'Invalid PaymentIntent status';
-        }
-
-        response.setContentType('application/json');
-        response.writer.print(JSON.stringify(responsePayload));
-        return;
-    } catch (e) {
-        responsePayload = {
-            error: true,
-            errorMessage: e.message
-        };
-    }
-
-    response.setContentType('application/json');
-    response.writer.print(JSON.stringify(responsePayload));
-}
-
-exports.CardPaymentHandleRequiresAction = cardPaymentHandleRequiresAction;
-exports.CardPaymentHandleRequiresAction.public = true;
 
 /**
  * Entry point for handling PaymentElementSubmitOrder.
@@ -813,6 +350,7 @@ function paymentElementSubmitOrder() {
         stripePaymentsHelper.LogStripeErrorMessage('StripePayments.PaymentElementSubmitOrder Create Payment Intent: Error on paymentMethod is STRIPE_PAYMENT_ELEMENT check');
         Transaction.wrap(function () {
             order.addNote('Stripe Error', 'Try to process Order as STRIPE_PAYMENT_ELEMENT for a different payment method');
+            OrderMgr.failOrder(order, true);
         });
         return;
     }
@@ -907,6 +445,8 @@ function paymentElementSubmitOrder() {
 
         if (!empty(confirmationToken)) {
             createPaymentIntentPayload.confirmation_token = confirmationToken.id;
+            // Required for redirect-based payment methods
+            createPaymentIntentPayload.return_url = URLUtils.https('StripePayments-HandleAPM').toString();
         }
 
         if (customer.authenticated && customer.profile && customer.profile.email) {
@@ -915,10 +455,12 @@ function paymentElementSubmitOrder() {
              * if not, make a call to Stripe to create such id and save it as customer profile custom attribute
              */
             if (!customer.profile.custom.stripeCustomerID) {
-                var newStripeCustomer = stripeService.customers.create({
+                var newStripeCustomerPayload = {
                     email: customer.profile.email,
                     name: customer.profile.firstName + ' ' + customer.profile.lastName
-                });
+                };
+                var newStripeCustomer = stripeService.customers.create(newStripeCustomerPayload,
+                    require('*/cartridge/scripts/stripe/helpers/idempotencyHelper').buildKey('customer', customer.profile.customerNo, newStripeCustomerPayload));
 
                 Transaction.wrap(function () {
                     customer.profile.custom.stripeCustomerID = newStripeCustomer.id;
@@ -942,7 +484,11 @@ function paymentElementSubmitOrder() {
         createPaymentIntentPayload.metadata.order_id = order.orderNo;
         createPaymentIntentPayload.metadata.site_id = dw.system.Site.getCurrent().getID();
 
-        var paymentIntent = stripeService.paymentIntents.create(createPaymentIntentPayload);
+        var idempotencyHelper = require('*/cartridge/scripts/stripe/helpers/idempotencyHelper');
+        var paymentIntentIdempotencyKey = idempotencyHelper.buildKey('pi-create', order.orderNo, createPaymentIntentPayload);
+        var paymentIntent = idempotencyHelper.callWithRetry(function () {
+            return stripeService.paymentIntents.create(createPaymentIntentPayload, paymentIntentIdempotencyKey);
+        }, paymentIntentIdempotencyKey);
         var paymentTransaction = stripePaymentInstrument.paymentTransaction;
         Transaction.wrap(function () {
             order.custom.stripePaymentIntentID = paymentIntent.id;
@@ -1303,10 +849,12 @@ function expressCheckoutSubmitOrder() {
              * if not, make a call to Stripe to create such id and save it as customer profile custom attribute
              */
             if (!customer.profile.custom.stripeCustomerID) {
-                var newStripeCustomer = stripeService.customers.create({
+                var newStripeCustomerPayload = {
                     email: customer.profile.email,
                     name: customer.profile.firstName + ' ' + customer.profile.lastName
-                });
+                };
+                var newStripeCustomer = stripeService.customers.create(newStripeCustomerPayload,
+                    require('*/cartridge/scripts/stripe/helpers/idempotencyHelper').buildKey('customer', customer.profile.customerNo, newStripeCustomerPayload));
 
                 Transaction.wrap(function () {
                     customer.profile.custom.stripeCustomerID = newStripeCustomer.id;
@@ -1338,7 +886,11 @@ function expressCheckoutSubmitOrder() {
         createPaymentIntentPayload.metadata.order_id = order.orderNo;
         createPaymentIntentPayload.metadata.site_id = dw.system.Site.getCurrent().getID();
 
-        var paymentIntent = stripeService.paymentIntents.create(createPaymentIntentPayload);
+        var idempotencyHelper = require('*/cartridge/scripts/stripe/helpers/idempotencyHelper');
+        var paymentIntentIdempotencyKey = idempotencyHelper.buildKey('pi-create', order.orderNo, createPaymentIntentPayload);
+        var paymentIntent = idempotencyHelper.callWithRetry(function () {
+            return stripeService.paymentIntents.create(createPaymentIntentPayload, paymentIntentIdempotencyKey);
+        }, paymentIntentIdempotencyKey);
         var paymentTransaction = stripePaymentInstrument.paymentTransaction;
         Transaction.wrap(function () {
             order.custom.stripePaymentIntentID = paymentIntent.id;

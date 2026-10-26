@@ -2,13 +2,6 @@
 <metadata xmlns="http://www.demandware.com/xml/impex/metadata/2006-10-31">
     <type-extension type-id="OrderPaymentInstrument">
         <custom-attribute-definitions>
-            <attribute-definition attribute-id="stripeCardID">
-                <display-name xml:lang="x-default">Stripe Card ID</display-name>
-                <type>string</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-                <min-length>0</min-length>
-            </attribute-definition>
             <attribute-definition attribute-id="stripeChargeID">
                 <display-name xml:lang="x-default">Stripe Charge ID</display-name>
                 <type>string</type>
@@ -22,19 +15,6 @@
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
                 <min-length>0</min-length>
-            </attribute-definition>
-            <attribute-definition attribute-id="stripeDefaultCard">
-                <display-name xml:lang="x-default">Stripe Default Card</display-name>
-                <type>boolean</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-            </attribute-definition>
-            <attribute-definition attribute-id="stripePRUsed">
-                <display-name xml:lang="x-default">From Payment Request Button</display-name>
-                <description xml:lang="x-default">If this is true, it was either google or apple pay</description>
-                <type>boolean</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
             </attribute-definition>
             <attribute-definition attribute-id="stripeSavePaymentInstrument">
                 <display-name xml:lang="x-default">Save Payment Instrument</display-name>
@@ -61,6 +41,14 @@
                 <type>boolean</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+            <attribute-definition attribute-id="stripePaymentMethodType">
+                <display-name xml:lang="x-default">Stripe Payment Method Type</display-name>
+                <description xml:lang="x-default">Stripe payment method type (card, paypal, klarna, ...) or card wallet (apple_pay, google_pay) used for the payment</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
             </attribute-definition>
         </custom-attribute-definitions>
     </type-extension>
@@ -148,14 +136,6 @@
                 <min-length>0</min-length>
                 <default-value>https://js.stripe.com/dahlia/stripe.js</default-value>
             </attribute-definition>
-            <attribute-definition attribute-id="stripeCardElementCSSStyle">
-                <display-name xml:lang="x-default">Stripe Card Element CSS Style</display-name>
-                <description xml:lang="x-default">Style Configuration for Stripe Elements</description>
-                <type>string</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-                <min-length>0</min-length>
-            </attribute-definition>
             <attribute-definition attribute-id="stripeChargeCapture">
                 <display-name xml:lang="x-default">Capture Funds on Stripe Charge?</display-name>
                 <description xml:lang="x-default">Capture Funds on Stripe Charge? true = Capture, false = Authorization</description>
@@ -171,28 +151,6 @@
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
                 <default-value>false</default-value>
-            </attribute-definition>
-            <attribute-definition attribute-id="stripeSaveCustomerCards">
-                <display-name xml:lang="x-default">Save Customer Cards</display-name>
-                <description xml:lang="x-default">Save Guest Customer Cards on Stripe side for re-Authorization</description>
-                <type>enum-of-string</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-                <select-multiple-flag>false</select-multiple-flag>
-                <value-definitions>
-                    <value-definition>
-                        <display xml:lang="x-default">Always save cards</display>
-                        <value>always</value>
-                    </value-definition>
-                    <value-definition>
-                        <display xml:lang="x-default">Ask the customer</display>
-                        <value>ask</value>
-                    </value-definition>
-                    <value-definition default="true">
-                        <display xml:lang="x-default">Disabled</display>
-                        <value>disabled</value>
-                    </value-definition>
-                </value-definitions>
             </attribute-definition>
             <attribute-definition attribute-id="stripeEnabled">
                 <display-name xml:lang="x-default">Stripe Enabled</display-name>
@@ -278,13 +236,6 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <type>text</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
-            </attribute-definition>
-            <attribute-definition attribute-id="stripeCustomCreditCardForm">
-                <display-name xml:lang="x-default">Custom Credit Card Form</display-name>
-                <type>boolean</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-                <default-value>false</default-value>
             </attribute-definition>
             <attribute-definition attribute-id="stripeUpdateInvoiceOnRefundWebhook">
                 <display-name xml:lang="x-default">Update SFCC Invoice on Stripe charge.refunded Webhook notification</display-name>
@@ -372,12 +323,12 @@ See more here:  https://stripe.com/docs/sources&#13;
             </attribute-definition>
 
             <attribute-definition attribute-id="stripeUseCheckoutSessions">
-                <display-name xml:lang="x-default">Use Stripe Checkout Sessions</display-name>
+                <display-name xml:lang="x-default">Use Stripe Checkout Sessions (SFRA Only)</display-name>
                 <description xml:lang="x-default">When enabled, STRIPE_PAYMENT_ELEMENT uses the embedded Payment Element with Checkout Sessions instead of the default Payment Element</description>
                 <type>boolean</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
-                <default-value>false</default-value>
+                <default-value>true</default-value>
             </attribute-definition>
         </custom-attribute-definitions>
         <group-definitions>
@@ -393,7 +344,6 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <attribute attribute-id="stripeAccountCountryCode"/>
                 <attribute attribute-id="stripeWebhookSigningSecret"/>
                 <attribute attribute-id="stripeAllowedWebHookStatuses"/>
-                <attribute attribute-id="stripeSaveCustomerCards"/>
                 <attribute attribute-id="stripeEnabled"/>
                 <attribute attribute-id="stripeUpdateInvoiceOnRefundWebhook"/>
                 <attribute attribute-id="stripeApiVersion"/>
@@ -416,12 +366,6 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <attribute attribute-id="stripeExpressCheckoutStyle"/>
                 <attribute attribute-id="stripeUseCheckoutSessions"/>
             </attribute-group>
-            <attribute-group group-id="Stripe Card Element and Payment Button Configs">
-                <display-name xml:lang="x-default">Stripe Card and Payment Request Button Configurations</display-name>
-                <attribute attribute-id="stripeCardElementCSSStyle"/>
-                <attribute attribute-id="stripeCustomCreditCardForm"/>
-            </attribute-group>
-
         </group-definitions>
     </type-extension>
 

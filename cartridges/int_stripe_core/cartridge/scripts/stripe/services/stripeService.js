@@ -62,56 +62,6 @@ function payloadToBody(payload) {
     return null;
 }
 
-const cardNumberRegex = /card.{1,6}number[^=]*=(\d*)/;
-
-/**
- * Replaces credit card number (a number following card_number=) in a given
- * string with a masked version, keeping only the last 4 digits.
- *
- * @param {type} msg - The string in which to replace the card number.
- * @return {string} - The same string with only card number masked.
- */
-function maskCardNumber(msg) {
-    if (msg && msg.length) {
-        const matches = msg.match(cardNumberRegex);
-
-        if (matches && matches.length > 1) {
-            const matched = matches[0];
-            const toMask = matches[1];
-            const masked = (new Array(toMask.length - 3)).join('*') + toMask.substr(-4);
-            const stringToReplace = matched.replace(toMask, masked);
-            return msg.replace(matched, stringToReplace);
-        }
-    }
-
-    return msg;
-}
-
-const cvcRegex = /card.{1,6}cvc[^=]*=(\d*)/;
-
-/**
- * Replaces CVC number (a number following card_cvc=) in a given
- * string with asterisks.
- *
- * @param {type} msg - The string in which to replace the cvc.
- * @return {string} - The same string with only cvc masked.
- */
-function maskCVC(msg) {
-    if (msg && msg.length) {
-        const matches = msg.match(cvcRegex);
-
-        if (matches && matches.length > 1) {
-            const matched = matches[0];
-            const toMask = matches[1];
-            const masked = (new Array(toMask.length + 1)).join('*');
-            const stringToReplace = matched.replace(toMask, masked);
-            return msg.replace(matched, stringToReplace);
-        }
-    }
-
-    return msg;
-}
-
 /**
  * Creates a Local Services Framework service definition
  *
@@ -139,13 +89,17 @@ function getStripeServiceDefinition() {
                     name: 'Stripe SFCCB2C',
                     partner_id: 'pp_partner_Fs71dOwRYXhmze',
                     url: 'https://docs.stripe.com/use-stripe-apps/salesforce-commerce-cloud',
-                    version: '24.0.3.' + framework
+                    version: '24.1.0.' + framework
                 }
             };
 
-            var idempotencyKey = require('dw/util/UUIDUtils').createUUID();
+            // Idempotency keys only apply to POST requests. Callers that may repeat the same logical
+            // operation pass a deterministic key (see idempotencyHelper.js) so Stripe can dedupe;
+            // otherwise every request gets a unique key.
+            if (requestObject.httpMethod === 'POST') {
+                svc.addHeader('Idempotency-Key', requestObject.idempotencyKey || require('dw/util/UUIDUtils').createUUID());
+            }
 
-            svc.addHeader('Idempotency-Key', idempotencyKey);
             svc.addHeader('Authorization', 'Bearer ' + apiKey);
             svc.addHeader('X-Stripe-Client-User-Agent', JSON.stringify(stripeHeader));
             svc.addHeader('Stripe-Version', apiVersion);
@@ -186,18 +140,6 @@ function getStripeServiceDefinition() {
 
             return mockResponsesHelper.getMockedResponse(svc);
         },
-
-        /**
-         * A callback that allows filtering communication URL, request, and response
-         * log messages. Must be implemented to have messages logged on Production.
-         *
-         * @param {string} msg - The original message to log.
-         * @returns {string} - The original message itself, as no sensitive data is
-         *   communicated.
-         */
-        filterLogMessage: function (msg) {
-            return maskCVC(maskCardNumber(msg));
-        }
     });
 }
 
@@ -234,6 +176,15 @@ function StripeServiceError(callResult) {
 }
 
 /**
+ * Checks that an endpoint only contains '/'-separated ID segments.
+ * @param {string} endpoint - API path
+ * @return {boolean} true when safe to call
+ */
+function isSafeEndpoint(endpoint) {
+    return typeof endpoint === 'string' && /^(\/[A-Za-z0-9_-]+)+$/.test(endpoint);
+}
+
+/**
  * Makes a call to Stripe web service given a request object.
  * Throws an error (StripeServiceError, which will have the call dw.svc.Result
  * object in callResult property) in case the result of a call is not ok.
@@ -247,9 +198,11 @@ function callService(requestObject) {
         throw new Error('Required requestObject parameter missing or incorrect.');
     }
 
-    const callResult = getStripeServiceDefinition().call(requestObject);
+    if (!isSafeEndpoint(requestObject.endpoint)) {
+        throw new Error('Invalid Stripe API endpoint.');
+    }
 
-    delete session.privacy.idempotencyKey;
+    const callResult = getStripeServiceDefinition().call(requestObject);
 
     if (!callResult.ok) {
         throw new StripeServiceError(callResult);
@@ -275,11 +228,12 @@ exports.customerSessions = {
 
 // https://stripe.com/docs/api/customers
 exports.customers = {
-    create: function (createCustomerPayload) {
+    create: function (createCustomerPayload, idempotencyKey) {
         var requestObject = {
             endpoint: '/customers',
             httpMethod: 'POST',
-            payload: createCustomerPayload
+            payload: createCustomerPayload,
+            idempotencyKey: idempotencyKey
         };
 
         return callService(requestObject);
@@ -331,7 +285,11 @@ exports.customers = {
     },
     list: function (email) {
         var requestObject = {
-            endpoint: '/customers?email=' + email + '&limit=5',
+            endpoint: '/customers',
+            queryString: {
+                email: email,
+                limit: 5
+            },
             httpMethod: 'GET'
         };
 
@@ -406,11 +364,12 @@ exports.paymentMethods = {
 
 // https://stripe.com/docs/api/payment_intents
 exports.paymentIntents = {
-    create: function (createPaymentIntentPayload) {
+    create: function (createPaymentIntentPayload, idempotencyKey) {
         var requestObject = {
             endpoint: '/payment_intents',
             httpMethod: 'POST',
-            payload: createPaymentIntentPayload
+            payload: createPaymentIntentPayload,
+            idempotencyKey: idempotencyKey
         };
 
         return callService(requestObject);
@@ -432,10 +391,11 @@ exports.paymentIntents = {
 
         return callService(requestObject);
     },
-    confirm: function (paymentIntentId, confirmPaymentIntentPayload) {
+    confirm: function (paymentIntentId, confirmPaymentIntentPayload, idempotencyKey) {
         var requestObject = {
             endpoint: ['/payment_intents', paymentIntentId, 'confirm'].join('/'),
-            httpMethod: 'POST'
+            httpMethod: 'POST',
+            idempotencyKey: idempotencyKey
         };
 
         if (confirmPaymentIntentPayload) {
@@ -444,10 +404,11 @@ exports.paymentIntents = {
 
         return callService(requestObject);
     },
-    capture: function (paymentIntentId, capturePaymentIntentPayload) {
+    capture: function (paymentIntentId, capturePaymentIntentPayload, idempotencyKey) {
         var requestObject = {
             endpoint: ['/payment_intents', paymentIntentId, 'capture'].join('/'),
-            httpMethod: 'POST'
+            httpMethod: 'POST',
+            idempotencyKey: idempotencyKey
         };
 
         if (capturePaymentIntentPayload) {
@@ -523,11 +484,12 @@ exports.sources = {
 
 // https://stripe.com/docs/api/charges
 exports.charges = {
-    create: function (createChargePayload) {
+    create: function (createChargePayload, idempotencyKey) {
         var requestObject = {
             endpoint: '/charges',
             httpMethod: 'POST',
-            payload: createChargePayload
+            payload: createChargePayload,
+            idempotencyKey: idempotencyKey
         };
 
         return callService(requestObject);
@@ -549,11 +511,12 @@ exports.charges = {
 
         return callService(requestObject);
     },
-    capture: function (chargeId, captureChargePayload) {
+    capture: function (chargeId, captureChargePayload, idempotencyKey) {
         var requestObject = {
             endpoint: ['/charges', chargeId, 'capture'].join('/'),
             httpMethod: 'POST',
-            payload: captureChargePayload
+            payload: captureChargePayload,
+            idempotencyKey: idempotencyKey
         };
 
         return callService(requestObject);
@@ -592,11 +555,12 @@ exports.checkoutSessions = {
 
 // https://stripe.com/docs/api/refunds
 exports.refunds = {
-    create: function (createRefundPayload) {
+    create: function (createRefundPayload, idempotencyKey) {
         var requestObject = {
             endpoint: '/refunds',
             httpMethod: 'POST',
-            payload: createRefundPayload
+            payload: createRefundPayload,
+            idempotencyKey: idempotencyKey
         };
 
         return callService(requestObject);

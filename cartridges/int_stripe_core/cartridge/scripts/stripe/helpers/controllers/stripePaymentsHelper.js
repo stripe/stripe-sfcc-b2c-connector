@@ -48,6 +48,44 @@ exports.FailOrder = failOrder;
 exports.FailOrder.public = true;
 
 /**
+ * Checks a Stripe object ID's prefix and format.
+ * @param {string} id - Stripe object ID
+ * @param {string} prefix - expected prefix, e.g. 'pi_'
+ * @return {boolean} true when valid
+ */
+function isValidStripeId(id, prefix) {
+    return typeof id === 'string'
+        && id.indexOf(prefix) === 0
+        && /^[A-Za-z0-9_]+$/.test(id);
+}
+
+/**
+ * Saves the payment method on the order of a returned Payment Intent.
+ * @param {Object} paymentIntent - Payment Intent
+ * @param {Object} paymentMethod - its Payment Method
+ */
+function saveReturnedPaymentMethod(paymentIntent, paymentMethod) {
+    try {
+        const orderNo = paymentIntent.metadata && paymentIntent.metadata.order_id;
+        const order = orderNo ? OrderMgr.getOrder(orderNo) : null;
+
+        if (!order || !paymentMethod || order.custom.stripePaymentIntentID !== paymentIntent.id) {
+            return;
+        }
+
+        const checkoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
+        const stripePaymentInstrument = checkoutHelper.getStripePaymentInstrument(order);
+
+        Transaction.wrap(function () {
+            checkoutHelper.savePaymentMethodDetails(stripePaymentInstrument, paymentMethod,
+                paymentMethod.billing_details && paymentMethod.billing_details.name);
+        });
+    } catch (e) {
+        logStripeErrorMessage('handleAPM saveReturnedPaymentMethod: ' + e.message);
+    }
+}
+
+/**
  * An entry point to handle returns from alternative payment methods.
  * @param {Object} sfra - .
  * @return {Object} redirectUrl.
@@ -70,6 +108,9 @@ function handleAPM(sfra) {
 
         // handle payments with source id
         if (!empty(sourceId)) {
+            if (!isValidStripeId(sourceId, 'src_')) {
+                throw new Error('Invalid source id');
+            }
             const source = stripeService.sources.retrieve(sourceId);
 
             if (source.client_secret !== sourceClientSecret) {
@@ -82,14 +123,21 @@ function handleAPM(sfra) {
         }
 
         if (!empty(checkoutSessionId)) {
+            if (!isValidStripeId(checkoutSessionId, 'cs_')) {
+                throw new Error('Invalid Checkout Session id');
+            }
             const checkoutSession = stripeService.checkoutSessions.retrieve(checkoutSessionId);
-            if (checkoutSession.status !== 'succeeded' || checkoutSession.status !== 'processing' || checkoutSession.status !== 'requires_capture') {
-                throw new Error('CheckoutSession Failed.');
+            // Session statuses are open / complete / expired; 'complete' includes delayed payments still processing
+            if (checkoutSession.status !== 'complete') {
+                throw new Error('Checkout Session not completed, status: ' + checkoutSession.status);
             }
         }
 
         // handle payment intents
         if (!empty(paymentIntentId)) {
+            if (!isValidStripeId(paymentIntentId, 'pi_')) {
+                throw new Error('Invalid PaymentIntent id');
+            }
             const paymentIntent = stripeService.paymentIntents.retrieve(paymentIntentId);
 
             if (paymentIntent.client_secret !== paymentIntentClientSecret) {
@@ -100,9 +148,10 @@ function handleAPM(sfra) {
                 throw new Error('Payment intent failed.');
             }
 
-            // Set a cookie to authenticate customers for Link
             if ((paymentIntent.status === 'succeeded' || paymentIntent.status === 'processing' || paymentIntent.status === 'requires_capture') && paymentIntent.payment_method) {
                 const paymentMethod = stripeService.paymentMethods.retrieve(paymentIntent.payment_method);
+
+                // Set a cookie to authenticate customers for Link
                 if (paymentMethod && paymentMethod.link && paymentMethod.link.persistent_token) {
                     var stripeCookie = new dw.web.Cookie('stripe.link.persistent_token', paymentMethod.link.persistent_token);
                     stripeCookie.setSecure(true);
@@ -111,6 +160,8 @@ function handleAPM(sfra) {
 
                     response.addHttpCookie(stripeCookie);
                 }
+
+                saveReturnedPaymentMethod(paymentIntent, paymentMethod);
             }
         }
 
@@ -123,9 +174,9 @@ function handleAPM(sfra) {
         logStripeErrorMessage('handleAPM: ' + e.message);
 
         if (sfra) {
-            redirectUrl = URLUtils.url('Checkout-Begin', 'stage', 'payment', 'apm_return_error', e.message);
+            redirectUrl = URLUtils.url('Checkout-Begin', 'stage', 'payment', 'apm_return_error', 'true');
         } else {
-            redirectUrl = URLUtils.url('COBilling-Start', 'apm_return_error', e.message);
+            redirectUrl = URLUtils.url('COBilling-Start', 'apm_return_error', 'true');
         }
     }
 

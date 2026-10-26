@@ -16,11 +16,6 @@ var PaymentMgr = require('dw/order/PaymentMgr');
  * @returns {ArrayList} Returns an array with the valid PaymentInstruments.
  */
 function validatePaymentInstruments(paymentContainer, countryCode, amount) {
-	// Stripe changes BEGIN
-	var stripeCheckoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
-	var cardPaymentsHandledByStripe = stripeCheckoutHelper.isStripeCardsPaymentMethodEnabled();
-	// Stripe changes END
-
     var paymentInstruments = paymentContainer.getPaymentInstruments();
 
     // Gets applicable payment methods.
@@ -48,10 +43,7 @@ function validatePaymentInstruments(paymentContainer, countryCode, amount) {
         // Checks whether payment method is still applicable.
         if (method && methods.contains(method)) {
             // In case of method CREDIT_CARD, check payment cards
-			// Stripe changes BEGIN
-			// Do not check if card type is enabled in BM if card payments are handled by Stripe.
-            if (!cardPaymentsHandledByStripe && PaymentInstrument.METHOD_CREDIT_CARD.equals(paymentInstrument.paymentMethod)) {
-            // Stripe changes END
+            if (PaymentInstrument.METHOD_CREDIT_CARD.equals(paymentInstrument.paymentMethod)) {
 
                 // Gets payment card.
                 var card = PaymentMgr.getPaymentCard(paymentInstrument.creditCardType);

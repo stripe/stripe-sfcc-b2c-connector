@@ -7,3 +7,5 @@ demandware.iml
 .DS_STORE
 nbproject/
 .vscode/
+.claude/
+CLAUDE.md

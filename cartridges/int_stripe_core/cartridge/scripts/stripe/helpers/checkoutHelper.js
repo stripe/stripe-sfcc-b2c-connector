@@ -13,25 +13,6 @@ exports.getPRCountry = function () {
     return require('dw/system/Site').current.getCustomPreferenceValue('stripeAccountCountryCode');
 };
 
-/**
- * Checks if Stripe integration for card payments is enabled.
- *
- * @return {boolean} - True if Stripe is used as processor for card payments.
- */
-exports.isStripeCardsPaymentMethodEnabled = function () {
-    const PaymentMgr = require('dw/order/PaymentMgr');
-    const PaymentInstrument = require('dw/order/PaymentInstrument');
-
-    const cardPaymentMethod = PaymentMgr.getPaymentMethod(PaymentInstrument.METHOD_CREDIT_CARD);
-    if (cardPaymentMethod && cardPaymentMethod.active) {
-        const paymentProcessor = cardPaymentMethod.getPaymentProcessor();
-
-        return (paymentProcessor && 'STRIPE_CREDIT'.equals(paymentProcessor.ID));
-    }
-
-    return false;
-};
-
 exports.areStripeAlernativePaymentMethodsEnabled = function () {
     const PaymentMgr = require('dw/order/PaymentMgr');
 
@@ -50,7 +31,7 @@ exports.areStripeAlernativePaymentMethodsEnabled = function () {
 };
 
 exports.isAnyStripePaymentMethodEnabled = function () {
-    return this.isStripeCardsPaymentMethodEnabled() || this.areStripeAlernativePaymentMethodsEnabled();
+    return this.areStripeAlernativePaymentMethodsEnabled();
 };
 
 /**
@@ -64,27 +45,9 @@ function isStripePaymentInstrument(paymentInstrument) {
         return false;
     }
 
-    const stripePaymentInstrumentRegex = /(^BANK_TRANSFER$|^CREDIT_CARD$|^STRIPE_.+)/i;
+    const stripePaymentInstrumentRegex = /(^BANK_TRANSFER$|^STRIPE_.+)/i;
     return stripePaymentInstrumentRegex.test(paymentInstrument.paymentMethod);
 }
-
-/**
- * Check if customer cards should always be saved for guest customers
- * @returns {boolean} true if customer cards always should be saved
- */
-function shouldAlwaysSaveGuessCustomerCards() {
-    return dw.system.Site.getCurrent().getCustomPreferenceValue('stripeSaveCustomerCards').value === 'always';
-}
-
-/**
- * Check if customer should be asked before save cards on Stripe side
- * @returns {boolean} true customer should be asked before save cards on Stripe side
- */
-function shouldAskBeforeSaveGuessCustomerCards() {
-    return dw.system.Site.getCurrent().getCustomPreferenceValue('stripeSaveCustomerCards').value === 'ask';
-}
-
-exports.shouldAskBeforeSaveGuessCustomerCards = shouldAskBeforeSaveGuessCustomerCards;
 
 /**
  * Gets the Stripe payment instrument created for a given line item container.
@@ -126,30 +89,6 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
         if ('sourceId' in params) {
             paymentInstrument.custom.stripeSourceID = params.sourceId;
         }
-
-        if ('cardHolder' in params) {
-            paymentInstrument.creditCardHolder = params.cardHolder;
-        }
-
-        if ('cardNumber' in params) {
-            paymentInstrument.creditCardNumber = params.cardNumber;
-        }
-
-        if ('cardType' in params) {
-            paymentInstrument.creditCardType = params.cardType;
-        }
-
-        if ('cardExpMonth' in params) {
-            paymentInstrument.creditCardExpirationMonth = params.cardExpMonth;
-        }
-
-        if ('cardExpYear' in params) {
-            paymentInstrument.creditCardExpirationYear = params.cardExpYear;
-        }
-
-        if ('prUsed' in params) {
-            paymentInstrument.custom.stripePRUsed = params.prUsed;
-        }
     }
 
     const paymentTransaction = paymentInstrument.paymentTransaction;
@@ -160,15 +99,6 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
     // so we need to add the Payment processor and transaction details manually
     if (!paymentTransaction.getPaymentProcessor() && paymentMethodId === 'STRIPE_PAYMENT_ELEMENT') {
         processor = PaymentMgr.getPaymentMethod('STRIPE_PAYMENT_ELEMENT').getPaymentProcessor();
-        if (processor) {
-            paymentTransaction.setPaymentProcessor(processor);
-        }
-    }
-
-    // for Stripe Card, we also create the order before actual confirmation the payment on stripe
-    // so we need to add the Payment processor and transaction details manually
-    if (!paymentTransaction.getPaymentProcessor() && paymentMethodId === 'CREDIT_CARD') {
-        processor = PaymentMgr.getPaymentMethod('CREDIT_CARD').getPaymentProcessor();
         if (processor) {
             paymentTransaction.setPaymentProcessor(processor);
         }
@@ -194,10 +124,12 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
 
         if (params.saveCard) {
             if (!stripeCustomerId) {
-                const newStripeCustomer = stripeService.customers.create({
+                const newStripeCustomerPayload = {
                     email: customer.profile.email,
                     name: customer.profile.firstName + ' ' + customer.profile.lastName
-                });
+                };
+                const newStripeCustomer = stripeService.customers.create(newStripeCustomerPayload,
+                    require('*/cartridge/scripts/stripe/helpers/idempotencyHelper').buildKey('customer', customer.profile.customerNo, newStripeCustomerPayload));
 
                 stripeCustomerId = newStripeCustomer.id;
                 customer.profile.custom.stripeCustomerID = stripeCustomerId;
@@ -211,15 +143,17 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
         }
     }
 
-    if (!customer.authenticated && (shouldAlwaysSaveGuessCustomerCards() || (shouldAskBeforeSaveGuessCustomerCards() && params.saveGuessCard))) {
+    if (!customer.authenticated) {
         const customerEmail = lineItemCtnr.getCustomerEmail();
 
         const guessCustomerName = lineItemCtnr.getBillingAddress().getFullName();
 
-        const newStripeGuessCustomer = stripeService.customers.create({
+        const newStripeGuessCustomerPayload = {
             email: customerEmail,
             name: guessCustomerName
-        });
+        };
+        const newStripeGuessCustomer = stripeService.customers.create(newStripeGuessCustomerPayload,
+            require('*/cartridge/scripts/stripe/helpers/idempotencyHelper').buildKey('guest-customer', lineItemCtnr.UUID, newStripeGuessCustomerPayload));
 
         paymentInstrument.custom.stripeSavePaymentForReAuthorise = true;
 
@@ -241,7 +175,14 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
     }
 };
 
-exports.createPaymentIntent = function (paymentInstrument, orderShipments) {
+/**
+ * Creates and confirms a Payment Intent for an order.
+ * @param {dw.order.PaymentInstrument} paymentInstrument - Stripe payment instrument
+ * @param {dw.util.Collection} orderShipments - Order shipments
+ * @param {string} orderNo - Order number the Payment Intent is created for
+ * @returns {Object} - Stripe Payment Intent
+ */
+exports.createPaymentIntent = function (paymentInstrument, orderShipments, orderNo) {
     const paymentMethod = paymentInstrument.custom.stripeSourceID;
 
     var currentCurency = dw.util.Currency.getCurrency(paymentInstrument.paymentTransaction.amount.currencyCode);
@@ -293,14 +234,18 @@ exports.createPaymentIntent = function (paymentInstrument, orderShipments) {
     }
 
     const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
+    const idempotencyHelper = require('*/cartridge/scripts/stripe/helpers/idempotencyHelper');
 
-    const paymentIntent = stripeService.paymentIntents.create(createPaymentIntentPayload);
+    const idempotencyKey = idempotencyHelper.buildKey('pi-create', orderNo || session.privacy.stripeOrderNumber, createPaymentIntentPayload);
 
-    return paymentIntent;
+    return idempotencyHelper.callWithRetry(function () {
+        return stripeService.paymentIntents.create(createPaymentIntentPayload, idempotencyKey);
+    }, idempotencyKey);
 };
 
 exports.confirmPaymentIntent = function (paymentIntentId, paymentInstrument) {
     const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
+    const idempotencyHelper = require('*/cartridge/scripts/stripe/helpers/idempotencyHelper');
 
     const paymentMethod = paymentInstrument.custom.stripeSourceID;
 
@@ -309,9 +254,14 @@ exports.confirmPaymentIntent = function (paymentIntentId, paymentInstrument) {
         return_url: dw.web.URLUtils.https('StripePaymentsAPM-HandleAPM').toString()
     };
 
-    const paymentIntent = stripeService.paymentIntents.confirm(paymentIntentId, paymentIntentPayload);
+    // A Payment Intent can legitimately be confirmed more than once (e.g. another 3DS round), so
+    // the key is scoped to this call: it only dedupes the retry below, not later confirmations.
+    const callId = require('dw/util/UUIDUtils').createUUID();
+    const idempotencyKey = idempotencyHelper.buildKey('pi-confirm', paymentIntentId + '-' + callId, paymentIntentPayload);
 
-    return paymentIntent;
+    return idempotencyHelper.callWithRetry(function () {
+        return stripeService.paymentIntents.confirm(paymentIntentId, paymentIntentPayload, idempotencyKey);
+    }, idempotencyKey);
 };
 
 exports.getSiteID = function () {
@@ -442,29 +392,46 @@ exports.isAPMOrder = function (order) {
     return false;
 };
 
-exports.refundCharge = function (order) {
-    const PaymentInstrument = require('dw/order/PaymentInstrument');
-    const cardPaymentInstruments = order.getPaymentInstruments(PaymentInstrument.METHOD_CREDIT_CARD);
-    const cardPaymentInstrument = cardPaymentInstruments.length && cardPaymentInstruments[0];
-    const chargeId = cardPaymentInstrument && cardPaymentInstrument.custom.stripeChargeID;
+/**
+ * Saves the payment method type and card details on the payment instrument.
+ * @param {dw.order.OrderPaymentInstrument} paymentInstrument - Stripe payment instrument
+ * @param {Object} paymentMethodDetails - PaymentMethod or charge payment_method_details
+ * @param {string} [holderName] - billing name
+ */
+exports.savePaymentMethodDetails = function (paymentInstrument, paymentMethodDetails, holderName) {
+    if (!paymentInstrument || !paymentMethodDetails || !paymentMethodDetails.type) {
+        return;
+    }
 
-    if (chargeId) {
-        const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
+    const stripePaymentsHelper = require('*/cartridge/scripts/stripe/helpers/controllers/stripePaymentsHelper');
+    var card = paymentMethodDetails.card;
+    var type = (card && card.wallet && card.wallet.type) || paymentMethodDetails.type;
 
-        try {
-            stripeService.refunds.create({
-                charge: chargeId
-            });
-        } catch (e) {
-            let errorMessage = 'Failed to refund charge ' + chargeId;
-            errorMessage += '\n Original error was: ' + e.message;
-            const Logger = require('dw/system/Logger');
-            Logger.error(errorMessage);
-            const Transaction = require('dw/system/Transaction');
-            Transaction.wrap(function () {
-                order.addNote('Stripe refund failed', errorMessage);
-            });
+    try {
+        if (card && card.last4) {
+            paymentInstrument.setCreditCardNumber('************' + card.last4);
+            if (card.brand) {
+                paymentInstrument.setCreditCardType(card.brand);
+            }
+            if (card.exp_month) {
+                paymentInstrument.setCreditCardExpirationMonth(Number(card.exp_month));
+            }
+            if (card.exp_year) {
+                paymentInstrument.setCreditCardExpirationYear(Number(card.exp_year));
+            }
         }
+        if (holderName) {
+            paymentInstrument.setCreditCardHolder(holderName);
+        }
+    } catch (e) {
+        stripePaymentsHelper.LogStripeErrorMessage('savePaymentMethodDetails: could not save card details: ' + e.message);
+    }
+
+    // Separate guard: fails if the stripePaymentMethodType metadata is not imported yet
+    try {
+        paymentInstrument.custom.stripePaymentMethodType = type;
+    } catch (e) {
+        stripePaymentsHelper.LogStripeErrorMessage('savePaymentMethodDetails: could not save stripePaymentMethodType (is the metadata imported?): ' + e.message);
     }
 };
 
@@ -652,7 +619,6 @@ exports.getShippingOptionsSFRA = function (params) {
                 returnObj.shippingMethods.push({
                     id: shippingMethod.ID,
                     displayName: shippingMethod.displayName,
-                    detail: shippingMethod.description,
                     amount: Math.round(shipmentShippingModel.getShippingCost(shippingMethod).amount.value * multiplier)
                 });
             }
@@ -704,7 +670,6 @@ exports.getShippingOptionsSiteGenesis = function (params) {
                 returnObj.shippingMethods.push({
                     id: shippingMethod.ID,
                     displayName: shippingMethod.displayName,
-                    detail: shippingMethod.description,
                     amount: Math.round(shipmentShippingModel.getShippingCost(shippingMethod).amount.value * multiplier)
                 });
             }
@@ -718,10 +683,23 @@ exports.getShippingOptionsSiteGenesis = function (params) {
     return returnObj;
 };
 
+/**
+ * Gets the Stripe.js locale for the current SFCC locale.
+ * @returns {string} Stripe locale, e.g. 'fr', 'en-GB' or 'auto'
+ */
 exports.getSiteLocale = function () {
     var locale = request.getLocale();
 
-    return locale ? locale.replace('_', '-') : null;
+    if (!locale || locale === 'default') {
+        return 'auto';
+    }
+
+    var stripeLocale = String(locale).replace('_', '-');
+    var supportedRegionLocales = ['en-GB', 'es-419', 'fr-CA', 'pt-BR', 'zh-HK', 'zh-TW'];
+
+    return supportedRegionLocales.indexOf(stripeLocale) !== -1
+        ? stripeLocale
+        : stripeLocale.split('-')[0].toLowerCase();
 };
 
 exports.isBasketPaymentIntentValid = function () {
@@ -898,6 +876,47 @@ exports.getBankTransferPaymentMethodOptions =  function(billingAddress) {
 }
 
 /**
+ * Builds Checkout Session line items, or a single line when they don't add up to the amount owed.
+ * @param {Object} basketDetails - Result of getStripeOrderDetails
+ * @return {Array} - Checkout Session line_items
+ */
+function getCheckoutSessionLineItems(basketDetails) {
+    const Resource = require('dw/web/Resource');
+    const currency = basketDetails.currency;
+    var itemsTotal = 0;
+
+    var lineItems = JSON.parse(basketDetails.order_items).map(function (item) {
+        var name = item.description || item.type;
+        if (item.quantity > 1) {
+            name += ' x ' + item.quantity;
+        }
+        itemsTotal += item.amount;
+
+        return {
+            price_data: {
+                currency: currency,
+                unit_amount: item.amount,
+                product_data: { name: name }
+            },
+            quantity: 1
+        };
+    });
+
+    if (itemsTotal === basketDetails.amount) {
+        return lineItems;
+    }
+
+    return [{
+        price_data: {
+            currency: currency,
+            unit_amount: basketDetails.amount,
+            product_data: { name: Resource.msg('checkoutsession.ordertotal', 'stripe', null) }
+        },
+        quantity: 1
+    }];
+}
+
+/**
  * Creates a Stripe Checkout Session for the given order.
  * Used when stripeUseCheckoutSessions site preference is enabled.
  *
@@ -911,26 +930,11 @@ exports.createCheckoutSession = function (basket) {
     const stripeChargeCapture = site.getCustomPreferenceValue('stripeChargeCapture');
 
     var basketDetails = exports.getStripeOrderDetails(basket);
-    var basketItems = JSON.parse(basketDetails.order_items);
-    var currency = basketDetails.currency;
-
-    var lineItems = basketItems.map(function (item) {
-        return {
-            price_data: {
-                currency: currency,
-                unit_amount: item.amount,
-                product_data: {
-                    name: item.description || item.type
-                }
-            },
-            quantity: item.quantity || 1
-        };
-    });
 
     var createCheckoutSessionPayload = {
         ui_mode: 'elements',
         mode: 'payment',
-        line_items: lineItems,
+        line_items: getCheckoutSessionLineItems(basketDetails),
         return_url:  dw.web.URLUtils.https("StripePaymentsAPM-HandleAPM").toString(),
         payment_intent_data: {
             capture_method: stripeChargeCapture ? 'automatic' : 'manual',
@@ -961,4 +965,20 @@ exports.retrieveCheckoutSession = function (sessionId) {
     const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
     return stripeService.checkoutSessions.retrieve(sessionId);
+};
+
+/**
+ * Checks that a Checkout Session charges the amount owed.
+ * @param {Object} checkoutSession - Stripe Checkout Session
+ * @param {dw.order.LineItemCtnr} lineItemCtnr - Basket or order
+ * @return {boolean} - True if amount and currency match
+ */
+exports.isCheckoutSessionAmountValid = function (checkoutSession, lineItemCtnr) {
+    const expected = exports.getStripeOrderDetails(lineItemCtnr);
+    const conversion = checkoutSession.currency_conversion;
+    const sessionAmount = conversion ? conversion.amount_total : checkoutSession.amount_total;
+    const sessionCurrency = conversion ? conversion.source_currency : checkoutSession.currency;
+
+    return sessionAmount === expected.amount
+        && String(sessionCurrency).toLowerCase() === expected.currency;
 };

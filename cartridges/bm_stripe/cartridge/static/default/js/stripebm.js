@@ -12,6 +12,53 @@ var ready = (callback) => {
     }
 };
 
+/**
+ * Submits a refund / capture form via AJAX.
+ * @param {HTMLButtonElement} button - Submit button
+ * @param {string} resultElementId - ID of the element displaying the result
+ */
+var submitPaymentOperationForm = (button, resultElementId) => {
+    var form = document.getElementById('stripe-payments-setup-form');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+
+    if (button.disabled) {
+        return;
+    }
+    button.disabled = true; // eslint-disable-line no-param-reassign
+
+    var httpRequest = new XMLHttpRequest();
+    var formData = form.serialize();
+
+    httpRequest.onreadystatechange = function () {
+        if (this.readyState !== 4) {
+            return;
+        }
+
+        button.disabled = false; // eslint-disable-line no-param-reassign
+
+        if (this.status === 200) {
+            var response = JSON.parse(this.responseText);
+            var result = document.getElementById(resultElementId);
+            result.style.color = response.error ? '#ff0000' : '';
+            result.innerHTML = response.message;
+
+            if (!response.error) {
+                // New nonce only after success: retries reuse the same idempotency key
+                form.elements.stripe_request_nonce.value = (window.crypto && window.crypto.randomUUID)
+                    ? window.crypto.randomUUID()
+                    : Date.now().toString(36) + Math.random().toString(36).substring(2);
+            }
+        }
+    };
+
+    httpRequest.open('POST', form.action, true);
+    httpRequest.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    httpRequest.send(formData);
+};
+
 ready(() => {
     if (document.querySelector('button.stripe-quick-setup-submit')) {
         // eslint-disable-next-line no-unused-vars
@@ -96,29 +143,7 @@ ready(() => {
         // eslint-disable-next-line no-unused-vars
         document.querySelector('button.stripe-payment-refund-submit').addEventListener('click', (e) => {
             e.preventDefault();
-
-            var stripePaymentRefundForm = document.getElementById('stripe-payments-setup-form');
-            var isStripePaymentRefundFormValid = stripePaymentRefundForm.checkValidity();
-            if (!isStripePaymentRefundFormValid) {
-                stripePaymentRefundForm.reportValidity();
-                return;
-            }
-
-            var httpRequest = new XMLHttpRequest();
-            var formData = document.getElementById('stripe-payments-setup-form').serialize();
-
-            httpRequest.onreadystatechange = function () {
-                if (this.readyState === 4 && this.status === 200) {
-                    var response = JSON.parse(this.responseText);
-                    var result = document.getElementById('payment-refund-result');
-                    result.style.color = response.error ? '#ff0000' : '';
-                    result.innerHTML = response.message;
-                }
-            };
-
-            httpRequest.open('POST', document.getElementById('stripe-payments-setup-form').action, true);
-            httpRequest.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-            httpRequest.send(formData);
+            submitPaymentOperationForm(e.currentTarget, 'payment-refund-result');
         });
     }
 
@@ -126,29 +151,7 @@ ready(() => {
         // eslint-disable-next-line no-unused-vars
         document.querySelector('button.stripe-payment-capture-submit').addEventListener('click', (e) => {
             e.preventDefault();
-
-            var stripePaymentCaptureForm = document.getElementById('stripe-payments-setup-form');
-            var isStripePaymentCaptureFormValid = stripePaymentCaptureForm.checkValidity();
-            if (!isStripePaymentCaptureFormValid) {
-                stripePaymentCaptureForm.reportValidity();
-                return;
-            }
-
-            var httpRequest = new XMLHttpRequest();
-            var formData = document.getElementById('stripe-payments-setup-form').serialize();
-
-            httpRequest.onreadystatechange = function () {
-                if (this.readyState === 4 && this.status === 200) {
-                    var response = JSON.parse(this.responseText);
-                    var result = document.getElementById('payment-capture-result');
-                    result.style.color = response.error ? '#ff0000' : '';
-                    result.innerHTML = response.message;
-                }
-            };
-
-            httpRequest.open('POST', document.getElementById('stripe-payments-setup-form').action, true);
-            httpRequest.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-            httpRequest.send(formData);
+            submitPaymentOperationForm(e.currentTarget, 'payment-capture-result');
         });
     }
 });

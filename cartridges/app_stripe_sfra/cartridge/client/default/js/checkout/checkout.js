@@ -8,6 +8,14 @@ var billingHelpers = require('./billing');
 var shippingHelpers = require('base/checkout/shipping');
 var summaryHelpers = require('base/checkout/summary');
 
+var baseHandleCreditCardNumber = base.handleCreditCardNumber;
+base.handleCreditCardNumber = function () {
+    // The SFRA card form is not rendered: cards go through the Payment Element
+    if ($('.cardNumber').length && baseHandleCreditCardNumber) {
+        baseHandleCreditCardNumber();
+    }
+};
+
 base.updateCheckoutView = function () {
     $('body').on('checkout:updateCheckoutView', function (e, data) {
         shippingHelpers.methods.updateMultiShipInformation(data.order);
