@@ -614,7 +614,7 @@ function expressCheckoutSubmitOrder() {
             shippingAddress.setFirstName(shippingFirstName);
             shippingAddress.setLastName(shippingLastname);
             shippingAddress.setAddress1(stripeShippingAddress.line1);
-            shippingAddress.setAddress2(stripeShippingAddress.line1);
+            shippingAddress.setAddress2(stripeShippingAddress.line2);
             shippingAddress.setCity(stripeShippingAddress.city);
             shippingAddress.setPostalCode(stripeShippingAddress.postal_code);
             shippingAddress.setCountryCode(stripeShippingAddress.country);
@@ -642,7 +642,7 @@ function expressCheckoutSubmitOrder() {
             }
 
             billingAddress.setFirstName(billingFirstName);
-            billingAddress.setLastName(billingFirstName);
+            billingAddress.setLastName(billingLastName);
             billingAddress.setAddress1(stripeBillingAddress.line1);
             billingAddress.setAddress2(stripeBillingAddress.line2);
             billingAddress.setCity(stripeBillingAddress.city);

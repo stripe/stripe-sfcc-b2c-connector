@@ -204,25 +204,6 @@ server.post('HandlePaymentsSetup', function (req, res, next) {
     }
 });
 
-/**
- * Converts a BM amount to the currency's smallest unit.
- * @param {string} amount - Amount entered in BM
- * @param {string} currencyCode - Currency code of the order
- * @returns {number|null} - Amount in the smallest currency unit, or null if invalid
- */
-function toStripeAmount(amount, currencyCode) {
-    const value = parseFloat(amount);
-
-    if (isNaN(value) || value <= 0) {
-        return null;
-    }
-
-    const Currency = require('dw/util/Currency');
-    const fractionDigits = Currency.getCurrency(currencyCode).getDefaultFractionDigits();
-
-    return Math.round(value * Math.pow(10, fractionDigits));
-}
-
 server.get('PaymentsRefund', function (req, res, next) {
     res.render('/stripebm/paymentsrefund');
     next();
@@ -259,7 +240,7 @@ server.post('HandlePaymentsRefund', function (req, res, next) {
             return next();
         }
 
-        const amount = toStripeAmount(amountToRefund, order.getCurrencyCode());
+        const amount = stripeBmHelper.toStripeMinorUnits(amountToRefund, order.getCurrencyCode());
         if (!amount) {
             res.json({
                 error: true,
@@ -381,7 +362,7 @@ server.post('HandlePaymentsCapture', function (req, res, next) {
             return next();
         }
 
-        const amount = toStripeAmount(amountToCapture, order.getCurrencyCode());
+        const amount = stripeBmHelper.toStripeMinorUnits(amountToCapture, order.getCurrencyCode());
         if (!amount) {
             res.json({
                 error: true,

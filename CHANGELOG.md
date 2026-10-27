@@ -3,6 +3,7 @@
 ## 24.1.0
 * Checkout Sessions Implementation
 * Adaptive Pricing with Checkout Sessions
+* Checkout Sessions are off by default (`stripeUseCheckoutSessions`). Before enabling them on an existing installation, add `checkout.session.completed`, `checkout.session.async_payment_succeeded` and `checkout.session.async_payment_failed` to the Stripe webhook endpoint and to `stripeAllowedWebHookStatuses` (Quick Setup does both), and make sure `stripeApiVersion` is on `2026-04-22.dahlia` and `stripeApiURL` is on 'https://js.stripe.com/dahlia/stripe.js' if you saved your own values
 * Improved localization logic
 * Webhooks: duplicate deliveries of an already stored event are acknowledged with HTTP 200 instead of 500, so Stripe stops retrying
 * Webhooks: the processing job no longer re-charges a source that already has a charge, and no longer marks failed / cancelled / already paid orders as paid again or moves exported orders back to export READY

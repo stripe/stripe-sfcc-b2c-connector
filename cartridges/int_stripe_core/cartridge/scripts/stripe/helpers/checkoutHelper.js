@@ -81,9 +81,12 @@ exports.removeStripePaymentInstruments = function (lineItemCtnr) {
 exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId, params) {
     exports.removeStripePaymentInstruments(lineItemCtnr);
 
-    const paymentInstrument = lineItemCtnr.createPaymentInstrument(paymentMethodId, this.getNonGiftCertificateAmount(lineItemCtnr));
+    // A leftover card instrument (another processor) would be authorized as well
+    lineItemCtnr.getPaymentInstruments(dw.order.PaymentInstrument.METHOD_CREDIT_CARD).toArray().forEach(function (cardInstrument) {
+        lineItemCtnr.removePaymentInstrument(cardInstrument);
+    });
 
-    const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
+    const paymentInstrument = lineItemCtnr.createPaymentInstrument(paymentMethodId, this.getNonGiftCertificateAmount(lineItemCtnr));
 
     if (params) {
         if ('sourceId' in params) {
@@ -119,49 +122,8 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
         paymentTransaction.custom.stripeOrderNumber = session.privacy.stripeOrderNumber;
     }
 
-    if (customer.authenticated && customer.profile && customer.profile.email) {
-        let stripeCustomerId = customer.profile.custom.stripeCustomerID;
-
-        if (params.saveCard) {
-            if (!stripeCustomerId) {
-                const newStripeCustomerPayload = {
-                    email: customer.profile.email,
-                    name: customer.profile.firstName + ' ' + customer.profile.lastName
-                };
-                const newStripeCustomer = stripeService.customers.create(newStripeCustomerPayload,
-                    require('*/cartridge/scripts/stripe/helpers/idempotencyHelper').buildKey('customer', customer.profile.customerNo, newStripeCustomerPayload));
-
-                stripeCustomerId = newStripeCustomer.id;
-                customer.profile.custom.stripeCustomerID = stripeCustomerId;
-            }
-
-            paymentInstrument.custom.stripeSavePaymentInstrument = true;
-        }
-
-        if (stripeCustomerId) {
-            paymentInstrument.custom.stripeCustomerID = stripeCustomerId;
-        }
-    }
-
-    if (!customer.authenticated) {
-        const customerEmail = lineItemCtnr.getCustomerEmail();
-
-        const guessCustomerName = lineItemCtnr.getBillingAddress().getFullName();
-
-        const newStripeGuessCustomerPayload = {
-            email: customerEmail,
-            name: guessCustomerName
-        };
-        const newStripeGuessCustomer = stripeService.customers.create(newStripeGuessCustomerPayload,
-            require('*/cartridge/scripts/stripe/helpers/idempotencyHelper').buildKey('guest-customer', lineItemCtnr.UUID, newStripeGuessCustomerPayload));
-
-        paymentInstrument.custom.stripeSavePaymentForReAuthorise = true;
-
-        paymentInstrument.custom.stripeSavePaymentInstrument = true;
-
-        if (newStripeGuessCustomer && newStripeGuessCustomer.id) {
-            paymentInstrument.custom.stripeCustomerID = newStripeGuessCustomer.id;
-        }
+    if (customer.authenticated && customer.profile && customer.profile.custom.stripeCustomerID) {
+        paymentInstrument.custom.stripeCustomerID = customer.profile.custom.stripeCustomerID;
     }
 
     const stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
@@ -173,95 +135,6 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
     if (paymentInstrument) {
         delete lineItemCtnr.custom.stripeIsPaymentIntentInReview; // eslint-disable-line
     }
-};
-
-/**
- * Creates and confirms a Payment Intent for an order.
- * @param {dw.order.PaymentInstrument} paymentInstrument - Stripe payment instrument
- * @param {dw.util.Collection} orderShipments - Order shipments
- * @param {string} orderNo - Order number the Payment Intent is created for
- * @returns {Object} - Stripe Payment Intent
- */
-exports.createPaymentIntent = function (paymentInstrument, orderShipments, orderNo) {
-    const paymentMethod = paymentInstrument.custom.stripeSourceID;
-
-    var currentCurency = dw.util.Currency.getCurrency(paymentInstrument.paymentTransaction.amount.currencyCode);
-    var multiplier = Math.pow(10, currentCurency.getDefaultFractionDigits());
-    var amount = Math.round(paymentInstrument.paymentTransaction.amount.value * multiplier);
-    const stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
-
-    const currency = paymentInstrument.paymentTransaction.amount.currencyCode.toLowerCase();
-
-    const createPaymentIntentPayload = {
-        payment_method: paymentMethod,
-        amount: amount,
-        currency: currency,
-        confirmation_method: 'manual',
-        capture_method: stripeChargeCapture ? 'automatic' : 'manual',
-        confirm: true
-    };
-
-    if (paymentInstrument.custom.stripeCustomerID) {
-        createPaymentIntentPayload.customer = paymentInstrument.custom.stripeCustomerID;
-    }
-
-    if (paymentInstrument.custom.stripeSavePaymentInstrument) {
-        createPaymentIntentPayload.save_payment_method = true;
-    }
-
-    if (!stripeChargeCapture && paymentInstrument.custom.stripeSavePaymentForReAuthorise) {
-        createPaymentIntentPayload.setup_future_usage = 'off_session';
-    }
-
-    var multicaptureEnabled = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeMultiCaptureEnabled');
-
-    if (multicaptureEnabled) {
-        createPaymentIntentPayload.payment_method_options = {
-            card: {
-                request_multicapture: 'if_available'
-            }
-        };
-    }
-
-    if (session.privacy.stripeOrderNumber) {
-        createPaymentIntentPayload.metadata = {};
-        createPaymentIntentPayload.metadata.order_id = session.privacy.stripeOrderNumber;
-        createPaymentIntentPayload.metadata.site_id = dw.system.Site.getCurrent().getID();
-    }
-
-    if (orderShipments && dw.system.Site.getCurrent().getCustomPreferenceValue('includeShippingDetailsInPaymentIntentPayload')) {
-        createPaymentIntentPayload.shipping = exports.getPaymentIntentShipmentPayload(orderShipments);
-    }
-
-    const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
-    const idempotencyHelper = require('*/cartridge/scripts/stripe/helpers/idempotencyHelper');
-
-    const idempotencyKey = idempotencyHelper.buildKey('pi-create', orderNo || session.privacy.stripeOrderNumber, createPaymentIntentPayload);
-
-    return idempotencyHelper.callWithRetry(function () {
-        return stripeService.paymentIntents.create(createPaymentIntentPayload, idempotencyKey);
-    }, idempotencyKey);
-};
-
-exports.confirmPaymentIntent = function (paymentIntentId, paymentInstrument) {
-    const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
-    const idempotencyHelper = require('*/cartridge/scripts/stripe/helpers/idempotencyHelper');
-
-    const paymentMethod = paymentInstrument.custom.stripeSourceID;
-
-    const paymentIntentPayload = {
-        payment_method: paymentMethod,
-        return_url: dw.web.URLUtils.https('StripePaymentsAPM-HandleAPM').toString()
-    };
-
-    // A Payment Intent can legitimately be confirmed more than once (e.g. another 3DS round), so
-    // the key is scoped to this call: it only dedupes the retry below, not later confirmations.
-    const callId = require('dw/util/UUIDUtils').createUUID();
-    const idempotencyKey = idempotencyHelper.buildKey('pi-confirm', paymentIntentId + '-' + callId, paymentIntentPayload);
-
-    return idempotencyHelper.callWithRetry(function () {
-        return stripeService.paymentIntents.confirm(paymentIntentId, paymentIntentPayload, idempotencyKey);
-    }, idempotencyKey);
 };
 
 exports.getSiteID = function () {
@@ -917,11 +790,9 @@ function getCheckoutSessionLineItems(basketDetails) {
 }
 
 /**
- * Creates a Stripe Checkout Session for the given order.
- * Used when stripeUseCheckoutSessions site preference is enabled.
- *
- * @param {dw.order.Order} order - The SFCC order
- * @return {Object} - Stripe Checkout Session object
+ * Creates a Checkout Session for the basket.
+ * @param {dw.order.Basket} basket - Current basket
+ * @return {string} - Checkout Session client secret
  */
 exports.createCheckoutSession = function (basket) {
     const Transaction = require('dw/system/Transaction');
@@ -931,14 +802,20 @@ exports.createCheckoutSession = function (basket) {
 
     var basketDetails = exports.getStripeOrderDetails(basket);
 
+    // Order number reserved on the billing page, used when the order is created
+    const orderMetadata = { order_id: exports.getNewStripeOrderNumber(), site_id: site.getID() };
+
     var createCheckoutSessionPayload = {
         ui_mode: 'elements',
         mode: 'payment',
         line_items: getCheckoutSessionLineItems(basketDetails),
-        return_url:  dw.web.URLUtils.https("StripePaymentsAPM-HandleAPM").toString(),
+        // Stripe fills in the session ID so HandleAPM can check the session status
+        return_url: dw.web.URLUtils.https('StripePaymentsAPM-HandleAPM').toString() + '?session_id={CHECKOUT_SESSION_ID}',
         payment_intent_data: {
             capture_method: stripeChargeCapture ? 'automatic' : 'manual',
+            metadata: orderMetadata
         },
+        metadata: orderMetadata,
         adaptive_pricing: { enabled: true }
     };
 
@@ -956,18 +833,6 @@ exports.createCheckoutSession = function (basket) {
 };
 
 /**
- * Retrieves a Stripe Checkout Session by ID.
- *
- * @param {string} sessionId - Stripe Checkout Session ID (cs_...)
- * @return {Object} - Stripe Checkout Session object
- */
-exports.retrieveCheckoutSession = function (sessionId) {
-    const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
-
-    return stripeService.checkoutSessions.retrieve(sessionId);
-};
-
-/**
  * Checks that a Checkout Session charges the amount owed.
  * @param {Object} checkoutSession - Stripe Checkout Session
  * @param {dw.order.LineItemCtnr} lineItemCtnr - Basket or order
@@ -981,4 +846,33 @@ exports.isCheckoutSessionAmountValid = function (checkoutSession, lineItemCtnr) 
 
     return sessionAmount === expected.amount
         && String(sessionCurrency).toLowerCase() === expected.currency;
+};
+
+/**
+ * Converts an order address to the Checkout Session confirm() format.
+ * @param {dw.order.OrderAddress} orderAddress - Billing or shipping address
+ * @returns {Object|null} - { name, address }, or null without a country
+ */
+exports.getCheckoutSessionAddress = function (orderAddress) {
+    if (!orderAddress || !orderAddress.countryCode || !orderAddress.countryCode.value) {
+        return null;
+    }
+
+    const address = {
+        country: orderAddress.countryCode.value.toUpperCase(),
+        line1: orderAddress.address1,
+        line2: orderAddress.address2,
+        city: orderAddress.city,
+        postal_code: orderAddress.postalCode,
+        state: orderAddress.stateCode
+    };
+
+    // Leave out empty values instead of sending blanks
+    Object.keys(address).forEach(function (key) {
+        if (empty(address[key])) {
+            delete address[key];
+        }
+    });
+
+    return { name: orderAddress.fullName, address: address };
 };

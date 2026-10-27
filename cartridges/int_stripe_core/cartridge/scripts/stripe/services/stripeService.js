@@ -140,6 +140,15 @@ function getStripeServiceDefinition() {
 
             return mockResponsesHelper.getMockedResponse(svc);
         },
+
+        /**
+         * Enables communication logs on Production (no card data is sent).
+         * @param {string} msg - Log message
+         * @returns {string} - Message to log
+         */
+        filterLogMessage: function (msg) {
+            return msg;
+        }
     });
 }
 

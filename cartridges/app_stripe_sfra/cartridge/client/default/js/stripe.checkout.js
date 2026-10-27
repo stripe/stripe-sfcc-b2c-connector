@@ -10,6 +10,7 @@
 'use strict';
 
 var stripeOptions = {};
+var CHECKOUT_ERROR_STORAGE_KEY = 'stripe_checkout_error';
 
 var STRIPE_CONSTANTS = {
     paymentElement: {
@@ -181,8 +182,6 @@ function redirectToBillingPage() {
         window.location.reload();
     }
 }
-
-var CHECKOUT_ERROR_STORAGE_KEY = 'stripe_checkout_error';
 
 /**
  * Shows an error in the checkout error banner.
@@ -524,28 +523,52 @@ function initNewStripeIntent(scope) {
 }
 
 /**
- * Initializes the Stripe Checkout Session flow.
- * Called instead of mounting the Payment Element when stripeUseCheckoutSessions is enabled.
- * Hides the payment element container and stores the mode flag so the place-order handler
- * redirects to Stripe's hosted Checkout page instead of submitting via Payment Element.
+ * Mounts the Checkout Session Payment Element and currency selector.
+ * @param {string} checkoutSessionClientSecret - Checkout Session client secret
+ * @param {string} scope - STRIPE_CONSTANTS key
  */
 function initStripeCheckoutSession(checkoutSessionClientSecret, scope) {
-    window.stripeCheckoutSession = stripe.initCheckoutElementsSdk({
+    // Replace the Elements of a previous session (e.g. after a shipping change)
+    ['stripeCheckoutPaymentElement', 'stripeCheckoutCurrencySelector'].forEach(function (name) {
+        if (window[name]) {
+            try {
+                window[name].destroy();
+            } catch (e) {
+                // already destroyed
+            }
+            window[name] = null;
+        }
+    });
+    window.stripeCheckoutSessionActions = null;
+    window.stripeCheckoutPaymentElementComplete = false;
+
+    var checkoutSession = stripe.initCheckoutElementsSdk({
         clientSecret: checkoutSessionClientSecret,
         adaptivePricing: { allowed: true }
-    })
-    window.stripeCheckoutSession.loadActions().then(function(result) {
-        window.stripeCheckoutSessionActions = result.actions;
-        if (result.type === "success") {
-            var stripePaymentElement = window.stripeCheckoutSession.createPaymentElement();
-            stripePaymentElement.mount(STRIPE_CONSTANTS[scope].ismlElementID);
-            var currencySelector = window.stripeCheckoutSession.createCurrencySelectorElement();
-            currencySelector.mount('#stripe-currency-selector-container');
+    });
+    window.stripeCheckoutSession = checkoutSession;
+
+    checkoutSession.loadActions().then(function (result) {
+        if (checkoutSession !== window.stripeCheckoutSession) {
+            return; // a newer session was initialized meanwhile
+        }
+
+        if (result.type === 'success') {
+            window.stripeCheckoutSessionActions = result.actions;
+            // Name and address come from the SFCC billing form and are passed to confirm()
+            window.stripeCheckoutPaymentElement = checkoutSession.createPaymentElement({
+                fields: { billingDetails: { name: 'never', address: 'never' } }
+            });
+            window.stripeCheckoutPaymentElement.on('change', function (event) {
+                window.stripeCheckoutPaymentElementComplete = event.complete;
+            });
+            window.stripeCheckoutPaymentElement.mount(STRIPE_CONSTANTS[scope].ismlElementID);
+            window.stripeCheckoutCurrencySelector = checkoutSession.createCurrencySelectorElement();
+            window.stripeCheckoutCurrencySelector.mount('#stripe-currency-selector-container');
         } else {
             showCheckoutError(result.error.message || 'Payment initialization failed. Please refresh.');
         }
-        
-    }) 
+    });
 }
 
 /* Stripe Payment Element */
@@ -619,6 +642,15 @@ ready(() => {
  * Creates the order and confirms the Checkout Session.
  */
 function handleStripeCheckoutSessionSubmitOrder() {
+    var checkoutSessionActions = window.stripeCheckoutSessionActions;
+
+    // Validate before the SFCC order is created
+    if (!checkoutSessionActions || !window.stripeCheckoutPaymentElementComplete) {
+        returnToPaymentStage();
+        showCheckoutError($('#payment-element').data('incompletemsg'));
+        return;
+    }
+
     $('body').trigger('checkout:disableButton', '.next-step-button button');
     $.spinner().start();
 
@@ -626,7 +658,8 @@ function handleStripeCheckoutSessionSubmitOrder() {
         url: document.getElementById('paymentElementSubmitOrderURL').value,
         method: 'POST',
         data: {
-            csrf_token: $('[name="csrf_token"]').val()
+            csrf_token: $('[name="csrf_token"]').val(),
+            checkoutSessionId: checkoutSessionActions.getSession().id
         },
         success: function (data) {
             window.localStorage.setItem('stripe_pe_continueurl', data.continueUrl || '');
@@ -638,10 +671,18 @@ function handleStripeCheckoutSessionSubmitOrder() {
                 return;
             }
 
-            var checkoutSessionActions = window.stripeCheckoutSessionActions;
-            var confirmPromise = checkoutSessionActions.getSession().email
-                ? checkoutSessionActions.confirm()
-                : checkoutSessionActions.confirm({ email: getBillingDetails().billingDetails.email });
+            var confirmOptions = {};
+            if (!checkoutSessionActions.getSession().email) {
+                confirmOptions.email = getBillingDetails().billingDetails.email;
+            }
+            if (data.billingAddress) {
+                confirmOptions.billingAddress = data.billingAddress;
+            }
+            if (data.shippingAddress) {
+                confirmOptions.shippingAddress = data.shippingAddress;
+            }
+
+            var confirmPromise = checkoutSessionActions.confirm(confirmOptions);
 
             // On success Stripe redirects to the return URL, so only errors are handled here
             confirmPromise.then(function (result) {

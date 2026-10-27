@@ -523,14 +523,12 @@ function processReviewNotification(stripeNotificationObject) {
 
 /**
  * Stores a Checkout Session's Payment Intent on the order.
- * @param {Object} checkoutSession - Checkout Session from the notification
+ * @param {string} paymentIntentId - Payment Intent ID, or null
  * @param {dw.order.Order} order - Order paid by the session
  * @param {dw.order.OrderPaymentInstrument} stripePaymentInstrument - Stripe payment instrument
  * @returns {string} - Payment Intent ID, or null if the session has none
  */
-function recordCheckoutSessionPaymentIntent(checkoutSession, order, stripePaymentInstrument) {
-    const paymentIntentId = checkoutSession.payment_intent || null;
-
+function recordCheckoutSessionPaymentIntent(paymentIntentId, order, stripePaymentInstrument) {
     if (!paymentIntentId || order.custom.stripePaymentIntentID === paymentIntentId) {
         return paymentIntentId;
     }
@@ -563,7 +561,7 @@ function recordCheckoutSessionPaymentIntent(checkoutSession, order, stripePaymen
  */
 function processCheckoutSessionCompleted(stripeNotificationObject, order, stripePaymentInstrument) {
     const checkoutSession = JSON.parse(stripeNotificationObject.custom.stripeWebhookData).data.object;
-    const paymentIntentId = recordCheckoutSessionPaymentIntent(checkoutSession, order, stripePaymentInstrument);
+    const paymentIntentId = recordCheckoutSessionPaymentIntent(checkoutSession.payment_intent || null, order, stripePaymentInstrument);
 
     if (checkoutSession.payment_status === 'paid') {
         placeOrder(stripeNotificationObject, order, stripePaymentInstrument);
@@ -693,13 +691,17 @@ function processNotificationObject(stripeNotificationObject) {
             break;
         case 'charge.succeeded':
         case 'payment_intent.succeeded':
+            // Checkout Session order without checkout.session.* events: link its Payment Intent here
+            if (order.custom.stripeCheckoutSessionID && !order.custom.stripePaymentIntentID) {
+                recordCheckoutSessionPaymentIntent(coStripePaymentIntentId || null, order, stripePaymentInstrument);
+            }
             placeOrder(stripeNotificationObject, order, stripePaymentInstrument, isPaymentCaptured(stripeNotificationObject));
             break;
         case 'checkout.session.completed':
             processCheckoutSessionCompleted(stripeNotificationObject, order, stripePaymentInstrument);
             break;
         case 'checkout.session.async_payment_succeeded':
-            recordCheckoutSessionPaymentIntent(JSON.parse(stripeNotificationObject.custom.stripeWebhookData).data.object, order, stripePaymentInstrument);
+            recordCheckoutSessionPaymentIntent(JSON.parse(stripeNotificationObject.custom.stripeWebhookData).data.object.payment_intent || null, order, stripePaymentInstrument);
             placeOrder(stripeNotificationObject, order, stripePaymentInstrument);
             break;
         case 'checkout.session.async_payment_failed':

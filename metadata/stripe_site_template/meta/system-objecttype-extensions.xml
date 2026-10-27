@@ -16,31 +16,12 @@
                 <externally-managed-flag>false</externally-managed-flag>
                 <min-length>0</min-length>
             </attribute-definition>
-            <attribute-definition attribute-id="stripeSavePaymentInstrument">
-                <display-name xml:lang="x-default">Save Payment Instrument</display-name>
-                <type>boolean</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-            </attribute-definition>
             <attribute-definition attribute-id="stripeSourceID">
                 <display-name xml:lang="x-default">Stripe Source/Payment Method ID</display-name>
                 <type>string</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
                 <min-length>0</min-length>
-            </attribute-definition>
-            <attribute-definition attribute-id="stripeCustomerID">
-                <display-name xml:lang="x-default">Stripe Customer ID</display-name>
-                <type>string</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-                <min-length>0</min-length>
-            </attribute-definition>
-            <attribute-definition attribute-id="stripeSavePaymentForReAuthorise">
-                <display-name xml:lang="x-default">Save Payment Instrument for re-authorise payments post 7 days on Stripe</display-name>
-                <type>boolean</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
             </attribute-definition>
             <attribute-definition attribute-id="stripePaymentMethodType">
                 <display-name xml:lang="x-default">Stripe Payment Method Type</display-name>
@@ -328,7 +309,7 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <type>boolean</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>
-                <default-value>true</default-value>
+                <default-value>false</default-value>
             </attribute-definition>
         </custom-attribute-definitions>
         <group-definitions>

@@ -286,6 +286,18 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
     }
     var currentBasket = basketValidationResult.currentBasket;
 
+    // The browser must confirm the Checkout Session that is checked and linked to the order below
+    var basketStripePaymentInstrument = checkoutHelper.getStripePaymentInstrument(currentBasket);
+    if (dw.system.Site.getCurrent().getCustomPreferenceValue('stripeUseCheckoutSessions')
+        && basketStripePaymentInstrument && basketStripePaymentInstrument.paymentMethod === 'STRIPE_PAYMENT_ELEMENT'
+        && req.form.checkoutSessionId !== currentBasket.custom.stripeCheckoutSessionID) {
+        res.json({
+            error: true,
+            errorMessage: Resource.msg('checkoutsession.error.sessionchanged', 'stripe', null)
+        });
+        return next();
+    }
+
     var order = COHelpers.createOrder(currentBasket);
     if (!order) {
         res.json({
@@ -385,6 +397,10 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
                 // The basket changed after the session was created (other tab, coupon, ...)
                 checkoutSessionError = 'Checkout Session ' + checkoutSession.id + ' amount does not match the order total';
                 checkoutSessionErrorMessage = Resource.msg('checkoutsession.error.amountchanged', 'stripe', null);
+            } else if (checkoutSession.metadata && checkoutSession.metadata.order_id
+                && checkoutSession.metadata.order_id !== order.orderNo) {
+                // Its Payment Intent would point the webhooks to another order
+                checkoutSessionError = 'Checkout Session ' + checkoutSession.id + ' was created for order ' + checkoutSession.metadata.order_id;
             } else {
                 // The Payment Intent is created by Stripe when the session is confirmed, so it is linked
                 // to the order by the webhook job (checkout.session.completed), not here
@@ -408,6 +424,12 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
 
             responsePayload.error = true;
             responsePayload.errorMessage = checkoutSessionErrorMessage;
+        } else {
+            // Passed to confirm() by Stripe.js, like billing_details / shipping in the Payment Intent flow
+            responsePayload.billingAddress = checkoutHelper.getCheckoutSessionAddress(order.getBillingAddress());
+            if (dw.system.Site.getCurrent().getCustomPreferenceValue('includeShippingDetailsInPaymentIntentPayload')) {
+                responsePayload.shippingAddress = checkoutHelper.getCheckoutSessionAddress(order.getDefaultShipment().getShippingAddress());
+            }
         }
 
         res.json(responsePayload);
@@ -571,7 +593,7 @@ server.post('StripeQuickCheckout', csrfProtection.validateAjaxRequest, function 
             shippingAddress.setFirstName(shippingFirstName);
             shippingAddress.setLastName(shippingLastname);
             shippingAddress.setAddress1(stripeShippingAddress.line1);
-            shippingAddress.setAddress2(stripeShippingAddress.line1);
+            shippingAddress.setAddress2(stripeShippingAddress.line2);
             shippingAddress.setCity(stripeShippingAddress.city);
             shippingAddress.setPostalCode(stripeShippingAddress.postal_code);
             shippingAddress.setCountryCode(stripeShippingAddress.country);
