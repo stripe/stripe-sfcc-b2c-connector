@@ -35,6 +35,7 @@ function failOrder() {
                     order.addNote('Order Failed Reason', 'failed from storefront Stripe.js: stripe.confirmPayment (for Stripe Payment Elements) or stripe.handleCardAction (for Card Payments)');
                     OrderMgr.failOrder(order, true);
                 });
+                require('*/cartridge/scripts/stripe/helpers/checkoutHelper').cancelBankTransferPaymentIntent(order);
             }
             session.privacy.stripeOrderNumber = null;
             delete session.privacy.stripeOrderNumber;

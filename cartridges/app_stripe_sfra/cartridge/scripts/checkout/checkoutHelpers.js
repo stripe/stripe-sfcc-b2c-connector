@@ -234,7 +234,7 @@ if (stripeHelper.isStripeEnabled()) {
             currency: orderCurrencyCode
         };
 
-        if (stripePaymentInstrument.paymentMethod !== 'BANK_TRANSFER') {
+        if (stripePaymentInstrument.paymentMethod !== 'STRIPE_BANK_TRANSFER') {
             createPaymentIntentPayload.capture_method = stripeChargeCapture ? 'automatic' : 'manual';
             createPaymentIntentPayload.automatic_payment_methods = {
                 enabled: true
@@ -267,7 +267,7 @@ if (stripeHelper.isStripeEnabled()) {
         }
 
         // Bank Transfer gets its payment_method_options from the billing country further down, and does not use Link
-        if (stripePaymentInstrument.paymentMethod !== 'BANK_TRANSFER'
+        if (stripePaymentInstrument.paymentMethod !== 'STRIPE_BANK_TRANSFER'
             && request.httpCookies['stripe.link.persistent_token'] && request.httpCookies['stripe.link.persistent_token'].value) {
             createPaymentIntentPayload.payment_method_options.link = {
                 persistent_token: request.httpCookies['stripe.link.persistent_token'].value
@@ -303,7 +303,7 @@ if (stripeHelper.isStripeEnabled()) {
                 });
             }
 
-            if (stripeHelper.isCVCRecollectionEnabled() && stripePaymentInstrument.paymentMethod !== 'BANK_TRANSFER') {
+            if (stripeHelper.isCVCRecollectionEnabled() && stripePaymentInstrument.paymentMethod !== 'STRIPE_BANK_TRANSFER') {
                 createPaymentIntentPayload.payment_method_options.card.require_cvc_recollection = true;
             }
 

@@ -358,7 +358,7 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
      */
     var stripePaymentInstrument = checkoutHelper.getStripePaymentInstrument(order);
 
-    if (!stripePaymentInstrument || (stripePaymentInstrument.paymentMethod !== 'STRIPE_PAYMENT_ELEMENT' && stripePaymentInstrument.paymentMethod !== 'BANK_TRANSFER')) {
+    if (!stripePaymentInstrument || (stripePaymentInstrument.paymentMethod !== 'STRIPE_PAYMENT_ELEMENT' && stripePaymentInstrument.paymentMethod !== 'STRIPE_BANK_TRANSFER')) {
         res.json({
             error: true,
             cartError: true,
@@ -436,6 +436,8 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
         return next();
     }
 
+    var paymentIntent = null;
+
     try {
         var stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
         var paymentIntentPayload = COHelpers.buildPaymentIntentPayload(order, req, stripeChargeCapture, stripePaymentInstrument);
@@ -443,7 +445,7 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
         paymentIntentPayload.expand = ['payment_method'];
         var idempotencyHelper = require('*/cartridge/scripts/stripe/helpers/idempotencyHelper');
         var paymentIntentIdempotencyKey = idempotencyHelper.buildKey('pi-create', order.orderNo, paymentIntentPayload);
-        var paymentIntent = idempotencyHelper.callWithRetry(function () {
+        paymentIntent = idempotencyHelper.callWithRetry(function () {
             return stripeService.paymentIntents.create(paymentIntentPayload, paymentIntentIdempotencyKey);
         }, paymentIntentIdempotencyKey);
         var paymentTransaction = stripePaymentInstrument.paymentTransaction;
@@ -474,6 +476,7 @@ server.post('PaymentElementSubmitOrder', csrfProtection.validateAjaxRequest, fun
             order.addNote('Error When Create Stripe Payment Intent', noteMessage);
             OrderMgr.failOrder(order, true);
         });
+        checkoutHelper.cancelBankTransferPaymentIntent(order, paymentIntent && paymentIntent.id);
 
         responsePayload.error = true;
         responsePayload.errorMessage = Resource.msg('error.technical', 'checkout', null);

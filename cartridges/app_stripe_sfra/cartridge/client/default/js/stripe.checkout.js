@@ -8,10 +8,10 @@
 /* globals Stripe, $ */
 
 'use strict';
-
+var helpers = require('./helpers')
 var stripeOptions = {};
-var CHECKOUT_ERROR_STORAGE_KEY = 'stripe_checkout_error';
 
+var CHECKOUT_ERROR_STORAGE_KEY = 'stripe_checkout_error';
 var STRIPE_CONSTANTS = {
     paymentElement: {
         ismlElementID: '#payment-element',
@@ -54,9 +54,9 @@ document.querySelector('button.submit-payment').addEventListener('click', functi
         return;
     }
 
-    if ($('#dwfrm_billing .' + $('.tab-pane.active').attr('id') + ' .payment-form-fields input.form-control').val() == 'BANK_TRANSFER') {
-        window.localStorage.setItem('stripe_payment_method', 'BANK_TRANSFER');
-        paymentMethodName = $('*[data-method-id="BANK_TRANSFER"] > a').text();
+    if ($('#dwfrm_billing .' + $('.tab-pane.active').attr('id') + ' .payment-form-fields input.form-control').val() == 'STRIPE_BANK_TRANSFER') {
+        window.localStorage.setItem('stripe_payment_method', 'STRIPE_BANK_TRANSFER');
+        paymentMethodName = $('*[data-method-id="STRIPE_BANK_TRANSFER"] > a').text();
         $('.payment-details').text(paymentMethodName);
         $('.payment-details').removeClass('payment-details').addClass('payment-details-stripe');
 
@@ -81,7 +81,7 @@ ready(() => {
         var stashedError = window.sessionStorage.getItem(CHECKOUT_ERROR_STORAGE_KEY);
         if (stashedError) {
             window.sessionStorage.removeItem(CHECKOUT_ERROR_STORAGE_KEY);
-            showCheckoutError(stashedError);
+            helpers.showCheckoutError(stashedError);
         }
     } catch (e) {
         // sessionStorage unavailable: nothing was stashed
@@ -129,95 +129,6 @@ ready(() => {
     });
 });
 
-function redirectToCheckoutSummaryPage() {
-    var continueUrl = window.localStorage.getItem('stripe_pe_continueurl');
-    var orderId = window.localStorage.getItem('stripe_pe_orderid');
-    var orderToken = window.localStorage.getItem('stripe_pe_ordertoken');
-
-    if (continueUrl && orderId && orderToken) {
-        var form = document.createElement('form');
-        form.style.display = 'none';
-
-        document.body.appendChild(form);
-
-        form.method = 'POST';
-        form.action = continueUrl;
-
-        var orderIdInput = document.createElement('input');
-        orderIdInput.name = 'orderID';
-        orderIdInput.value = orderId;
-        form.appendChild(orderIdInput);
-
-        var orderTokenInput = document.createElement('input');
-        orderTokenInput.name = 'orderToken';
-        orderTokenInput.value = orderToken;
-        form.appendChild(orderTokenInput);
-
-        form.submit();
-    }
-}
-
-/**
- * Redirects to the billing page (same-origin http(s) URLs only).
- */
-function redirectToBillingPage() {
-    var billingPageUrlInput = document.getElementById('billingPageUrl');
-    var safeUrl = null;
-
-    if (billingPageUrlInput && billingPageUrlInput.value) {
-        try {
-            var parsedUrl = new URL(billingPageUrlInput.value, window.location.href);
-            if ((parsedUrl.protocol === 'https:' || parsedUrl.protocol === 'http:')
-                && parsedUrl.origin === window.location.origin) {
-                safeUrl = parsedUrl.href;
-            }
-        } catch (e) {
-            safeUrl = null;
-        }
-    }
-
-    if (safeUrl) {
-        window.location.replace(safeUrl);
-    } else {
-        window.location.reload();
-    }
-}
-
-/**
- * Shows an error in the checkout error banner.
- * @param {string} message - error message
- */
-function showCheckoutError(message) {
-    if (!message) {
-        return;
-    }
-
-    var $errorBlock = $('.error-message');
-    if ($errorBlock.length) {
-        $errorBlock.find('.error-message-text').text(message);
-        $errorBlock.show();
-        $errorBlock.get(0).scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else {
-        alert(message);
-    }
-}
-
-/**
- * Redirects to the billing page and shows the error there.
- * @param {string} message - error message
- */
-function redirectToBillingPageWithError(message) {
-    if (message) {
-        try {
-            window.sessionStorage.setItem(CHECKOUT_ERROR_STORAGE_KEY, message);
-        } catch (e) {
-            alert(message);
-        }
-    }
-
-    redirectToBillingPage();
-}
-
 /**
  * Returns to the payment stage without reloading the page.
  */
@@ -238,7 +149,7 @@ function elementSubmitControllerCallback(data) {
     window.localStorage.setItem('stripe_pe_ordertoken', data.orderToken);
 
     if (data.error) {
-        redirectToBillingPageWithError(data.errorMessage);
+        helpers.redirectToBillingPageWithError(data.errorMessage, CHECKOUT_ERROR_STORAGE_KEY);
     } else {
         if (data.status === 'requires_action') {
             stripe.handleNextAction({
@@ -259,16 +170,16 @@ function elementSubmitControllerCallback(data) {
                             if (result.success === false) {
                                 window.location.replace(result.redirectUrl);
                             } else {
-                                redirectToBillingPageWithError($('#payment-element').data('errormsg'));
+                                helpers.redirectToBillingPageWithError($('#payment-element').data('errormsg'), CHECKOUT_ERROR_STORAGE_KEY);
                             }
                         }
                     });
                 } else {
-                    redirectToCheckoutSummaryPage();
+                    helpers.redirectToCheckoutSummaryPage();
                 }
             })
         } else {
-            redirectToCheckoutSummaryPage();
+            helpers.redirectToCheckoutSummaryPage();
         }
     }
     // enable the placeOrder button here
@@ -288,13 +199,13 @@ function handleStripeBankTransferSubmitOrder() {
         var stripeBankTransferPaymentData = {
             elements: window.stripeBankTransferElements,
             params: {
-                billing_details: getConfirmationBillingDetails()
+                billing_details: helpers.getConfirmationBillingDetails()
             }
         }
 
         stripe.createPaymentMethod(stripeBankTransferPaymentData).then(function(paymentMethodCreationResult) {
             if (paymentMethodCreationResult.error) {
-                redirectToBillingPage();
+                helpers.redirectToBillingPage();
                 return;
             } else {
 
@@ -337,7 +248,7 @@ function handleStripePaymentElementSubmitOrder() {
             params: {
                 return_url: stripeReturnURL,
                 payment_method_data: {
-                    billing_details: getConfirmationBillingDetails()
+                    billing_details: helpers.getConfirmationBillingDetails()
                 }
             }
         }).then(function (createConfirmationTokenResult) {
@@ -352,7 +263,7 @@ function handleStripePaymentElementSubmitOrder() {
                     }
                 })
 
-                redirectToBillingPage();
+                helpers.redirectToBillingPage();
                 return;
             }
 
@@ -378,79 +289,8 @@ function handleStripePaymentElementSubmitOrder() {
     });
 }
 
-function getBillingDetails(ownerEmail) {
-    if (!ownerEmail || ownerEmail === 'null') {
-        var summaryEmail = $('.customer-summary-email').length ? $('.customer-summary-email').text().trim() : '';
-        if (summaryEmail && summaryEmail !== 'null') {
-            ownerEmail = summaryEmail;
-        } else {
-            var emailInput = document.querySelector('#dwfrm_billing input[name$="_email"]')
-                || document.querySelector('input[name$="_email"]');
-            ownerEmail = emailInput ? emailInput.value : '';
-        }
-    }
 
-    return {
-        billingDetails: {
-            email: ownerEmail,
-            name: (document.querySelector('#dwfrm_billing input[name$="_firstName"]') && document.querySelector('#dwfrm_billing input[name$="_lastName"]')) ? document.querySelector('#dwfrm_billing input[name$="_firstName"]').value + ' ' + document.querySelector('#dwfrm_billing input[name$="_lastName"]').value : '',
-            phone: document.querySelector('#dwfrm_billing input[name$="_phone"]') ? document.querySelector('#dwfrm_billing input[name$="_phone"]').value : '',
-            address: {
-                postal_code: document.querySelector('#dwfrm_billing input[name$="_postalCode"]') ? document.querySelector('#dwfrm_billing input[name$="_postalCode"]').value : '',
-                country: document.querySelector('#dwfrm_billing select[name$="_country"]') ? document.querySelector('#dwfrm_billing select[name$="_country"]').value : '',
-                state: document.querySelector('#dwfrm_billing select[name$="_stateCode"]') ? document.querySelector('#dwfrm_billing select[name$="_stateCode"]').value : '',
-                city: document.querySelector('#dwfrm_billing input[name$="_city"]') ? document.querySelector('#dwfrm_billing input[name$="_city"]').value : '',
-                line1: document.querySelector('.billing-address input[name$="_address1"]') ? document.querySelector('.billing-address input[name$="_address1"]').value : '',
-                line2: document.querySelector('.billing-address input[name$="_address2"]') ? document.querySelector('.billing-address input[name$="_address2"]').value : ''
-            }
-        }
-    };
-}
 
-/**
- * @returns {boolean} true when the Element collects billing details ('auto')
- */
-function isBillingDetailsCollectedByElement() {
-    var input = document.getElementById('stripeCollectBillingDetailsOnPaymentElement');
-    return !input || input.value !== 'never';
-}
-
-/**
- * Removes empty billing values.
- * @param {Object} details - billing details
- * @returns {Object} billing details without empty values
- */
-function removeEmptyBillingValues(details) {
-    var result = {};
-    Object.keys(details).forEach(function (key) {
-        var value = details[key];
-        if (value && typeof value === 'object') {
-            value = removeEmptyBillingValues(value);
-            if (Object.keys(value).length) {
-                result[key] = value;
-            }
-        } else if (value) {
-            result[key] = value;
-        }
-    });
-    return result;
-}
-
-/**
- * Billing details to pass on confirmation.
- * @returns {Object} billing details
- */
-function getConfirmationBillingDetails() {
-    var billingDetails = getBillingDetails(null).billingDetails;
-
-    if (!isBillingDetailsCollectedByElement()) {
-        return billingDetails;
-    }
-
-    var confirmationBillingDetails = removeEmptyBillingValues(billingDetails);
-    delete confirmationBillingDetails.phone; // the Element collects it (E.164 for Bizum / MB WAY)
-    return confirmationBillingDetails;
-}
 
 function initStripeElement(customerEmail, scope) {
     var stripeCollectBillingDetailsOnPaymentElement = document.getElementById('stripeCollectBillingDetailsOnPaymentElement').value;
@@ -466,7 +306,7 @@ function initStripeElement(customerEmail, scope) {
 
     if (window[STRIPE_CONSTANTS[scope].elementsName]) {
         window[STRIPE_CONSTANTS[scope].instanceName] = window[STRIPE_CONSTANTS[scope].elementsName].create('payment', {
-            defaultValues: { billingDetails: removeEmptyBillingValues(getBillingDetails(customerEmail).billingDetails) },
+            defaultValues: { billingDetails: helpers.getFormatedBillingAddress(customerEmail) },
             fields: {
                 billingDetails: stripeCollectBillingDetailsOnPaymentElement
             }
@@ -500,7 +340,7 @@ function initAvailableElements() {
  * Refreshes the Element's pre-filled billing details.
  */
 function refreshElementDefaultValues() {
-    if (isBillingDetailsCollectedByElement()) {
+    if (helpers.isBillingDetailsCollectedByElement()) {
         initAvailableElements();
     }
 }
@@ -566,7 +406,7 @@ function initStripeCheckoutSession(checkoutSessionClientSecret, scope) {
             window.stripeCheckoutCurrencySelector = checkoutSession.createCurrencySelectorElement();
             window.stripeCheckoutCurrencySelector.mount('#stripe-currency-selector-container');
         } else {
-            showCheckoutError(result.error.message || 'Payment initialization failed. Please refresh.');
+            helpers.showCheckoutError(result.error.message || 'Payment initialization failed. Please refresh.');
         }
     });
 }
@@ -647,7 +487,7 @@ function handleStripeCheckoutSessionSubmitOrder() {
     // Validate before the SFCC order is created
     if (!checkoutSessionActions || !window.stripeCheckoutPaymentElementComplete) {
         returnToPaymentStage();
-        showCheckoutError($('#payment-element').data('incompletemsg'));
+        helpers.showCheckoutError($('#payment-element').data('incompletemsg'));
         return;
     }
 
@@ -667,13 +507,13 @@ function handleStripeCheckoutSessionSubmitOrder() {
             window.localStorage.setItem('stripe_pe_ordertoken', data.orderToken || '');
 
             if (data.error) {
-                redirectToBillingPageWithError(data.errorMessage);
+                helpers.redirectToBillingPageWithError(data.errorMessage, CHECKOUT_ERROR_STORAGE_KEY);
                 return;
             }
 
             var confirmOptions = {};
             if (!checkoutSessionActions.getSession().email) {
-                confirmOptions.email = getBillingDetails().billingDetails.email;
+                confirmOptions.email = helpers.getCustomerEmail();
             }
             if (data.billingAddress) {
                 confirmOptions.billingAddress = data.billingAddress;
@@ -687,9 +527,9 @@ function handleStripeCheckoutSessionSubmitOrder() {
             // On success Stripe redirects to the return URL, so only errors are handled here
             confirmPromise.then(function (result) {
                 if (result.type === 'error') {
-                    failCheckoutSessionOrder(result.error);
+                    helpers.failCheckoutSessionOrder(result.error);
                 }
-            }, failCheckoutSessionOrder);
+            }, helpers.failCheckoutSessionOrder);
         },
         error: function () {
             forceSubmit = false;
@@ -699,31 +539,10 @@ function handleStripeCheckoutSessionSubmitOrder() {
     });
 }
 
-/**
- * Fails the SFCC order created for a Checkout Session that could not be confirmed, then
- * sends the shopper back to the billing step, which creates a new session.
- * @param {Object} error - Error returned by Stripe.js
- */
-function failCheckoutSessionOrder(error) {
-    var errorMessage = (error && error.message) || $('#payment-element').data('errormsg');
-
-    $.ajax({
-        url: document.getElementById('stripeFailOrderURL').value,
-        method: 'POST',
-        dataType: 'json',
-        data: {
-            csrf_token: $('[name="csrf_token"]').val(),
-            errorMessage: errorMessage
-        }
-    }).always(function () {
-        redirectToBillingPageWithError(errorMessage);
-    });
-}
-
 // v1
 // eslint-disable-next-line consistent-return
 document.querySelector('button.place-order').addEventListener('click', function (event) {
-    if (window.localStorage.getItem('stripe_payment_method') !== 'STRIPE_PAYMENT_ELEMENT' && window.localStorage.getItem('stripe_payment_method') !== 'BANK_TRANSFER') {
+    if (window.localStorage.getItem('stripe_payment_method') !== 'STRIPE_PAYMENT_ELEMENT' && window.localStorage.getItem('stripe_payment_method') !== 'STRIPE_BANK_TRANSFER') {
         return true;
     }
 
@@ -743,7 +562,7 @@ document.querySelector('button.place-order').addEventListener('click', function 
         return false;
     }
 
-    if (window.localStorage.getItem('stripe_payment_method') === 'BANK_TRANSFER') {
+    if (window.localStorage.getItem('stripe_payment_method') === 'STRIPE_BANK_TRANSFER') {
          if (forceSubmit) return false;
 
         forceSubmit = true;

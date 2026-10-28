@@ -53,6 +53,12 @@ function getStripePaymentMethodDefinitions() {
             name: 'Stripe Payment Element',
             currencies: {},
             payment_processor: 'STRIPE_APM'
+        },
+        {
+            id: 'STRIPE_BANK_TRANSFER',
+            name: 'Bank Transfer',
+            currencies: {},
+            payment_processor: 'STRIPE_APM'
         }
     ];
 }

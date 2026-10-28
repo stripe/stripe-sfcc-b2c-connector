@@ -3,16 +3,20 @@
 ## 24.1.0
 * Checkout Sessions Implementation
 * Adaptive Pricing with Checkout Sessions
-* Checkout Sessions are off by default (`stripeUseCheckoutSessions`). Before enabling them on an existing installation, add `checkout.session.completed`, `checkout.session.async_payment_succeeded` and `checkout.session.async_payment_failed` to the Stripe webhook endpoint and to `stripeAllowedWebHookStatuses` (Quick Setup does both), and make sure `stripeApiVersion` is on `2026-04-22.dahlia` and `stripeApiURL` is on 'https://js.stripe.com/dahlia/stripe.js' if you saved your own values
+* Checkout Sessions are off by default ('stripeUseCheckoutSessions'). Before enabling them on an existing installation, add 'checkout.session.completed', 'checkout.session.async_payment_succeeded' and 'checkout.session.async_payment_failed' to the Stripe webhook endpoint and to 'stripeAllowedWebHookStatuses' (Quick Setup does both)
+* Defaults and recommended values for 'stripeApiVersion'/'stripeApiURL' '2026-04-22.dahlia' are now 'https://js.stripe.com/dahlia/stripe.js'. Please make sure to update Site Preferences with these values, and also update the version in your Stripe Dashboard -> Developer Settings -> Preferences -> Default API version
 * Improved localization logic
 * Webhooks: duplicate deliveries of an already stored event are acknowledged with HTTP 200 instead of 500, so Stripe stops retrying
 * Webhooks: the processing job no longer re-charges a source that already has a charge, and no longer marks failed / cancelled / already paid orders as paid again or moves exported orders back to export READY
-* Webhook cleanup job only removes custom objects older than `MinAgeInDays` (default 4) and `StripeWebhookNotifications` retention is raised to 7 days (re-import metadata)
+* Webhook cleanup job only removes custom objects older than 'MinAgeInDays' (default 4) and 'StripeWebhookNotifications' retention is raised to 7 days (re-import metadata)
 * Idempotency keys: money-moving calls use keys derived from the order / request and are retried once with the same key when the outcome is unknown
 * BM refund / capture: double submits can no longer refund or capture twice, amounts are converted using the currency's decimal digits
-* `StripeProfile` service timeout raised from 3s to 10s (update the service profile in BM on existing installations)
-* Removed the legacy card integration. Cards are paid through the Payment Element: before upgrading, make sure `STRIPE_PAYMENT_ELEMENT` is enabled and `CREDIT_CARD` is no longer assigned to `STRIPE_CREDIT`
+* 'StripeProfile' service timeout raised from 3s to 10s (update the service profile in BM on existing installations)
+* Removed the legacy card integration. Cards are paid through the Payment Element: before upgrading, make sure 'STRIPE_PAYMENT_ELEMENT' is enabled and 'CREDIT_CARD' is no longer assigned to 'STRIPE_CREDIT'
 * Payment Element orders now store the card details correctly
+* Bank Transfer: failed orders cancel their Payment Intent, so funds already received go back to the customer's cash balance instead of staying on the failed order
+* Bank Transfer: the payment method ID is now 'STRIPE_BANK_TRANSFER' (was 'BANK_TRANSFER'), so it no longer takes over a 'BANK_TRANSFER' method assigned to another provider. Before upgrading, create 'STRIPE_BANK_TRANSFER' with processor 'STRIPE_APM' (or import 'payment-methods.xml') and disable 'BANK_TRANSFER'. IMPORTANT: If you are already using Stripe Bank Transfer under 'BANK_TRANSFER' payment method make sure to change back 'STRIPE_BANK_TRANSFER' with 'BANK_TRANSFER' after upgrading to the new version.
+* Upgraded Webpack from version 4 to version 5 ('sgmf-scripts' 3.x, same build setup as SFRA 8), which fixes the 'compile:scss' build. Run 'npm install' before compiling
 
 ## 24.0.3 (2026-09-04) 
 * Fix BM refund/capture amount conversion for zero-decimal currencies- #31

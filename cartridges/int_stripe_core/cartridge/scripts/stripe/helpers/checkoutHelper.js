@@ -45,7 +45,7 @@ function isStripePaymentInstrument(paymentInstrument) {
         return false;
     }
 
-    const stripePaymentInstrumentRegex = /(^BANK_TRANSFER$|^STRIPE_.+)/i;
+    const stripePaymentInstrumentRegex = /^STRIPE_.+/i;
     return stripePaymentInstrumentRegex.test(paymentInstrument.paymentMethod);
 }
 
@@ -747,6 +747,29 @@ exports.getBankTransferPaymentMethodOptions =  function(billingAddress) {
             }
         };
 }
+
+/**
+ * Cancels the open Payment Intent of a Bank Transfer order.
+ * @param {dw.order.Order} order - Failed or cancelled order
+ * @param {string} [paymentIntentId] - Defaults to the Payment Intent stored on the order
+ */
+exports.cancelBankTransferPaymentIntent = function (order, paymentIntentId) {
+    const stripePaymentInstrument = getStripePaymentInstrument(order);
+    const id = paymentIntentId || order.custom.stripePaymentIntentID;
+
+    if (!id || !stripePaymentInstrument || stripePaymentInstrument.paymentMethod !== 'STRIPE_BANK_TRANSFER') {
+        return;
+    }
+
+    // Funds already applied go back to the customer's cash balance, and later transfers
+    // can no longer be reconciled to this order
+    try {
+        require('*/cartridge/scripts/stripe/services/stripeService').paymentIntents.cancel(id, 'abandoned');
+    } catch (e) {
+        // Rejected when the Payment Intent already succeeded or was cancelled
+        require('dw/system/Logger').getLogger('Stripe', 'stripe').warn('Could not cancel Bank Transfer Payment Intent {0} for order {1}: {2}', id, order.orderNo, e.message);
+    }
+};
 
 /**
  * Builds Checkout Session line items, or a single line when they don't add up to the amount owed.

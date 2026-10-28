@@ -62,6 +62,16 @@ function isOutcomeUnknown(err) {
         return true;
     }
 
+    const Result = require('dw/svc/Result');
+    const notSentReasons = [Result.UNAVAILABLE_RATE_LIMITED, Result.UNAVAILABLE_CIRCUIT_BROKEN,
+        Result.UNAVAILABLE_DISABLED, Result.UNAVAILABLE_CONFIG_PROBLEM];
+
+    // Rejected locally by the service framework: the request never reached Stripe
+    if (callResult.status === Result.SERVICE_UNAVAILABLE
+        && notSentReasons.indexOf(callResult.unavailableReason) !== -1) {
+        return false;
+    }
+
     const httpStatus = callResult.error;
 
     return !httpStatus || httpStatus >= 500 || httpStatus === 409 || httpStatus === 429;

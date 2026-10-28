@@ -5,7 +5,7 @@
 </iscomment>
 <isif condition="${paymentOption.ID.equals('CREDIT_CARD') && isStripePaymentElementEnabled}"><iscontinue/></isif>
 <iscomment>Only methods with a content pane in paymentOptionsContent.isml get a tab</iscomment>
-<isif condition="${paymentOption.ID !== 'CREDIT_CARD' && paymentOption.ID !== 'STRIPE_PAYMENT_ELEMENT' && paymentOption.ID !== 'BANK_TRANSFER'}"><iscontinue/></isif>
+<isif condition="${paymentOption.ID !== 'CREDIT_CARD' && paymentOption.ID !== 'STRIPE_PAYMENT_ELEMENT' && paymentOption.ID !== 'STRIPE_BANK_TRANSFER'}"><iscontinue/></isif>
 
 <isset name="selectedPaymentInstruments" value="${pdict.order.billing.payment.selectedPaymentInstruments}" scope="page" />
 <isset name="selectedPaymentInstrument" value="${selectedPaymentInstruments && selectedPaymentInstruments.length ? selectedPaymentInstruments[0] : null}" scope="page" />

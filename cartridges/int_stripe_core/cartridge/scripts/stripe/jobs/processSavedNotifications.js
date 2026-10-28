@@ -141,8 +141,7 @@ function createCharge(stripeNotificationObject, order, stripePaymentInstrument) 
 
     const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
-    // Deterministic key: if this job retries the same charge (e.g. the charge succeeded but
-    // persisting its ID failed), Stripe returns the original charge instead of creating a new one.
+    // If this job retries the same charge, Stripe returns the original charge instead of creating a new one.
     const idempotencyKey = require('*/cartridge/scripts/stripe/helpers/idempotencyHelper')
         .buildKey('source-charge', order.orderNo + '-' + stripeNotificationObject.custom.stripeSourceId, createChargePayload);
 
@@ -152,9 +151,6 @@ function createCharge(stripeNotificationObject, order, stripePaymentInstrument) 
     } catch (e) {
         stripeLogger.info('Unsuccessful charge for order {0}, CO event id {1}, source {2} message {3}', order.orderNo, stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId, e.message);
 
-        // A 4xx rejection (declined, source already consumed, ...) will not succeed on retry, so stop
-        // re-attempting it every job run. Timeouts, 5xx, 409 (concurrent idempotent request) and
-        // 429 stay in PROCESS and are retried with the same idempotency key.
         const httpStatus = e.callResult && e.callResult.error;
         if (httpStatus >= 400 && httpStatus < 500 && httpStatus !== 409 && httpStatus !== 429) {
             Transaction.wrap(function () {
@@ -164,8 +160,6 @@ function createCharge(stripeNotificationObject, order, stripePaymentInstrument) 
         return;
     }
 
-    // Persist the charge ID in its own transaction so that a failure while updating the order
-    // below cannot roll it back and cause the source to be charged again on the next job run.
     Transaction.wrap(function () {
         stripePaymentInstrument.custom.stripeChargeID = charge.id; // eslint-disable-line
         stripeNotificationObject.custom.processingStatus = 'PROCESSED'; // eslint-disable-line
@@ -187,7 +181,6 @@ function createCharge(stripeNotificationObject, order, stripePaymentInstrument) 
         });
         stripeLogger.info('Charge was successfull for order {0}, CO event id {1}, source {2}', order.orderNo, stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId);
     } catch (e) {
-        // The charge exists and is recorded; the order is placed by the follow-up 'charge.succeeded' notification.
         logger.error('Charge {0} created for order {1} but updating the order failed: {2}', charge.id, order.orderNo, e.message);
     }
 }
@@ -228,6 +221,8 @@ function failOrder(stripeNotificationObject, order) {
 
         stripeNotificationObject.custom.processingStatus = 'FAIL_OR_CANCEL';  // eslint-disable-line
     });
+
+    require('*/cartridge/scripts/stripe/helpers/checkoutHelper').cancelBankTransferPaymentIntent(order);
 
     var statusMail = sendMail(order, 'stripe/mail/orderfailed', Resource.msg('order.orderfailed-email.001', 'stripe', null));
 
