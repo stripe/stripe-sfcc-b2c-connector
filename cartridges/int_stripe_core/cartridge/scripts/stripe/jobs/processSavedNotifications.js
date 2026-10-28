@@ -502,7 +502,7 @@ function processReviewNotification(stripeNotificationObject) {
         }
         const order = OrderMgr.getOrder(paymentIntent.metadata.order_id);
 
-        if (order === null) {
+        if (order === null || isForeignCheckoutSessionEvent(stripeNotificationObject, order, paymentIntent, paymentIntent.id)) {
             return;
         }
 
@@ -600,6 +600,49 @@ function isPaymentCaptured(stripeNotificationObject) {
 }
 
 /**
+ * Checks that an event for a Checkout Session order comes from that order's own session.
+ * @param {dw.object.CustomObject} stripeNotificationObject - Notification CO
+ * @param {dw.order.Order} order - Order found by the event metadata
+ * @param {Object} stripeObject - Event object (checkout.session, payment_intent or charge)
+ * @param {string} paymentIntentId - Payment Intent ID of the event, or null
+ * @returns {boolean} - True if the event must not update the order
+ */
+function isForeignCheckoutSessionEvent(stripeNotificationObject, order, stripeObject, paymentIntentId) {
+    const orderSessionId = order.custom.stripeCheckoutSessionID;
+    if (!orderSessionId) {
+        return false;
+    }
+
+    var matches;
+    if (stripeObject.object === 'checkout.session') {
+        // Every session created on the billing page carries the same order number
+        matches = stripeObject.id === orderSessionId
+            && require('*/cartridge/scripts/stripe/helpers/checkoutHelper').isCheckoutSessionAmountValid(stripeObject, order);
+    } else if (order.custom.stripePaymentIntentID) {
+        matches = paymentIntentId === order.custom.stripePaymentIntentID;
+    } else {
+        try {
+            const orderSession = require('*/cartridge/scripts/stripe/services/stripeService').checkoutSessions.retrieve(orderSessionId);
+            matches = !!paymentIntentId && orderSession.payment_intent === paymentIntentId;
+        } catch (e) {
+            // Left in PROCESS: retried by the next job run
+            logger.error('Could not retrieve Checkout Session {0} for order {1}: {2}', orderSessionId, order.orderNo, e.message);
+            return true;
+        }
+    }
+
+    if (!matches) {
+        Transaction.wrap(function () {
+            order.addNote('Stripe Processing Job Note', 'Event ' + stripeNotificationObject.custom.stripeEventId + ' does not belong to Checkout Session ' + orderSessionId + ' of this order or its amount does not match, order not updated. Manual review required.');
+            stripeNotificationObject.custom.processingStatus = 'PROCESSED'; // eslint-disable-line
+        });
+        logger.warn('Event {0} does not match Checkout Session {1} of order {2}, order not updated.', stripeNotificationObject.custom.stripeEventId, orderSessionId, order.orderNo);
+    }
+
+    return !matches;
+}
+
+/**
  * Processes a custom object containing notification from Stripe.
  *
  * @param {dw.object.CustomObject} stripeNotificationObject - Notification CO
@@ -676,6 +719,11 @@ function processNotificationObject(stripeNotificationObject) {
             );
             return;
         }
+    }
+
+    const stripeObject = JSON.parse(stripeNotificationObject.custom.stripeWebhookData).data.object;
+    if (isForeignCheckoutSessionEvent(stripeNotificationObject, order, stripeObject, coStripePaymentIntentId || null)) {
+        return;
     }
 
     const stripeEventType = stripeNotificationObject.custom.stripeType;
