@@ -1,23 +1,23 @@
 'use strict';
 
 var baseDetail = require('base/product/detail');
+var stripeConfig = require('./stripe/config');
+var baseConfig = stripeConfig.get('base');
+var expressCheckoutConfig = stripeConfig.get('expressCheckout');
 var stripeOptions = {};
 var expressCheckoutElement;
 
-var stripeLocaleInput = document.getElementById('stripeLocale');
-if (stripeLocaleInput && stripeLocaleInput.value) {
-    stripeOptions.locale = stripeLocaleInput.value;
+if (baseConfig.locale) {
+    stripeOptions.locale = baseConfig.locale;
 }
 
-var stripe = Stripe(document.getElementById('stripePublicKey').value, stripeOptions);
-
-var stripeOrderCurrencyInput = document.getElementById('stripe_order_currency').value.toLowerCase();
+var stripe = Stripe(baseConfig.publicKey, stripeOptions);
 
 var elements = stripe.elements({
     mode: 'setup',
-    currency: stripeOrderCurrencyInput,
-    appearance: JSON.parse(document.getElementById('stripeExpressCheckoutAppearance').value),
-    capture_method: $('#stripeCaptureMethod').val(),
+    currency: expressCheckoutConfig.order.currency.toLowerCase(),
+    appearance: expressCheckoutConfig.appearance,
+    capture_method: expressCheckoutConfig.captureMethod,
 });
 
 /**
@@ -30,12 +30,12 @@ function getAmountToDisplay(product, shippingCost) {
     if ($('#express-checkout-element').hasClass('isProductPage')) {
         var shippingAmount = shippingCost || 0;
         var quantitySelected = parseInt($('button.add-to-cart').closest('.product-detail').find('.quantity-select').val(), 10);
-        var productTotalPrice = !product ? document.getElementById('stripeProductPrice').value * 100 : product.price.sales.value * 100;
+        var productTotalPrice = !product ? $('#express-checkout-element').data('product-price') * 100 : product.price.sales.value * 100;
 
         return productTotalPrice * quantitySelected + shippingAmount;
     }
 
-    var basketValue = parseInt(document.getElementById('stripe_order_amount').value, 10);
+    var basketValue = parseInt(expressCheckoutConfig.order.amount, 10);
 
     return basketValue;
 }
@@ -136,7 +136,7 @@ function initStripeCheckoutExpress() {
         var bodyData = getProductData();
 
         $.ajax({
-            url: $('#stripe_get_shipping_options').val(),
+            url: expressCheckoutConfig.urls.shippingOptions,
             method: 'GET',
             data: bodyData,
             success: function(data) {
@@ -160,7 +160,7 @@ function initStripeCheckoutExpress() {
         bodyData.selectedShippingRateId = event.shippingRate.id;
 
         $.ajax({
-            url: $('#stripe_get_shipping_options').val(),
+            url: expressCheckoutConfig.urls.shippingOptions,
             method: 'GET',
             data: bodyData,
             success: function(data) {
@@ -178,7 +178,7 @@ function initStripeCheckoutExpress() {
         bodyData.shippingAddress = JSON.stringify(event.address);
         bodyData.shippingName = event.name;
         $.ajax({
-            url: $('#stripe_get_shipping_options').val(),
+            url: expressCheckoutConfig.urls.shippingOptions,
             method: 'GET',
             data: bodyData,
             success: function(data) {
@@ -194,8 +194,7 @@ function initStripeCheckoutExpress() {
     });
 
     expressCheckoutElement.on('confirm', function (event) {
-        var stripeReturnURLInput = $('#stripe_return_url');
-        var stripeReturnURL = stripeReturnURLInput.val();
+        var stripeReturnURL = expressCheckoutConfig.urls.returnUrl;
         var payloadData = getProductData();
 
         payloadData.billingAddress = JSON.stringify(event.billingDetails.address);
@@ -212,7 +211,7 @@ function initStripeCheckoutExpress() {
                 return;
             }
             $.ajax({
-                url: $('#stripe_express_checkout_url').val(),
+                url: expressCheckoutConfig.urls.quickCheckout,
                 method: 'POST',
                 data: payloadData,
                 success: function (data) {
@@ -230,7 +229,7 @@ function initStripeCheckoutExpress() {
                     ).then(function (response) {
                         if (response.error) {
                             $.ajax({
-                                url: document.getElementById('logStripeErrorMessageURL').value,
+                                url: expressCheckoutConfig.urls.logError,
                                 method: 'POST',
                                 dataType: 'json',
                                 data: {
@@ -241,7 +240,7 @@ function initStripeCheckoutExpress() {
                                 $.spinner().start();
 
                                 $.ajax({
-                                    url: document.getElementById('stripeFailOrderURL').value,
+                                    url: expressCheckoutConfig.urls.failOrder,
                                     method: 'POST',
                                     dataType: 'json',
                                     data: {

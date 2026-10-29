@@ -1,4 +1,3 @@
-<isset name="stripeCheckoutHelper" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper')}" scope="page" />
 <isset name="stripeHelper" value="${require('*/cartridge/scripts/stripe/helpers/stripeHelper')}" scope="page" />
 <isset name="stripeEnabled" value="${stripeHelper.isStripeEnabled()}" scope="page" />
 
@@ -8,33 +7,8 @@
         assets.addJs('/js/stripe.checkout.js');
     </isscript>
 </isif>
-<input type="hidden" id="getPaymentElementOptions" value="${URLUtils.https('StripePaymentsAPM-GetPaymentElementOptions')}" />
-<input type="hidden" id="getBankTransferElementOptions" value="${URLUtils.https('StripePaymentsAPM-GetBankTransferElementOptions')}" />
-<input type="hidden" id="stripeAccountCountry" value="${stripeCheckoutHelper.getPRCountry()}" />
-<input type="hidden" id="getStripeOrderItemsURL" value="${URLUtils.https('StripePaymentsAPM-GetStripeOrderItems')}" />
-<input type="hidden" id="billingPageUrl" value="${URLUtils.url('Checkout-Begin', 'stage', 'payment')}" />
-<input type="hidden" id="getCustomerEmailURL" value="${URLUtils.https('StripePaymentsAPM-GetCustomerEmail')}" />
-
-<input type="hidden" id="paymentElementSubmitOrderURL" value="${URLUtils.https('StripePaymentsAPM-PaymentElementSubmitOrder')}" />
-<input type="hidden" id="isStripePaymentElementsSavePaymentsEnabled" value="${customer.authenticated && customer.profile && customer.profile.email && stripeHelper.isStripePaymentElementsSavePaymentsEnabled()}" />
-<input type="hidden" id="stripeUseCheckoutSessions" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('stripeUseCheckoutSessions')}" />
-<input type="hidden" id="stripeCaptureMethod" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture') ? 'automatic' : 'manual'}" />
-<input type="hidden" id="stripeCollectBillingDetailsOnPaymentElement" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('stripeCollectBillingDetailsOnPaymentElement') ? 'auto' : 'never'}" />
-
-<input type="hidden" id="logStripeErrorMessageURL" value="${URLUtils.https('StripePaymentsAPM-LogStripeErrorMessage')}" />
-
-<input type="hidden" id="stripeFailOrderURL" value="${URLUtils.https('StripePaymentsAPM-FailOrder')}" />
-
-<input type="hidden" name="stripe_source_client_secret" id="stripe_source_client_secret"/>
-<input type="hidden" name="stripe_redirect_url" id="stripe_redirect_url"/>
-
-<isset name="stripeOrder" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getStripeOrderDetails(dw.order.BasketMgr.getCurrentBasket())}" scope="page" />
-
-<input type="hidden" id="stripe_order_amount" value="${stripeOrder.amount}"/>
-<input type="hidden" id="stripe_order_currency" value="${stripeOrder.currency}"/>
-
-<input type="hidden" id="stripe_order_number" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getNewStripeOrderNumber()}"/>
-<input type="hidden" id="stripe_return_url" value="${URLUtils.https("StripePaymentsAPM-HandleAPM")}"/>
+<isset name="clientConfigHelper" value="${require('*/cartridge/scripts/stripe/clientConfigHelper')}" scope="page" />
+<script type="application/json" id="stripe-checkout-config"><isprint value="${clientConfigHelper.toScriptJson(clientConfigHelper.getCheckoutConfig(dw.order.BasketMgr.getCurrentBasket()))}" encoding="off" /></script>
 
 <isloop items="${pdict.order.billing.payment.applicablePaymentMethods}" var="paymentOption">
     <isif condition="${paymentOption.ID === 'CREDIT_CARD'}">

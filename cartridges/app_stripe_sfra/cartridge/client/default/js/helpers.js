@@ -1,5 +1,25 @@
+/* eslint-disable no-alert */
+/* globals $ */
+
 'use strict';
 
+var stripeConfig = require('./stripe/config');
+
+var CHECKOUT_ERROR_STORAGE_KEY = 'stripe_checkout_error';
+
+/**
+ * Stores the order details read by redirectToCheckoutSummaryPage.
+ * @param {Object} data - PaymentElementSubmitOrder response
+ */
+function storeOrderDetails(data) {
+    window.localStorage.setItem('stripe_pe_continueurl', data.continueUrl || '');
+    window.localStorage.setItem('stripe_pe_orderid', data.orderID || '');
+    window.localStorage.setItem('stripe_pe_ordertoken', data.orderToken || '');
+}
+
+/**
+ * Posts the stored order details to the order confirmation page.
+ */
 function redirectToCheckoutSummaryPage() {
     var continueUrl = window.localStorage.getItem('stripe_pe_continueurl');
     var orderId = window.localStorage.getItem('stripe_pe_orderid');
@@ -28,27 +48,35 @@ function redirectToCheckoutSummaryPage() {
     }
 }
 
+/**
+ * Returns the given email, or the one from the checkout summary or form.
+ * @param {string} ownerEmail - known email, may be empty
+ * @returns {string} customer email
+ */
 function getCustomerEmail(ownerEmail) {
-    if (!ownerEmail || ownerEmail === 'null') {
-        var summaryEmail = $('.customer-summary-email').length ? $('.customer-summary-email').text().trim() : '';
-        if (summaryEmail && summaryEmail !== 'null') {
-            ownerEmail = summaryEmail;
-        } else {
-            var emailInput = document.querySelector('#dwfrm_billing input[name$="_email"]')
-                || document.querySelector('input[name$="_email"]');
-            ownerEmail = emailInput ? emailInput.value : '';
-        }
+    if (ownerEmail && ownerEmail !== 'null') {
+        return ownerEmail;
     }
 
-    return ownerEmail;
+    var summaryEmail = $('.customer-summary-email').length ? $('.customer-summary-email').text().trim() : '';
+    if (summaryEmail && summaryEmail !== 'null') {
+        return summaryEmail;
+    }
+
+    var emailInput = document.querySelector('#dwfrm_billing input[name$="_email"]')
+        || document.querySelector('input[name$="_email"]');
+    return emailInput ? emailInput.value : '';
 }
 
+/**
+ * Reads the billing details from the SFRA billing form.
+ * @param {string} ownerEmail - known email, may be empty
+ * @returns {Object} { billingDetails }
+ */
 function getBillingDetails(ownerEmail) {
-    ownerEmail = getCustomerEmail(ownerEmail);
-
     return {
         billingDetails: {
-            email: ownerEmail,
+            email: getCustomerEmail(ownerEmail),
             name: (document.querySelector('#dwfrm_billing input[name$="_firstName"]') && document.querySelector('#dwfrm_billing input[name$="_lastName"]')) ? document.querySelector('#dwfrm_billing input[name$="_firstName"]').value + ' ' + document.querySelector('#dwfrm_billing input[name$="_lastName"]').value : '',
             phone: document.querySelector('#dwfrm_billing input[name$="_phone"]') ? document.querySelector('#dwfrm_billing input[name$="_phone"]').value : '',
             address: {
@@ -67,8 +95,7 @@ function getBillingDetails(ownerEmail) {
  * @returns {boolean} true when the Element collects billing details ('auto')
  */
 function isBillingDetailsCollectedByElement() {
-    var input = document.getElementById('stripeCollectBillingDetailsOnPaymentElement');
-    return !input || input.value !== 'never';
+    return stripeConfig.get('checkout').billingDetailsCollection !== 'never';
 }
 
 /**
@@ -94,7 +121,7 @@ function removeEmptyBillingValues(details) {
 
 /**
  * Returns Billing Details without empty values
- * @param {String} customerEmail - customer email
+ * @param {string} customerEmail - customer email
  * @returns {Object} billing details without empty values
  */
 function getFormatedBillingAddress(customerEmail) {
@@ -121,12 +148,12 @@ function getConfirmationBillingDetails() {
  * Redirects to the billing page (same-origin http(s) URLs only).
  */
 function redirectToBillingPage() {
-    var billingPageUrlInput = document.getElementById('billingPageUrl');
+    var billingPageUrl = (stripeConfig.get('checkout').urls || {}).billingPage;
     var safeUrl = null;
 
-    if (billingPageUrlInput && billingPageUrlInput.value) {
+    if (billingPageUrl) {
         try {
-            var parsedUrl = new URL(billingPageUrlInput.value, window.location.href);
+            var parsedUrl = new URL(billingPageUrl, window.location.href);
             if ((parsedUrl.protocol === 'https:' || parsedUrl.protocol === 'http:')
                 && parsedUrl.origin === window.location.origin) {
                 safeUrl = parsedUrl.href;
@@ -166,16 +193,31 @@ function showCheckoutError(message) {
  * Redirects to the billing page and shows the error there.
  * @param {string} message - error message
  */
-function redirectToBillingPageWithError(message, errorStorageKey) {
+function redirectToBillingPageWithError(message) {
     if (message) {
         try {
-            window.sessionStorage.setItem(errorStorageKey, message);
+            window.sessionStorage.setItem(CHECKOUT_ERROR_STORAGE_KEY, message);
         } catch (e) {
             alert(message);
         }
     }
 
     redirectToBillingPage();
+}
+
+/**
+ * Shows the error stored by redirectToBillingPageWithError, once.
+ */
+function showStoredCheckoutError() {
+    try {
+        var storedError = window.sessionStorage.getItem(CHECKOUT_ERROR_STORAGE_KEY);
+        if (storedError) {
+            window.sessionStorage.removeItem(CHECKOUT_ERROR_STORAGE_KEY);
+            showCheckoutError(storedError);
+        }
+    } catch (e) {
+        // sessionStorage unavailable: nothing was stored
+    }
 }
 
 /**
@@ -187,7 +229,7 @@ function failCheckoutSessionOrder(error) {
     var errorMessage = (error && error.message) || $('#payment-element').data('errormsg');
 
     $.ajax({
-        url: document.getElementById('stripeFailOrderURL').value,
+        url: stripeConfig.get('checkout').urls.failOrder,
         method: 'POST',
         dataType: 'json',
         data: {
@@ -199,7 +241,40 @@ function failCheckoutSessionOrder(error) {
     });
 }
 
+/**
+ * Runs the callback once the DOM is ready.
+ * @param {Function} callback - callback
+ */
+function ready(callback) {
+    if (document.readyState !== 'loading') {
+        callback();
+    } else {
+        document.addEventListener('DOMContentLoaded', callback);
+    }
+}
+
+/**
+ * Shows only the tab pane of the active payment method.
+ */
+function showSelectedPaymentTab() {
+    var list = document.querySelector('.payment-form').querySelectorAll('.tab-pane');
+    for (var i = 0; i < list.length; i += 1) {
+        list[i].classList.remove('active');
+    }
+
+    var activePaymentMethod = document.getElementsByClassName('nav-link credit-card-tab active');
+    if (activePaymentMethod.length) {
+        var selectedPaymentContent = document.getElementById(activePaymentMethod[0].getAttribute('href').replace('#', ''));
+        if (selectedPaymentContent) {
+            selectedPaymentContent.classList.add('active');
+        }
+    }
+}
+
 module.exports = {
+    CHECKOUT_ERROR_STORAGE_KEY: CHECKOUT_ERROR_STORAGE_KEY,
+    ready: ready,
+    storeOrderDetails: storeOrderDetails,
     redirectToCheckoutSummaryPage: redirectToCheckoutSummaryPage,
     getBillingDetails: getBillingDetails,
     getFormatedBillingAddress: getFormatedBillingAddress,
@@ -207,6 +282,8 @@ module.exports = {
     isBillingDetailsCollectedByElement: isBillingDetailsCollectedByElement,
     redirectToBillingPageWithError: redirectToBillingPageWithError,
     showCheckoutError: showCheckoutError,
+    showStoredCheckoutError: showStoredCheckoutError,
+    showSelectedPaymentTab: showSelectedPaymentTab,
     getCustomerEmail: getCustomerEmail,
     failCheckoutSessionOrder: failCheckoutSessionOrder
 };

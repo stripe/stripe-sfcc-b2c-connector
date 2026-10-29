@@ -17,6 +17,7 @@
 * Bank Transfer: failed orders cancel their Payment Intent, so funds already received go back to the customer's cash balance instead of staying on the failed order
 * Bank Transfer: the payment method ID is now 'STRIPE_BANK_TRANSFER' (was 'BANK_TRANSFER'), so it no longer takes over a 'BANK_TRANSFER' method assigned to another provider. Before upgrading, create 'STRIPE_BANK_TRANSFER' with processor 'STRIPE_APM' (or import 'payment-methods.xml') and disable 'BANK_TRANSFER'. IMPORTANT: If you are already using Stripe Bank Transfer under 'BANK_TRANSFER' payment method make sure to change back 'STRIPE_BANK_TRANSFER' with 'BANK_TRANSFER' after upgrading to the new version.
 * Upgraded Webpack from version 4 to version 5 ('sgmf-scripts' 3.x, same build setup as SFRA 8), which fixes the 'compile:scss' build. Run 'npm install' before compiling
+* SFRA client settings are now rendered as JSON config built by 'clientConfigHelper.js', replacing the hidden inputs.
 
 ## 24.0.3 (2026-09-04) 
 * Fix BM refund/capture amount conversion for zero-decimal currencies- #31

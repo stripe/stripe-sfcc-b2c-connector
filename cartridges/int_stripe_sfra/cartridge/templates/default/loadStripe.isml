@@ -10,13 +10,7 @@
 	<script type="text/javascript" src="${stripeScriptURL}"></script>
 	<isif condition="${stripePublicKey}">
 
-		<isset name="stripeApiVersion" value="${stripeHelper.getStripeApiVersion()}" scope="page" />
-		<isset name="stripeCheckoutHelper" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper')}" scope="page" />
-		<isset name="stripeAccountCountry" value="${stripeCheckoutHelper.getPRCountry()}" scope="page" />
-
-		<input type="hidden" id="stripePublicKey" value="${stripePublicKey}" />
-		<input type="hidden" id="stripeApiVersion" value="${stripeApiVersion}" />
-		<input type="hidden" id="stripeLocale" value="${stripeCheckoutHelper.getSiteLocale()}" />
+		<isset name="clientConfigHelper" value="${require('*/cartridge/scripts/stripe/clientConfigHelper')}" scope="page" />
+		<script type="application/json" id="stripe-base-config"><isprint value="${clientConfigHelper.toScriptJson(clientConfigHelper.getBaseConfig())}" encoding="off" /></script>
 	</isif>
-	<input type="hidden" id="stripePaymentMethodsInBeta" value="${stripeHelper.getPaymentMethodsInBeta()}" />
 </isif>
