@@ -42,8 +42,6 @@ function Payment(currentBasket, currentCustomer, countryCode) {
             paymentAmount.value
         );
 
-        paymentMethods = stripeHelper.getStripePaymentMethods(paymentMethods, request.locale);
-
         this.applicablePaymentMethods = paymentMethods ? applicablePaymentMethods(paymentMethods) : null;
     } else {
         var applicablePaymentMethodsWithoutStripe = [];

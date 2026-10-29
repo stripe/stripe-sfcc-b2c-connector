@@ -177,37 +177,6 @@
                 <externally-managed-flag>false</externally-managed-flag>
                 <default-value>false</default-value>
             </attribute-definition>
-            <attribute-definition attribute-id="stripeAllowedAPMMethods">
-                <display-name xml:lang="x-default">Allowed APM Methods</display-name>
-                <description xml:lang="x-default">Enumeration of allowed Payment Methods from the Stripe API.&#13;
-&#13;
-See more here:  https://stripe.com/docs/sources&#13;
-&#13;
-{&#13;
-  "default": [&#13;
-    "p24",&#13;
-    "eps",&#13;
-    "sepa_debit",&#13;
-    "ideal",&#13;
-    "sofort",&#13;
-    "bitcoin",&#13;
-    "alipay",&#13;
-    "bancontact",&#13;
-    "giropay"&#13;
-  ],&#13;
-  "en_UK": [&#13;
-    "p24",&#13;
-    "eps"&#13;
-    ],&#13;
-  "de_AT": [&#13;
-    "sofort",&#13;
-    "ideal"&#13;
-    ]&#13;
-  }</description>
-                <type>text</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-            </attribute-definition>
             <attribute-definition attribute-id="stripeUpdateInvoiceOnRefundWebhook">
                 <display-name xml:lang="x-default">Update SFCC Invoice on Stripe charge.refunded Webhook notification</display-name>
                 <type>boolean</type>
@@ -325,7 +294,6 @@ See more here:  https://stripe.com/docs/sources&#13;
             </attribute-group>
             <attribute-group group-id="Stripe APM Configurations">
                 <display-name xml:lang="x-default">Stripe Payment Element And Express Checkout Configurations</display-name>
-                <attribute attribute-id="stripeAllowedAPMMethods"/>
                 <attribute attribute-id="stripePaymentMethodsInBeta"/>
                 <attribute attribute-id="stripePaymentElementStyle"/>
                 <attribute attribute-id="cvcRecollectionEnabled"/>

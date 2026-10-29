@@ -147,13 +147,6 @@ function initCreditCardList(cart) {
     var creditCardMethod = PaymentMgr.getPaymentMethod(PaymentInstrument.METHOD_CREDIT_CARD);
     applicablePaymentCards = creditCardMethod ? creditCardMethod.getApplicablePaymentCards(customer, countryCode, paymentAmount.value) : require('dw/util/List').EMPTY_LIST;
 
-    //Stripe change BEGIN
-    var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
-    if (stripeHelper.isStripeEnabled()) {
-        applicablePaymentMethods = stripeHelper.getStripePaymentMethods(applicablePaymentMethods, request.locale);
-    }
-    //Stripe change END
-
     app.getForm('billing').object.paymentMethods.creditCard.type.setOptions(applicablePaymentCards.iterator());
 
     applicableCreditCards = null;

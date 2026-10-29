@@ -67,35 +67,6 @@ exports.getStripeApiVersion = function () {
     return Site.getCurrent().getCustomPreferenceValue('stripeApiVersion');
 };
 
-/**
- * Returns Stripe allowed payment methods
- *
- * @param {dw.util.Collection} applicablePaymentMethods - SFCC payment methods
- * @param {string} locale - the APM locale
- * @return {dw.util.Collection} - filtered payment methods
- */
-exports.getStripePaymentMethods = function (applicablePaymentMethods, locale) {
-    const localeConfig = JSON.parse(Site.getCurrent().getCustomPreferenceValue('stripeAllowedAPMMethods')) || {};
-    const list = localeConfig[locale] != null ? localeConfig[locale] : localeConfig.default;
-    const applicablePaymentMethodsIterator = applicablePaymentMethods.iterator();
-
-    if (!empty(list)) {
-        let filteredPaymentMethods = new dw.util.ArrayList();
-
-        while (applicablePaymentMethodsIterator.hasNext()) {
-            let method = applicablePaymentMethodsIterator.next();
-            let isAPM = isStripeAPMPayment(method);
-            if ((isAPM && list.indexOf(method.ID.substr(7).toLowerCase()) > -1) || !isAPM) {
-                filteredPaymentMethods.push(method);
-            }
-        }
-
-        return filteredPaymentMethods;
-    }
-
-    return applicablePaymentMethods;
-};
-
 exports.isStripeAPMPayment = isStripeAPMPayment;
 
 /**
