@@ -54,16 +54,6 @@
 
     <type-extension type-id="SitePreferences">
         <custom-attribute-definitions>
-            <attribute-definition attribute-id="applePayVerificationString">
-                <display-name xml:lang="x-default">ApplePay Verification String</display-name>
-                <description xml:lang="x-default">The Stripe console will proxy the Apple Pay for Web verification&#13;
-                    String upon setup. &#13;
-                    This will need to be configured into the sandbox.</description>
-                <type>text</type>
-                <mandatory-flag>false</mandatory-flag>
-                <externally-managed-flag>false</externally-managed-flag>
-                <min-length>0</min-length>
-            </attribute-definition>
             <attribute-definition attribute-id="stripeAccountCountryCode">
                 <display-name xml:lang="x-default">Country Code (Stripe Payment Request Button)</display-name>
                 <type>string</type>
@@ -321,7 +311,6 @@ See more here:  https://stripe.com/docs/sources&#13;
                 <attribute attribute-id="stripeChargeCapture"/>
                 <attribute attribute-id="stripeMultiCaptureEnabled"/>
                 <attribute attribute-id="stripeApiURL"/>
-                <attribute attribute-id="applePayVerificationString"/>
                 <attribute attribute-id="stripeAccountCountryCode"/>
                 <attribute attribute-id="stripeWebhookSigningSecret"/>
                 <attribute attribute-id="stripeAllowedWebHookStatuses"/>

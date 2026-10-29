@@ -16,38 +16,9 @@
  * @module controllers/RedirectURL
  */
 
-/* API Includes */
-var URLRedirectMgr = require('dw/web/URLRedirectMgr');
-
 /* Script Modules */
 var app = require('*/cartridge/scripts/app');
 var guard = require('*/cartridge/scripts/guard');
-
-/**
- * Gets the redirect. Renders the template for a redirect (util/redirectpermanent template). If no redirect can be found,
- * renders an error page (util/redirecterrorutil/redirecterror template).
- */
-function start() {
-
-    //Stripe change BEGIN
-    if (URLRedirectMgr.getRedirectOrigin() === '/.well-known/apple-developer-merchantid-domain-association') { // Intercept the incoming path request
-        app.getView().render('stripe/util/apple');
-        return;
-    }
-    //Stripe change END
-
-    var redirect = URLRedirectMgr.getRedirect(),
-        location = redirect ? redirect.getLocation() : null;
-
-    if (!location) {
-        response.setStatus(410);
-        app.getView().render('util/redirecterror');
-    } else {
-        app.getView({
-            Location: location
-        }).render('util/redirectpermanent');
-    }
-}
 
 /**
  * Hostname-only URLs (http://sitegenesis.com/) cannot be redirected using the URL mapping framework.
@@ -77,9 +48,6 @@ function hostName() {
 /*
  * Web exposed methods
  */
-/** Gets a redirect and renders it.
- * @see module:controllers/RedirectURL~start */
-exports.Start = guard.ensure([], start);
 /** Used by the platform for URL redirects.
  * @see module:controllers/RedirectURL~hostName */
 exports.Hostname = guard.ensure([], hostName);
