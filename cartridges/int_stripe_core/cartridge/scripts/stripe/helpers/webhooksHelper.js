@@ -223,6 +223,7 @@ exports.processIncomingNotification = function () {
                             stripeNotification.custom.processingStatus = 'PROCESS';
                             break;
                         case 'checkout.session.async_payment_failed':
+                        case 'checkout.session.expired':
                             stripeNotification.custom.processingStatus = 'PROCESS';
                             break;
                         default:

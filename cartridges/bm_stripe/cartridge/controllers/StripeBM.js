@@ -115,7 +115,8 @@ server.post('HandleStripeQuickSetup', function (req, res, next) {
                 'payment_intent.payment_failed',
                 'checkout.session.completed',
                 'checkout.session.async_payment_succeeded',
-                'checkout.session.async_payment_failed'];
+                'checkout.session.async_payment_failed',
+                'checkout.session.expired'];
 
             var webHookCreateResult = stripeBMService.webhooks.create(webHookURL, enabledEvents, stripePrivateKey);
             var webHookSecretKey = webHookCreateResult.secret;

@@ -441,19 +441,26 @@ function handleStripeCheckoutSessionSubmitOrder() {
     });
 }
 
-document.querySelector('button.place-order').addEventListener('click', function (event) {
-    var method = window.localStorage.getItem('stripe_payment_method');
-    if (method !== 'STRIPE_PAYMENT_ELEMENT' && method !== 'STRIPE_BANK_TRANSFER') {
+document.addEventListener('click', function (event) {
+    var placeOrderBtn = (event.target && event.target.closest) ? event.target.closest('button.place-order') : null;
+    if (!placeOrderBtn) {
+        return;
+    }
+
+    var selectedPaymentMethod = window.localStorage.getItem('stripe_payment_method');
+    if (selectedPaymentMethod !== 'STRIPE_PAYMENT_ELEMENT' && selectedPaymentMethod !== 'STRIPE_BANK_TRANSFER') {
         return true;
     }
 
     event.stopImmediatePropagation();
+    event.preventDefault();
+
     if (forceSubmit) {
         return false;
     }
 
     forceSubmit = true;
-    if (method === 'STRIPE_BANK_TRANSFER') {
+    if (selectedPaymentMethod === 'STRIPE_BANK_TRANSFER') {
         handleStripeBankTransferSubmitOrder();
     } else if (checkoutConfig.useCheckoutSessions) {
         handleStripeCheckoutSessionSubmitOrder();
@@ -461,4 +468,4 @@ document.querySelector('button.place-order').addEventListener('click', function 
         handleStripePaymentElementSubmitOrder();
     }
     return false;
-});
+}, true); // capture phase so this runs before SFRA's button-level place-order handler

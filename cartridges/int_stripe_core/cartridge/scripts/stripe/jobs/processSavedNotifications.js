@@ -586,6 +586,32 @@ function processCheckoutSessionCompleted(stripeNotificationObject, order, stripe
 }
 
 /**
+ * Processes checkout.session.expired: fails the order if it was never paid.
+ * @param {dw.object.CustomObject} stripeNotificationObject - Notification CO
+ */
+function processCheckoutSessionExpired(stripeNotificationObject) {
+    const checkoutSession = JSON.parse(stripeNotificationObject.custom.stripeWebhookData).data.object;
+    const orderNo = stripeNotificationObject.custom.orderId;
+    const order = orderNo ? OrderMgr.getOrder(orderNo) : null;
+
+    Transaction.wrap(function () {
+        stripeNotificationObject.custom.processingStatus = 'PROCESSED'; // eslint-disable-line
+
+        // Sessions of earlier billing page loads carry the same order number
+        if (!order || order.custom.stripeCheckoutSessionID !== checkoutSession.id
+            || order.status.value !== Order.ORDER_STATUS_CREATED) {
+            return;
+        }
+
+        order.addNote('Stripe Processing Job Note', 'Checkout Session ' + checkoutSession.id + ' expired without payment');
+        var failStatus = OrderMgr.failOrder(order, false);
+        if (failStatus.isError()) {
+            logger.error('Could not fail order {0} for expired Checkout Session {1}: {2}', order.orderNo, checkoutSession.id, failStatus.message);
+        }
+    });
+}
+
+/**
  * @param {dw.object.CustomObject} stripeNotificationObject - Notification CO
  * @returns {boolean} - False for a charge that is authorized but not captured
  */
@@ -645,6 +671,11 @@ function isForeignCheckoutSessionEvent(stripeNotificationObject, order, stripeOb
 function processNotificationObject(stripeNotificationObject) {
     if (stripeNotificationObject.custom.stripeObjectType === 'review') {
         processReviewNotification(stripeNotificationObject);
+        return;
+    }
+
+    if (stripeNotificationObject.custom.stripeType === 'checkout.session.expired') {
+        processCheckoutSessionExpired(stripeNotificationObject);
         return;
     }
 
