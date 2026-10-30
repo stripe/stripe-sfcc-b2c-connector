@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 24.1.1
+* Webhooks: charge.refunded amounts (order note and invoice refund transaction) are converted using the currency's decimal digits instead of assuming 2
+
 ## 24.1.0
 * Checkout Sessions Implementation
 * Adaptive Pricing with Checkout Sessions

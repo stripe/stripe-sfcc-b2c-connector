@@ -87,7 +87,7 @@ function getStripeServiceDefinition(apiKey) {
                     name: 'Stripe SFCCB2C',
                     partner_id: 'pp_partner_Fs71dOwRYXhmze',
                     url: 'https://docs.stripe.com/use-stripe-apps/salesforce-commerce-cloud',
-                    version: '24.1.0.' + framework
+                    version: '24.1.1.' + framework
                 }
             };
             // Idempotency keys only apply to POST requests. Callers that may repeat the same logical
