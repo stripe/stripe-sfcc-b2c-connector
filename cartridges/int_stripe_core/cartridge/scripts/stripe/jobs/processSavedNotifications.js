@@ -382,8 +382,10 @@ function processChargeRefunded(stripeNotificationObject, order, stripePaymentIns
 
     Transaction.wrap(function () {
         const amountRefunded = chargeRefundedJSON.data.object.amount_refunded;
-        const currency = stripeNotificationObject.custom.currency;
-        const moneyRefunded = new Money((amountRefunded / 100).toFixed(2), currency);
+        const currencyCode = order.getCurrencyCode();
+        const currency = require('dw/util/Currency').getCurrency(currencyCode);
+        const fractionDigits = currency ? currency.getDefaultFractionDigits() : 2;
+        const moneyRefunded = new Money(amountRefunded / Math.pow(10, fractionDigits), currencyCode);
 
         const noteTitle = Resource.msg('order.amountrefunded', 'stripe', null);
         const noteMessage = Resource.msgf('order.amountrefundedmsg', 'stripe', null, moneyRefunded.toString(), order.getOrderNo());
