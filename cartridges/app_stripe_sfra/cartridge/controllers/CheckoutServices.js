@@ -42,7 +42,7 @@ server.prepend('PlaceOrder', server.middleware.https, function (req, res, next) 
     collections.forEach(currentBasket.getPaymentInstruments(), function (paymentInstrument) {
         var paymentProcessor = PaymentMgr.getPaymentMethod(paymentInstrument.getPaymentMethod()).getPaymentProcessor();
 
-        if (paymentProcessor.ID === 'STRIPE_APM' || paymentProcessor.ID === 'STRIPE_CREDIT') {
+        if (paymentProcessor.ID === 'STRIPE_APM') {
             isStripe = true;
         }
     });

@@ -42,15 +42,13 @@ function Payment(currentBasket, currentCustomer, countryCode) {
             paymentAmount.value
         );
 
-        paymentMethods = stripeHelper.getStripePaymentMethods(paymentMethods, request.locale);
-
         this.applicablePaymentMethods = paymentMethods ? applicablePaymentMethods(paymentMethods) : null;
     } else {
         var applicablePaymentMethodsWithoutStripe = [];
         for (var i = 0; i < this.applicablePaymentMethods.length; i++) {
             var paymentMethod = this.applicablePaymentMethods[i];
             var currentPaymentMethod = dw.order.PaymentMgr.getPaymentMethod(paymentMethod.ID);
-            if (currentPaymentMethod.paymentProcessor.ID !== 'STRIPE_APM' && currentPaymentMethod.paymentProcessor.ID !== 'STRIPE_CREDIT') {
+            if (currentPaymentMethod.paymentProcessor.ID !== 'STRIPE_APM') {
                 applicablePaymentMethodsWithoutStripe.push({
                     ID: paymentMethod.ID,
                     name: paymentMethod.name
@@ -59,6 +57,19 @@ function Payment(currentBasket, currentCustomer, countryCode) {
         }
 
         this.applicablePaymentMethods = applicablePaymentMethodsWithoutStripe;
+    }
+
+    // Adds the saved Stripe payment method to the payment instruments
+    if (this.selectedPaymentInstruments && currentBasket.paymentInstruments) {
+        var paymentInstruments = currentBasket.paymentInstruments;
+        for (var j = 0; j < this.selectedPaymentInstruments.length && j < paymentInstruments.length; j++) {
+            var stripePaymentMethodType = paymentInstruments[j].custom.stripePaymentMethodType;
+            if (stripePaymentMethodType) {
+                this.selectedPaymentInstruments[j].stripePaymentMethodType = stripePaymentMethodType;
+                this.selectedPaymentInstruments[j].stripeCardBrand = paymentInstruments[j].creditCardType;
+                this.selectedPaymentInstruments[j].stripeCardLastFour = paymentInstruments[j].creditCardNumberLastDigits;
+            }
+        }
     }
 }
 

@@ -144,14 +144,8 @@ function initCreditCardList(cart) {
     }).countryCode;
 
     applicablePaymentMethods = PaymentMgr.getApplicablePaymentMethods(customer, countryCode, paymentAmount.value);
-    applicablePaymentCards = PaymentMgr.getPaymentMethod(PaymentInstrument.METHOD_CREDIT_CARD).getApplicablePaymentCards(customer, countryCode, paymentAmount.value);
-
-    //Stripe change BEGIN
-    var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
-    if (stripeHelper.isStripeEnabled()) {
-        applicablePaymentMethods = stripeHelper.getStripePaymentMethods(applicablePaymentMethods, request.locale);
-    }
-    //Stripe change END
+    var creditCardMethod = PaymentMgr.getPaymentMethod(PaymentInstrument.METHOD_CREDIT_CARD);
+    applicablePaymentCards = creditCardMethod ? creditCardMethod.getApplicablePaymentCards(customer, countryCode, paymentAmount.value) : require('dw/util/List').EMPTY_LIST;
 
     app.getForm('billing').object.paymentMethods.creditCard.type.setOptions(applicablePaymentCards.iterator());
 

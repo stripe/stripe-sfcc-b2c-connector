@@ -5,7 +5,7 @@
     </service-credential>
 
     <service-profile service-profile-id="StripeProfile">
-        <timeout-millis>3000</timeout-millis>
+        <timeout-millis>10000</timeout-millis>
         <rate-limit-enabled>true</rate-limit-enabled>
         <rate-limit-calls>5</rate-limit-calls>
         <rate-limit-millis>100</rate-limit-millis>

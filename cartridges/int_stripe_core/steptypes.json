@@ -46,6 +46,14 @@
                             "@required": "false",
                             "@trim": "true",
                             "description": "Remove custom objects having status PENDING_CHARGE"
+                        },
+                        {
+                            "@name": "MinAgeInDays",
+                            "@type": "long",
+                            "@required": "true",
+                            "@trim": "true",
+                            "default-value": "4",
+                            "description": "Only remove custom objects older than this many days. Values below 4 are within Stripe's 3-day webhook retry window, so a redelivered event can be processed again."
                         }
                    ]
                 },

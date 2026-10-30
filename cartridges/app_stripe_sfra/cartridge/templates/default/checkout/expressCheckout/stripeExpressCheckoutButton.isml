@@ -5,22 +5,8 @@
 <isset name="stripePublicKey" value="${stripeHelper.getPublicApiKey()}" scope="page" />
 
 <isif condition="${stripeEnabled && (isStripeExpressCheckoutEnabledProductPage || isStripeExpressCheckoutEnabledCartPage) && stripePublicKey}">
-    <isset name="stripeApiVersion" value="${stripeHelper.getStripeApiVersion()}" scope="page" />
-    <isset name="stripeOrder" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getStripeOrderDetails(dw.order.BasketMgr.getCurrentBasket())}" scope="page" />
-    <isset name="stripeCheckoutHelper" value="${require('*/cartridge/scripts/stripe/helpers/checkoutHelper')}" scope="page" />
-    <isset name="stripeExpressCheckoutAppearance" value="${JSON.stringify(stripeHelper.getStripeExpressCheckoutAppearance())}" scope="page" />
-
-    <input type="hidden" id="stripePublicKey" value="${stripePublicKey}" />
-    <input type="hidden" id="stripeApiVersion" value="${stripeApiVersion}" />
-    <input type="hidden" id="stripe_express_checkout_url" value="${URLUtils.https("StripePaymentsAPM-StripeQuickCheckout")}" />
-    <input type="hidden" id="stripe_return_url" value="${URLUtils.https("StripePaymentsAPM-HandleAPM")}" />
-    <input type="hidden" id="stripe_get_shipping_options" value="${URLUtils.https("Stripe-GetShippingOptions")}" />
-    <input type="hidden" id="logStripeErrorMessageURL" value="${URLUtils.https('StripePaymentsAPM-LogStripeErrorMessage')}" />
-    <input type="hidden" id="stripeCaptureMethod" value="${dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture') ? 'automatic' : 'manual'}" />
-    <input type="hidden" id="stripeExpressCheckoutAppearance" value="${stripeExpressCheckoutAppearance}" />
-    <input type="hidden" id="stripePaymentMethodsInBeta" value="${stripeHelper.getPaymentMethodsInBeta()}" />
-    <input type="hidden" id="stripe_order_amount" value="${stripeOrder ? stripeOrder.amount : 0}" />
-    <input type="hidden" id="stripe_order_currency" value="${stripeOrder && stripeOrder.currency ? stripeOrder.currency : session.currency.currencyCode}" />
+    <isset name="clientConfigHelper" value="${require('*/cartridge/scripts/stripe/clientConfigHelper')}" scope="page" />
+    <script type="application/json" id="stripe-expressCheckout-config"><isprint value="${clientConfigHelper.toScriptJson(clientConfigHelper.getExpressCheckoutConfig(dw.order.BasketMgr.getCurrentBasket()))}" encoding="off" /></script>
 
     <isscript>
         var assets = require('*/cartridge/scripts/assets.js');
@@ -31,13 +17,12 @@
 
     <isif condition="${pdict.product}">
         <isset name="displayExpressCheckout" value="${isStripeExpressCheckoutEnabledProductPage}" scope="page" />
-        <input type="hidden" id="stripeProductPrice" value="${pdict.product.price.sales.value}" />
     <iselseif condition="${isStripeExpressCheckoutEnabledCartPage}">
         <isset name="displayExpressCheckout" value="true" scope="page" />
     </isif>
 
     <isif condition="${displayExpressCheckout}">
-        <div class="${pdict.product ? 'isProductPage' : ''} ${pdict.product ? (pdict.product.readyToOrder && pdict.product.available ? '' : 'd-none') : ''}" id="express-checkout-element" style="margin-top: 10px"></div>
+        <div class="${pdict.product ? 'isProductPage' : ''} ${pdict.product ? (pdict.product.readyToOrder && pdict.product.available ? '' : 'd-none') : ''}" id="express-checkout-element" data-product-price="${pdict.product ? pdict.product.price.sales.value : ''}" style="margin-top: 10px"></div>
         <input type="hidden" name="${dw.web.CSRFProtection.getTokenName()}" value="${dw.web.CSRFProtection.generateToken()}" />
     </isif>
 </isif>

@@ -12,10 +12,7 @@
 		<input type="hidden" id="stripePublicKey" value="${stripePublicKey}" />
 		<input type="hidden" id="stripeApiVersion" value="${stripeApiVersion}" />
 		<isif condition="${pageContext.ns === 'checkout'}">
-			<input type="hidden" id="stripeCardFormStyle" value="${JSON.stringify(stripeHelper.getStripeCardFormStyle())}" />
 			<input type="hidden" id="stripeAccountCountry" value="${stripeCheckoutHelper.getPRCountry()}" />
-			<input type="hidden" id="cardPaymentSubmitOrderURL" value="${URLUtils.https('StripePayments-CardPaymentSubmitOrder')}" />
-			<input type="hidden" id="cardPaymentHandleRequiresActionURL" value="${URLUtils.https('StripePayments-CardPaymentHandleRequiresAction')}" />
 			<input type="hidden" id="billingPageUrl" value="${isSFRA ? URLUtils.url('Checkout-Begin', 'stage', 'payment') : URLUtils.url('COShipping-Start')}" />
 			<input type="hidden" id="paymentElementSubmitOrderURL" value="${URLUtils.https('StripePayments-PaymentElementSubmitOrder')}" />
             <input type="hidden" id="isStripePaymentElementsSavePaymentsEnabled" value="${customer.authenticated && customer.profile && customer.profile.email && stripeHelper.isStripePaymentElementsSavePaymentsEnabled()}" />

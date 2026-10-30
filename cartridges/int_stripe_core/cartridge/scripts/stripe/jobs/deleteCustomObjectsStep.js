@@ -29,8 +29,19 @@ function getSearchQueryString(jobParams) {
     }
 
     return clauses.length
-        ? clauses.join(' OR ')
+        ? '(' + clauses.join(' OR ') + ') AND creationDate < {0}'
         : null;
+}
+
+/**
+ * Returns the date before which custom objects may be removed.
+ * @param {Object} jobParams - Job parameters
+ * @return {Date} - Cut-off date
+ */
+function getCutOffDate(jobParams) {
+    const minAgeInDays = Number(jobParams.MinAgeInDays);
+
+    return new Date(Date.now() - (minAgeInDays * 24 * 60 * 60 * 1000));
 }
 
 exports.execute = function (jobParams) {
@@ -51,7 +62,7 @@ exports.execute = function (jobParams) {
     var stripeObjectsIter;
     try {
         const customObjectType = webhooksHelper.getNotificationsCustomObjectType();
-        stripeObjectsIter = CustomObjectMgr.queryCustomObjects(customObjectType, queryString, null);
+        stripeObjectsIter = CustomObjectMgr.queryCustomObjects(customObjectType, queryString, null, getCutOffDate(jobParams));
         let objectsRemovedCount = 0;
 
         while (stripeObjectsIter.hasNext()) {

@@ -5,23 +5,42 @@
 var COHelpers = module.superModule;
 var stripeHelper = require('*/cartridge/scripts/stripe/helpers/stripeHelper');
 var stripePaymentsHelper = require('*/cartridge/scripts/stripe/helpers/controllers/stripePaymentsHelper');
+var checkoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
 var Transaction = require('dw/system/Transaction');
 var hooksHelper = require('*/cartridge/scripts/helpers/hooks');
 
 if (stripeHelper.isStripeEnabled()) {
+    var baseValidatePayment = COHelpers.validatePayment;
+    var baseCreateOrder = COHelpers.createOrder;
+
     /**
-     * Validates payment - Overriden because Stripe validates the cards.
+     * @param {dw.order.LineItemCtnr} lineItemCtnr - basket or order
+     * @returns {boolean} true when paid with a Stripe payment instrument
+     */
+    var isStripeBasket = function (lineItemCtnr) {
+        return !!require('*/cartridge/scripts/stripe/helpers/checkoutHelper').getStripePaymentInstrument(lineItemCtnr);
+    };
+
+    /**
+     * Validates payment - skipped for Stripe baskets.
      * @param {Object} req - The local instance of the request object
      * @param {dw.order.Basket} currentBasket - The current basket
+     * @param {Boolean} isExpressCheckout - for express checkout payment instrument is created directly on order
      * @returns {Object} an object that has error information
      */
-    // v1
-    // eslint-disable-next-line no-unused-vars
-    COHelpers.validatePayment = function validatePayment(req, currentBasket) {
+    COHelpers.validatePayment = function validatePayment(req, currentBasket, isExpressCheckout) {
+        if (!isStripeBasket(currentBasket) && empty(isExpressCheckout)) {
+            return baseValidatePayment(req, currentBasket);
+        }
+
         return { error: false };
     };
 
     COHelpers.createOrder = function createOrder(currentBasket) {
+        if (!isStripeBasket(currentBasket)) {
+            return baseCreateOrder(currentBasket);
+        }
+
         try {
             const stripeCheckoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
             return stripeCheckoutHelper.createOrder(currentBasket);
@@ -37,7 +56,6 @@ if (stripeHelper.isStripeEnabled()) {
         var URLUtils = require('dw/web/URLUtils');
         var basketCalculationHelpers = require('*/cartridge/scripts/helpers/basketCalculationHelpers');
         var validationHelpers = require('*/cartridge/scripts/helpers/basketValidationHelpers');
-        var checkoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
 
         session.privacy.stripeOrderNumber = null;
         delete session.privacy.stripeOrderNumber;
@@ -61,13 +79,6 @@ if (stripeHelper.isStripeEnabled()) {
         if (currentBasket.custom.stripePaymentIntentID) {
             Transaction.wrap(function () {
                 currentBasket.custom.stripePaymentIntentID = null;
-            });
-        }
-
-        var cardPaymentInstrument = checkoutHelper.getStripePaymentInstrument(currentBasket);
-        if (cardPaymentInstrument && cardPaymentInstrument.paymentTransaction && cardPaymentInstrument.paymentTransaction.getTransactionID()) {
-            Transaction.wrap(function () {
-                cardPaymentInstrument.paymentTransaction.setTransactionID(null);
             });
         }
 
@@ -183,7 +194,7 @@ if (stripeHelper.isStripeEnabled()) {
 
     COHelpers.buildPaymentIntentPayload = function buildPaymentIntentPayload(order, req, stripeChargeCapture, stripePaymentInstrument) {
         var Money = require('dw/value/Money');
-        var checkoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
+       
         var stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
         var orderCurrencyCode = order.getCurrencyCode();
@@ -223,7 +234,7 @@ if (stripeHelper.isStripeEnabled()) {
             currency: orderCurrencyCode
         };
 
-        if (stripePaymentInstrument.paymentMethod !== 'BANK_TRANSFER') {
+        if (stripePaymentInstrument.paymentMethod !== 'STRIPE_BANK_TRANSFER') {
             createPaymentIntentPayload.capture_method = stripeChargeCapture ? 'automatic' : 'manual';
             createPaymentIntentPayload.automatic_payment_methods = {
                 enabled: true
@@ -255,7 +266,9 @@ if (stripeHelper.isStripeEnabled()) {
             };
         }
 
-        if (request.httpCookies['stripe.link.persistent_token'] && request.httpCookies['stripe.link.persistent_token'].value) {
+        // Bank Transfer gets its payment_method_options from the billing country further down, and does not use Link
+        if (stripePaymentInstrument.paymentMethod !== 'STRIPE_BANK_TRANSFER'
+            && request.httpCookies['stripe.link.persistent_token'] && request.httpCookies['stripe.link.persistent_token'].value) {
             createPaymentIntentPayload.payment_method_options.link = {
                 persistent_token: request.httpCookies['stripe.link.persistent_token'].value
             };
@@ -266,6 +279,10 @@ if (stripeHelper.isStripeEnabled()) {
         if (!empty(req.form.confirmationToken)) {
             confirmationToken = JSON.parse(req.form.confirmationToken);
             createPaymentIntentPayload.confirmation_token = confirmationToken.id;
+
+            if (!empty(confirmationToken.return_url)) {
+                createPaymentIntentPayload.return_url = confirmationToken.return_url;
+            }
         }
 
         if (customer.authenticated && customer.profile && customer.profile.email) {
@@ -274,23 +291,25 @@ if (stripeHelper.isStripeEnabled()) {
                 * if not, make a call to Stripe to create such id and save it as customer profile custom attribute
                 */
             if (!customer.profile.custom.stripeCustomerID) {
-                var newStripeCustomer = stripeService.customers.create({
+                var newStripeCustomerPayload = {
                     email: customer.profile.email,
                     name: customer.profile.firstName + ' ' + customer.profile.lastName
-                });
+                };
+                var newStripeCustomer = stripeService.customers.create(newStripeCustomerPayload,
+                    require('*/cartridge/scripts/stripe/helpers/idempotencyHelper').buildKey('customer', customer.profile.customerNo, newStripeCustomerPayload));
 
                 Transaction.wrap(function () {
                     customer.profile.custom.stripeCustomerID = newStripeCustomer.id;
                 });
             }
 
-            if (stripeHelper.isCVCRecollectionEnabled() && stripePaymentInstrument.paymentMethod !== 'BANK_TRANSFER') {
+            if (stripeHelper.isCVCRecollectionEnabled() && stripePaymentInstrument.paymentMethod !== 'STRIPE_BANK_TRANSFER') {
                 createPaymentIntentPayload.payment_method_options.card.require_cvc_recollection = true;
             }
 
             createPaymentIntentPayload.customer = customer.profile.custom.stripeCustomerID;
 
-            if (!empty(confirmationToken)) {
+            if (!empty(confirmationToken) && !empty(confirmationToken.setup_future_usage)) {
                 createPaymentIntentPayload.setup_future_usage = confirmationToken.setup_future_usage;
             }
         }
@@ -303,10 +322,12 @@ if (stripeHelper.isStripeEnabled()) {
             createPaymentIntentPayload.payment_method_options = checkoutHelper.getBankTransferPaymentMethodOptions(billingAddress);
 
             if (empty(createPaymentIntentPayload.customer)) {
-                var guestStripeCustomer = stripeService.customers.create({
+                var guestStripeCustomerPayload = {
                     email: order.getCustomerEmail(),
                     name: billingAddress.fullName
-                });
+                };
+                var guestStripeCustomer = stripeService.customers.create(guestStripeCustomerPayload,
+                    require('*/cartridge/scripts/stripe/helpers/idempotencyHelper').buildKey('guest-customer', order.orderNo, guestStripeCustomerPayload));
 
                 createPaymentIntentPayload.customer = guestStripeCustomer.id;
             }

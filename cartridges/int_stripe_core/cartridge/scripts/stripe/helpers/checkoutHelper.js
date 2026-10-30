@@ -13,25 +13,6 @@ exports.getPRCountry = function () {
     return require('dw/system/Site').current.getCustomPreferenceValue('stripeAccountCountryCode');
 };
 
-/**
- * Checks if Stripe integration for card payments is enabled.
- *
- * @return {boolean} - True if Stripe is used as processor for card payments.
- */
-exports.isStripeCardsPaymentMethodEnabled = function () {
-    const PaymentMgr = require('dw/order/PaymentMgr');
-    const PaymentInstrument = require('dw/order/PaymentInstrument');
-
-    const cardPaymentMethod = PaymentMgr.getPaymentMethod(PaymentInstrument.METHOD_CREDIT_CARD);
-    if (cardPaymentMethod && cardPaymentMethod.active) {
-        const paymentProcessor = cardPaymentMethod.getPaymentProcessor();
-
-        return (paymentProcessor && 'STRIPE_CREDIT'.equals(paymentProcessor.ID));
-    }
-
-    return false;
-};
-
 exports.areStripeAlernativePaymentMethodsEnabled = function () {
     const PaymentMgr = require('dw/order/PaymentMgr');
 
@@ -50,7 +31,7 @@ exports.areStripeAlernativePaymentMethodsEnabled = function () {
 };
 
 exports.isAnyStripePaymentMethodEnabled = function () {
-    return this.isStripeCardsPaymentMethodEnabled() || this.areStripeAlernativePaymentMethodsEnabled();
+    return this.areStripeAlernativePaymentMethodsEnabled();
 };
 
 /**
@@ -64,27 +45,9 @@ function isStripePaymentInstrument(paymentInstrument) {
         return false;
     }
 
-    const stripePaymentInstrumentRegex = /(^BANK_TRANSFER$|^CREDIT_CARD$|^STRIPE_.+)/i;
+    const stripePaymentInstrumentRegex = /^STRIPE_.+/i;
     return stripePaymentInstrumentRegex.test(paymentInstrument.paymentMethod);
 }
-
-/**
- * Check if customer cards should always be saved for guest customers
- * @returns {boolean} true if customer cards always should be saved
- */
-function shouldAlwaysSaveGuessCustomerCards() {
-    return dw.system.Site.getCurrent().getCustomPreferenceValue('stripeSaveCustomerCards').value === 'always';
-}
-
-/**
- * Check if customer should be asked before save cards on Stripe side
- * @returns {boolean} true customer should be asked before save cards on Stripe side
- */
-function shouldAskBeforeSaveGuessCustomerCards() {
-    return dw.system.Site.getCurrent().getCustomPreferenceValue('stripeSaveCustomerCards').value === 'ask';
-}
-
-exports.shouldAskBeforeSaveGuessCustomerCards = shouldAskBeforeSaveGuessCustomerCards;
 
 /**
  * Gets the Stripe payment instrument created for a given line item container.
@@ -118,37 +81,16 @@ exports.removeStripePaymentInstruments = function (lineItemCtnr) {
 exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId, params) {
     exports.removeStripePaymentInstruments(lineItemCtnr);
 
-    const paymentInstrument = lineItemCtnr.createPaymentInstrument(paymentMethodId, this.getNonGiftCertificateAmount(lineItemCtnr));
+    // A leftover card instrument (another processor) would be authorized as well
+    lineItemCtnr.getPaymentInstruments(dw.order.PaymentInstrument.METHOD_CREDIT_CARD).toArray().forEach(function (cardInstrument) {
+        lineItemCtnr.removePaymentInstrument(cardInstrument);
+    });
 
-    const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
+    const paymentInstrument = lineItemCtnr.createPaymentInstrument(paymentMethodId, this.getNonGiftCertificateAmount(lineItemCtnr));
 
     if (params) {
         if ('sourceId' in params) {
             paymentInstrument.custom.stripeSourceID = params.sourceId;
-        }
-
-        if ('cardHolder' in params) {
-            paymentInstrument.creditCardHolder = params.cardHolder;
-        }
-
-        if ('cardNumber' in params) {
-            paymentInstrument.creditCardNumber = params.cardNumber;
-        }
-
-        if ('cardType' in params) {
-            paymentInstrument.creditCardType = params.cardType;
-        }
-
-        if ('cardExpMonth' in params) {
-            paymentInstrument.creditCardExpirationMonth = params.cardExpMonth;
-        }
-
-        if ('cardExpYear' in params) {
-            paymentInstrument.creditCardExpirationYear = params.cardExpYear;
-        }
-
-        if ('prUsed' in params) {
-            paymentInstrument.custom.stripePRUsed = params.prUsed;
         }
     }
 
@@ -160,15 +102,6 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
     // so we need to add the Payment processor and transaction details manually
     if (!paymentTransaction.getPaymentProcessor() && paymentMethodId === 'STRIPE_PAYMENT_ELEMENT') {
         processor = PaymentMgr.getPaymentMethod('STRIPE_PAYMENT_ELEMENT').getPaymentProcessor();
-        if (processor) {
-            paymentTransaction.setPaymentProcessor(processor);
-        }
-    }
-
-    // for Stripe Card, we also create the order before actual confirmation the payment on stripe
-    // so we need to add the Payment processor and transaction details manually
-    if (!paymentTransaction.getPaymentProcessor() && paymentMethodId === 'CREDIT_CARD') {
-        processor = PaymentMgr.getPaymentMethod('CREDIT_CARD').getPaymentProcessor();
         if (processor) {
             paymentTransaction.setPaymentProcessor(processor);
         }
@@ -189,45 +122,8 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
         paymentTransaction.custom.stripeOrderNumber = session.privacy.stripeOrderNumber;
     }
 
-    if (customer.authenticated && customer.profile && customer.profile.email) {
-        let stripeCustomerId = customer.profile.custom.stripeCustomerID;
-
-        if (params.saveCard) {
-            if (!stripeCustomerId) {
-                const newStripeCustomer = stripeService.customers.create({
-                    email: customer.profile.email,
-                    name: customer.profile.firstName + ' ' + customer.profile.lastName
-                });
-
-                stripeCustomerId = newStripeCustomer.id;
-                customer.profile.custom.stripeCustomerID = stripeCustomerId;
-            }
-
-            paymentInstrument.custom.stripeSavePaymentInstrument = true;
-        }
-
-        if (stripeCustomerId) {
-            paymentInstrument.custom.stripeCustomerID = stripeCustomerId;
-        }
-    }
-
-    if (!customer.authenticated && (shouldAlwaysSaveGuessCustomerCards() || (shouldAskBeforeSaveGuessCustomerCards() && params.saveGuessCard))) {
-        const customerEmail = lineItemCtnr.getCustomerEmail();
-
-        const guessCustomerName = lineItemCtnr.getBillingAddress().getFullName();
-
-        const newStripeGuessCustomer = stripeService.customers.create({
-            email: customerEmail,
-            name: guessCustomerName
-        });
-
-        paymentInstrument.custom.stripeSavePaymentForReAuthorise = true;
-
-        paymentInstrument.custom.stripeSavePaymentInstrument = true;
-
-        if (newStripeGuessCustomer && newStripeGuessCustomer.id) {
-            paymentInstrument.custom.stripeCustomerID = newStripeGuessCustomer.id;
-        }
+    if (customer.authenticated && customer.profile && customer.profile.custom.stripeCustomerID) {
+        paymentInstrument.custom.stripeCustomerID = customer.profile.custom.stripeCustomerID;
     }
 
     const stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
@@ -239,79 +135,6 @@ exports.createStripePaymentInstrument = function (lineItemCtnr, paymentMethodId,
     if (paymentInstrument) {
         delete lineItemCtnr.custom.stripeIsPaymentIntentInReview; // eslint-disable-line
     }
-};
-
-exports.createPaymentIntent = function (paymentInstrument, orderShipments) {
-    const paymentMethod = paymentInstrument.custom.stripeSourceID;
-
-    var currentCurency = dw.util.Currency.getCurrency(paymentInstrument.paymentTransaction.amount.currencyCode);
-    var multiplier = Math.pow(10, currentCurency.getDefaultFractionDigits());
-    var amount = Math.round(paymentInstrument.paymentTransaction.amount.value * multiplier);
-    const stripeChargeCapture = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
-
-    const currency = paymentInstrument.paymentTransaction.amount.currencyCode.toLowerCase();
-
-    const createPaymentIntentPayload = {
-        payment_method: paymentMethod,
-        amount: amount,
-        currency: currency,
-        confirmation_method: 'manual',
-        capture_method: stripeChargeCapture ? 'automatic' : 'manual',
-        confirm: true
-    };
-
-    if (paymentInstrument.custom.stripeCustomerID) {
-        createPaymentIntentPayload.customer = paymentInstrument.custom.stripeCustomerID;
-    }
-
-    if (paymentInstrument.custom.stripeSavePaymentInstrument) {
-        createPaymentIntentPayload.save_payment_method = true;
-    }
-
-    if (!stripeChargeCapture && paymentInstrument.custom.stripeSavePaymentForReAuthorise) {
-        createPaymentIntentPayload.setup_future_usage = 'off_session';
-    }
-
-    var multicaptureEnabled = dw.system.Site.getCurrent().getCustomPreferenceValue('stripeMultiCaptureEnabled');
-
-    if (multicaptureEnabled) {
-        createPaymentIntentPayload.payment_method_options = {
-            card: {
-                request_multicapture: 'if_available'
-            }
-        };
-    }
-
-    if (session.privacy.stripeOrderNumber) {
-        createPaymentIntentPayload.metadata = {};
-        createPaymentIntentPayload.metadata.order_id = session.privacy.stripeOrderNumber;
-        createPaymentIntentPayload.metadata.site_id = dw.system.Site.getCurrent().getID();
-    }
-
-    if (orderShipments && dw.system.Site.getCurrent().getCustomPreferenceValue('includeShippingDetailsInPaymentIntentPayload')) {
-        createPaymentIntentPayload.shipping = exports.getPaymentIntentShipmentPayload(orderShipments);
-    }
-
-    const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
-
-    const paymentIntent = stripeService.paymentIntents.create(createPaymentIntentPayload);
-
-    return paymentIntent;
-};
-
-exports.confirmPaymentIntent = function (paymentIntentId, paymentInstrument) {
-    const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
-
-    const paymentMethod = paymentInstrument.custom.stripeSourceID;
-
-    const paymentIntentPayload = {
-        payment_method: paymentMethod,
-        return_url: dw.web.URLUtils.https('StripePayments-HandleAPM').toString()
-    };
-
-    const paymentIntent = stripeService.paymentIntents.confirm(paymentIntentId, paymentIntentPayload);
-
-    return paymentIntent;
 };
 
 exports.getSiteID = function () {
@@ -442,29 +265,46 @@ exports.isAPMOrder = function (order) {
     return false;
 };
 
-exports.refundCharge = function (order) {
-    const PaymentInstrument = require('dw/order/PaymentInstrument');
-    const cardPaymentInstruments = order.getPaymentInstruments(PaymentInstrument.METHOD_CREDIT_CARD);
-    const cardPaymentInstrument = cardPaymentInstruments.length && cardPaymentInstruments[0];
-    const chargeId = cardPaymentInstrument && cardPaymentInstrument.custom.stripeChargeID;
+/**
+ * Saves the payment method type and card details on the payment instrument.
+ * @param {dw.order.OrderPaymentInstrument} paymentInstrument - Stripe payment instrument
+ * @param {Object} paymentMethodDetails - PaymentMethod or charge payment_method_details
+ * @param {string} [holderName] - billing name
+ */
+exports.savePaymentMethodDetails = function (paymentInstrument, paymentMethodDetails, holderName) {
+    if (!paymentInstrument || !paymentMethodDetails || !paymentMethodDetails.type) {
+        return;
+    }
 
-    if (chargeId) {
-        const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
+    const stripePaymentsHelper = require('*/cartridge/scripts/stripe/helpers/controllers/stripePaymentsHelper');
+    var card = paymentMethodDetails.card;
+    var type = (card && card.wallet && card.wallet.type) || paymentMethodDetails.type;
 
-        try {
-            stripeService.refunds.create({
-                charge: chargeId
-            });
-        } catch (e) {
-            let errorMessage = 'Failed to refund charge ' + chargeId;
-            errorMessage += '\n Original error was: ' + e.message;
-            const Logger = require('dw/system/Logger');
-            Logger.error(errorMessage);
-            const Transaction = require('dw/system/Transaction');
-            Transaction.wrap(function () {
-                order.addNote('Stripe refund failed', errorMessage);
-            });
+    try {
+        if (card && card.last4) {
+            paymentInstrument.setCreditCardNumber('************' + card.last4);
+            if (card.brand) {
+                paymentInstrument.setCreditCardType(card.brand);
+            }
+            if (card.exp_month) {
+                paymentInstrument.setCreditCardExpirationMonth(Number(card.exp_month));
+            }
+            if (card.exp_year) {
+                paymentInstrument.setCreditCardExpirationYear(Number(card.exp_year));
+            }
         }
+        if (holderName) {
+            paymentInstrument.setCreditCardHolder(holderName);
+        }
+    } catch (e) {
+        stripePaymentsHelper.LogStripeErrorMessage('savePaymentMethodDetails: could not save card details: ' + e.message);
+    }
+
+    // Separate guard: fails if the stripePaymentMethodType metadata is not imported yet
+    try {
+        paymentInstrument.custom.stripePaymentMethodType = type;
+    } catch (e) {
+        stripePaymentsHelper.LogStripeErrorMessage('savePaymentMethodDetails: could not save stripePaymentMethodType (is the metadata imported?): ' + e.message);
     }
 };
 
@@ -602,7 +442,7 @@ exports.getShippingOptionsSFRA = function (params) {
                 shippingAddress.setFirstName(shippingFirstName);
                 shippingAddress.setLastName(shippingLastname);
                 shippingAddress.setAddress1(stripeShippingAddress.line1);
-                shippingAddress.setAddress2(stripeShippingAddress.line1);
+                shippingAddress.setAddress2(stripeShippingAddress.line2);
                 shippingAddress.setCity(stripeShippingAddress.city);
                 shippingAddress.setPostalCode(stripeShippingAddress.postal_code);
                 shippingAddress.setCountryCode(stripeShippingAddress.country);
@@ -652,7 +492,6 @@ exports.getShippingOptionsSFRA = function (params) {
                 returnObj.shippingMethods.push({
                     id: shippingMethod.ID,
                     displayName: shippingMethod.displayName,
-                    detail: shippingMethod.description,
                     amount: Math.round(shipmentShippingModel.getShippingCost(shippingMethod).amount.value * multiplier)
                 });
             }
@@ -704,7 +543,6 @@ exports.getShippingOptionsSiteGenesis = function (params) {
                 returnObj.shippingMethods.push({
                     id: shippingMethod.ID,
                     displayName: shippingMethod.displayName,
-                    detail: shippingMethod.description,
                     amount: Math.round(shipmentShippingModel.getShippingCost(shippingMethod).amount.value * multiplier)
                 });
             }
@@ -718,10 +556,23 @@ exports.getShippingOptionsSiteGenesis = function (params) {
     return returnObj;
 };
 
+/**
+ * Gets the Stripe.js locale for the current SFCC locale.
+ * @returns {string} Stripe locale, e.g. 'fr', 'en-GB' or 'auto'
+ */
 exports.getSiteLocale = function () {
     var locale = request.getLocale();
 
-    return locale ? locale.replace('_', '-') : null;
+    if (!locale || locale === 'default') {
+        return 'auto';
+    }
+
+    var stripeLocale = String(locale).replace('_', '-');
+    var supportedRegionLocales = ['en-GB', 'es-419', 'fr-CA', 'pt-BR', 'zh-HK', 'zh-TW'];
+
+    return supportedRegionLocales.indexOf(stripeLocale) !== -1
+        ? stripeLocale
+        : stripeLocale.split('-')[0].toLowerCase();
 };
 
 exports.isBasketPaymentIntentValid = function () {
@@ -887,7 +738,6 @@ exports.getBankTransferPaymentMethodOptions =  function(billingAddress) {
                 };
                
                 break;
-                return null;
         }
 
         return {
@@ -897,3 +747,155 @@ exports.getBankTransferPaymentMethodOptions =  function(billingAddress) {
             }
         };
 }
+
+/**
+ * Cancels the open Payment Intent of a Bank Transfer order.
+ * @param {dw.order.Order} order - Failed or cancelled order
+ * @param {string} [paymentIntentId] - Defaults to the Payment Intent stored on the order
+ */
+exports.cancelBankTransferPaymentIntent = function (order, paymentIntentId) {
+    const stripePaymentInstrument = getStripePaymentInstrument(order);
+    const id = paymentIntentId || order.custom.stripePaymentIntentID;
+
+    if (!id || !stripePaymentInstrument || stripePaymentInstrument.paymentMethod !== 'STRIPE_BANK_TRANSFER') {
+        return;
+    }
+
+    // Funds already applied go back to the customer's cash balance, and later transfers
+    // can no longer be reconciled to this order
+    try {
+        require('*/cartridge/scripts/stripe/services/stripeService').paymentIntents.cancel(id, 'abandoned');
+    } catch (e) {
+        // Rejected when the Payment Intent already succeeded or was cancelled
+        require('dw/system/Logger').getLogger('Stripe', 'stripe').warn('Could not cancel Bank Transfer Payment Intent {0} for order {1}: {2}', id, order.orderNo, e.message);
+    }
+};
+
+/**
+ * Builds Checkout Session line items, or a single line when they don't add up to the amount owed.
+ * @param {Object} basketDetails - Result of getStripeOrderDetails
+ * @return {Array} - Checkout Session line_items
+ */
+function getCheckoutSessionLineItems(basketDetails) {
+    const Resource = require('dw/web/Resource');
+    const currency = basketDetails.currency;
+    var itemsTotal = 0;
+
+    var lineItems = JSON.parse(basketDetails.order_items).map(function (item) {
+        var name = item.description || item.type;
+        if (item.quantity > 1) {
+            name += ' x ' + item.quantity;
+        }
+        itemsTotal += item.amount;
+
+        return {
+            price_data: {
+                currency: currency,
+                unit_amount: item.amount,
+                product_data: { name: name }
+            },
+            quantity: 1
+        };
+    });
+
+    if (itemsTotal === basketDetails.amount) {
+        return lineItems;
+    }
+
+    return [{
+        price_data: {
+            currency: currency,
+            unit_amount: basketDetails.amount,
+            product_data: { name: Resource.msg('checkoutsession.ordertotal', 'stripe', null) }
+        },
+        quantity: 1
+    }];
+}
+
+/**
+ * Creates a Checkout Session for the basket.
+ * @param {dw.order.Basket} basket - Current basket
+ * @return {string} - Checkout Session client secret
+ */
+exports.createCheckoutSession = function (basket) {
+    const Transaction = require('dw/system/Transaction');
+    const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
+    const site = dw.system.Site.getCurrent();
+    const stripeChargeCapture = site.getCustomPreferenceValue('stripeChargeCapture');
+
+    var basketDetails = exports.getStripeOrderDetails(basket);
+
+    // Order number reserved on the billing page, used when the order is created
+    const orderMetadata = { order_id: exports.getNewStripeOrderNumber(), site_id: site.getID() };
+
+    var createCheckoutSessionPayload = {
+        ui_mode: 'elements',
+        mode: 'payment',
+        line_items: getCheckoutSessionLineItems(basketDetails),
+        // Stripe fills in the session ID so HandleAPM can check the session status
+        return_url: dw.web.URLUtils.https('StripePaymentsAPM-HandleAPM').toString() + '?session_id={CHECKOUT_SESSION_ID}',
+        payment_intent_data: {
+            capture_method: stripeChargeCapture ? 'automatic' : 'manual',
+            metadata: orderMetadata
+        },
+        metadata: orderMetadata,
+        adaptive_pricing: { enabled: true }
+    };
+
+    if (customer.authenticated && customer.profile && customer.profile.custom.stripeCustomerID) {
+        createCheckoutSessionPayload.customer = customer.profile.custom.stripeCustomerID;
+    }
+
+    const checkoutSession = stripeService.checkoutSessions.create(createCheckoutSessionPayload);
+
+    Transaction.wrap(function () {
+        basket.custom.stripeCheckoutSessionID = checkoutSession.id;
+    });
+
+    return checkoutSession.client_secret;
+};
+
+/**
+ * Checks that a Checkout Session charges the amount owed.
+ * @param {Object} checkoutSession - Stripe Checkout Session
+ * @param {dw.order.LineItemCtnr} lineItemCtnr - Basket or order
+ * @return {boolean} - True if amount and currency match
+ */
+exports.isCheckoutSessionAmountValid = function (checkoutSession, lineItemCtnr) {
+    const expected = exports.getStripeOrderDetails(lineItemCtnr);
+    const conversion = checkoutSession.currency_conversion;
+    const sessionAmount = conversion ? conversion.amount_total : checkoutSession.amount_total;
+    const sessionCurrency = conversion ? conversion.source_currency : checkoutSession.currency;
+
+    return sessionAmount === expected.amount
+        && String(sessionCurrency).toLowerCase() === expected.currency;
+};
+
+/**
+ * Converts an order address to the Checkout Session confirm() format.
+ * @param {dw.order.OrderAddress} orderAddress - Billing or shipping address
+ * @returns {Object|null} - { name, address }, or null without a country
+ */
+exports.getCheckoutSessionAddress = function (orderAddress) {
+    if (!orderAddress || !orderAddress.countryCode || !orderAddress.countryCode.value) {
+        return null;
+    }
+
+    const address = {
+        country: orderAddress.countryCode.value.toUpperCase(),
+        line1: orderAddress.address1,
+        line2: orderAddress.address2,
+        city: orderAddress.city,
+        postal_code: orderAddress.postalCode,
+        state: orderAddress.stateCode
+    };
+
+    // Leave out empty values instead of sending blanks
+    Object.keys(address).forEach(function (key) {
+        if (empty(address[key])) {
+            delete address[key];
+        }
+    });
+
+    return { name: orderAddress.fullName, address: address };
+};

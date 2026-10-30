@@ -90,27 +90,6 @@ function getStripeAPMPaymentInstrument(order) {
 }
 
 /**
- * Retrieves the payment instrument using Stripe credit payment method for
- * an order.
- *
- * @param {dw.order.Order} order - Order to get the payment isntrument for
- * @return {paymentInstrument} - Stripe Credit payment instrument if found or null otherwise
- */
-function getStripeCreditPaymentInstrument(order) {
-    for (let i = 0; i < order.paymentInstruments.length; i++) {
-        let paymentInstrument = order.paymentInstruments[i];
-        let paymentTransaction = paymentInstrument.paymentTransaction;
-        let paymentProcessor = paymentTransaction && paymentTransaction.paymentProcessor;
-
-        if (paymentProcessor && 'STRIPE_CREDIT'.equals(paymentProcessor.ID)) {
-            return paymentInstrument;
-        }
-    }
-
-    return null;
-}
-
-/**
  * Retrieves Stripe customer ID from customer profile associated with a given order.
  *
  * @param {dw.order.Order} order - Order to get Stripe customer ID from
@@ -135,6 +114,16 @@ function getStripeCustomerIdFromOrder(order) {
  * @param {dw.order.OrderPaymentInstrument} stripePaymentInstrument - Stripe payment instrument
  */
 function createCharge(stripeNotificationObject, order, stripePaymentInstrument) {
+    // The source was already charged for this order (redelivered / re-stored source.chargeable
+    // event, or a retry after a failure following the charge). Never charge it a second time.
+    if (stripePaymentInstrument.custom.stripeChargeID) {
+        Transaction.wrap(function () {
+            stripeNotificationObject.custom.processingStatus = 'PROCESSED'; // eslint-disable-line
+        });
+        stripeLogger.info('Charge {0} already exists for order {1}, skipping CO event id {2}, source {3}', stripePaymentInstrument.custom.stripeChargeID, order.orderNo, stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId);
+        return;
+    }
+
     var customerEmail = order.getCustomerEmail();
 
     var createChargePayload = {
@@ -152,12 +141,32 @@ function createCharge(stripeNotificationObject, order, stripePaymentInstrument) 
 
     const stripeService = require('*/cartridge/scripts/stripe/services/stripeService');
 
-    try {
-        const charge = stripeService.charges.create(createChargePayload);
-        Transaction.wrap(function () {
-            stripePaymentInstrument.custom.stripeChargeID = charge.id; // eslint-disable-line
-            stripeNotificationObject.custom.processingStatus = 'PROCESSED'; // eslint-disable-line
+    // If this job retries the same charge, Stripe returns the original charge instead of creating a new one.
+    const idempotencyKey = require('*/cartridge/scripts/stripe/helpers/idempotencyHelper')
+        .buildKey('source-charge', order.orderNo + '-' + stripeNotificationObject.custom.stripeSourceId, createChargePayload);
 
+    var charge;
+    try {
+        charge = stripeService.charges.create(createChargePayload, idempotencyKey);
+    } catch (e) {
+        stripeLogger.info('Unsuccessful charge for order {0}, CO event id {1}, source {2} message {3}', order.orderNo, stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId, e.message);
+
+        const httpStatus = e.callResult && e.callResult.error;
+        if (httpStatus >= 400 && httpStatus < 500 && httpStatus !== 409 && httpStatus !== 429) {
+            Transaction.wrap(function () {
+                stripeNotificationObject.custom.processingStatus = 'FAIL_OR_CANCEL'; // eslint-disable-line
+            });
+        }
+        return;
+    }
+
+    Transaction.wrap(function () {
+        stripePaymentInstrument.custom.stripeChargeID = charge.id; // eslint-disable-line
+        stripeNotificationObject.custom.processingStatus = 'PROCESSED'; // eslint-disable-line
+    });
+
+    try {
+        Transaction.wrap(function () {
             if (order.status.value === Order.ORDER_STATUS_CREATED) {
                 OrderMgr.placeOrder(order);
             }
@@ -172,7 +181,7 @@ function createCharge(stripeNotificationObject, order, stripePaymentInstrument) 
         });
         stripeLogger.info('Charge was successfull for order {0}, CO event id {1}, source {2}', order.orderNo, stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId);
     } catch (e) {
-        stripeLogger.info('Unsuccessful charge for order {0}, CO event id {1}, source {2} message {3}', order.orderNo, stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId, e.message);
+        logger.error('Charge {0} created for order {1} but updating the order failed: {2}', charge.id, order.orderNo, e.message);
     }
 }
 
@@ -184,8 +193,11 @@ function createCharge(stripeNotificationObject, order, stripePaymentInstrument) 
  * @param {dw.order.OrderPaymentInstrument} stripePaymentInstrument - Stripe payment instrument
  */
 function failOrder(stripeNotificationObject, order) {
-    // If the order is failed, do not try to fail it
-    if (order.status === dw.order.Order.ORDER_STATUS_FAILED) {
+    // If the order is failed, do not try to fail it (or email the customer) again
+    if (order.status.value === Order.ORDER_STATUS_FAILED) {
+        Transaction.wrap(function () {
+            stripeNotificationObject.custom.processingStatus = 'FAIL_OR_CANCEL'; // eslint-disable-line
+        });
         return;
     }
 
@@ -210,9 +222,67 @@ function failOrder(stripeNotificationObject, order) {
         stripeNotificationObject.custom.processingStatus = 'FAIL_OR_CANCEL';  // eslint-disable-line
     });
 
+    require('*/cartridge/scripts/stripe/helpers/checkoutHelper').cancelBankTransferPaymentIntent(order);
+
     var statusMail = sendMail(order, 'stripe/mail/orderfailed', Resource.msg('order.orderfailed-email.001', 'stripe', null));
 
     stripeLogger.info('\nSuccessfully proccesed CO with event id: {0}, source id: {1}, updated SFCC order status to "FAILED". Set up CO processingStatus to {2}, email send - {3}', stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId, 'FAIL_OR_CANCEL', statusMail.status === Status.OK ? 'true' : 'false');
+}
+
+/**
+ * @param {dw.order.Order} order - Order to check
+ * @returns {boolean} - True if the order is placed (New, Open or Completed)
+ */
+function isOrderPlaced(order) {
+    const orderStatus = order.status.value;
+    return orderStatus === Order.ORDER_STATUS_NEW || orderStatus === Order.ORDER_STATUS_OPEN || orderStatus === Order.ORDER_STATUS_COMPLETED;
+}
+
+/**
+ * Places and confirms an order for a successful payment. Must be called in a transaction.
+ * @param {dw.object.CustomObject} stripeNotificationObject - Notification CO
+ * @param {dw.order.Order} order - Order to confirm
+ * @param {boolean} [paymentReceived] - False if the payment is only authorized
+ * @returns {boolean} - True if the order was confirmed by this call, false otherwise
+ */
+function confirmPaidOrder(stripeNotificationObject, order, paymentReceived) {
+    const orderStatus = order.status.value;
+    const markPaid = paymentReceived !== false;
+
+    stripeNotificationObject.custom.processingStatus = 'PROCESSED'; // eslint-disable-line
+
+    if (orderStatus === Order.ORDER_STATUS_FAILED || orderStatus === Order.ORDER_STATUS_CANCELLED) {
+        order.addNote('Stripe Processing Job Note', 'Successful payment notification ' + stripeNotificationObject.custom.stripeEventId + ' received for a failed or cancelled order. Manual review required.');
+        logger.warn('Successful payment notification {0} received for failed or cancelled order {1}, order not updated.', stripeNotificationObject.custom.stripeEventId, order.orderNo);
+        return false;
+    }
+
+    const isPlaced = isOrderPlaced(order);
+
+    if (isPlaced && (!markPaid || order.paymentStatus.value === Order.PAYMENT_STATUS_PAID)) {
+        return false;
+    }
+
+    if (!isPlaced) {
+        var placeOrderStatus = OrderMgr.placeOrder(order);
+        if (placeOrderStatus.isError()) {
+            OrderMgr.failOrder(order, true);
+            stripeLogger.info('An error occured durring place order: {0}, error message: {1}', order.orderNo, placeOrderStatus.message);
+            return false;
+        }
+    }
+
+    order.setConfirmationStatus(Order.CONFIRMATION_STATUS_CONFIRMED);
+    if (markPaid) {
+        order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
+    }
+
+    // Never move an order that was already exported back to READY (it would be exported again)
+    if (order.exportStatus.value === Order.EXPORT_STATUS_NOTEXPORTED) {
+        order.setExportStatus(Order.EXPORT_STATUS_READY);
+    }
+
+    return true;
 }
 
 /**
@@ -221,8 +291,9 @@ function failOrder(stripeNotificationObject, order) {
  * @param {dw.object.CustomObject} stripeNotificationObject - Notification CO
  * @param {dw.order.Order} order - Order to place
  * @param {dw.order.OrderPaymentInstrument} stripePaymentInstrument - Stripe payment instrument
+ * @param {boolean} [paymentReceived] - False if the payment is only authorized
  */
-function placeOrder(stripeNotificationObject, order, stripePaymentInstrument) { // eslint-disable-line
+function placeOrder(stripeNotificationObject, order, stripePaymentInstrument, paymentReceived) { // eslint-disable-line
     var chargeJSON = JSON.parse(stripeNotificationObject.custom.stripeWebhookData);
 
     // add card info (if any) to payment instrument for Stripe payment element
@@ -232,31 +303,24 @@ function placeOrder(stripeNotificationObject, order, stripePaymentInstrument) { 
 
         if (stripePEPaymentInstrument && chargeJSON && chargeJSON.data && chargeJSON.data.object && chargeJSON.data.object.payment_method_details) {
             Transaction.wrap(function () {
-                if (chargeJSON.data.object.billing_details && chargeJSON.data.object.billing_details.name) {
-                    stripePEPaymentInstrument.creditCardHolder = chargeJSON.data.object.billing_details.name;
-                }
-
-                if (chargeJSON.data.object.payment_method_details.card && chargeJSON.data.object.payment_method_details.card.last4) {
-                    stripePEPaymentInstrument.creditCardNumber = '************' + chargeJSON.data.object.payment_method_details.card.last4;
-                }
-
-                if (chargeJSON.data.object.payment_method_details.card && chargeJSON.data.object.payment_method_details.card.brand) {
-                    stripePEPaymentInstrument.creditCardType = chargeJSON.data.object.payment_method_details.card.brand;
-                }
-
-                if (chargeJSON.data.object.payment_method_details.card && chargeJSON.data.object.payment_method_details.card.exp_month) {
-                    stripePEPaymentInstrument.creditCardExpirationMonth = chargeJSON.data.object.payment_method_details.card.exp_month;
-                }
-
-                if (chargeJSON.data.object.payment_method_details.card && chargeJSON.data.object.payment_method_details.card.exp_month) {
-                    stripePEPaymentInstrument.creditCardExpirationYear = chargeJSON.data.object.payment_method_details.card.exp_year;
-                }
+                require('*/cartridge/scripts/stripe/helpers/checkoutHelper').savePaymentMethodDetails(
+                    stripePEPaymentInstrument,
+                    chargeJSON.data.object.payment_method_details,
+                    chargeJSON.data.object.billing_details && chargeJSON.data.object.billing_details.name
+                );
             });
         }
-        
-        if (chargeJSON && chargeJSON.data && chargeJSON.data.object && chargeJSON.data.object.outcome && chargeJSON.data.object.outcome.risk_level && chargeJSON.data.object.outcome.risk_score) {
-        	Transaction.wrap(function () {
-        		order.custom.stripeRiskLevel = chargeJSON.data.object.outcome.risk_level;
+
+        var stripeChargeOutcomeData = (chargeJSON && chargeJSON.data && chargeJSON.data.object && chargeJSON.data.object.outcome) || null;
+
+        if (stripeChargeOutcomeData && !empty(stripeChargeOutcomeData.risk_level)) {
+            Transaction.wrap(function () {
+                order.custom.stripeRiskLevel = chargeJSON.data.object.outcome.risk_level;
+            });
+        }
+
+        if (stripeChargeOutcomeData && stripeChargeOutcomeData.risk_score !== null && stripeChargeOutcomeData.risk_score !== undefined) {
+            Transaction.wrap(function () {
                 order.custom.stripeRiskScore = chargeJSON.data.object.outcome.risk_score;
             });
         }
@@ -264,7 +328,8 @@ function placeOrder(stripeNotificationObject, order, stripePaymentInstrument) { 
         logger.error('Error writing stripePEPaymentInstrument: {0}', e.message);
     }
 
-    Transaction.wrap(function () {
+    const wasPlaced = isOrderPlaced(order);
+    var orderConfirmed = Transaction.wrap(function () {
         /*
         stripePaymentInstrument.paymentTransaction.transactionID = chargeJSON.data.object.balance_transaction; // eslint-disable-line
         stripePaymentInstrument.paymentTransaction.type = PaymentTransaction.TYPE_CAPTURE; // eslint-disable-line
@@ -273,20 +338,19 @@ function placeOrder(stripeNotificationObject, order, stripePaymentInstrument) { 
         stripePaymentInstrument.paymentTransaction.custom.stripeChargeOutcomeData = JSON.stringify(chargeJSON.data.object.outcome ? chargeJSON.data.object.outcome : {}); // eslint-disable-line
         stripePaymentInstrument.paymentTransaction.custom.stripeJsonData = stripeNotificationObject.custom.stripeWebhookData; // eslint-disable-line
         */
-        if (order.status !== dw.order.Order.ORDER_STATUS_NEW && order.status !== dw.order.Order.ORDER_STATUS_OPEN && order.status !== dw.order.Order.ORDER_STATUS_COMPLETED) {
-            var placeOrderStatus = OrderMgr.placeOrder(order);
-            if (placeOrderStatus.isError()) {
-                OrderMgr.failOrder(order, true);
-                stripeLogger.info('An error occured durring place order: {0}, error message: {1}', order.orderNo, placeOrderStatus.message);
-            }
-        }
-
-        order.setConfirmationStatus(Order.CONFIRMATION_STATUS_CONFIRMED);
-        order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
-        order.setExportStatus(Order.EXPORT_STATUS_READY);
-
-        stripeNotificationObject.custom.processingStatus = 'PROCESSED'; // eslint-disable-line
+        return confirmPaidOrder(stripeNotificationObject, order, paymentReceived);
     });
+
+    if (!orderConfirmed) {
+        stripeLogger.info('CO with event id: {0}, source id: {1} processed, order {2} not updated (already paid, failed or could not be placed)', stripeNotificationObject.custom.stripeEventId, stripeNotificationObject.custom.stripeSourceId, order.orderNo);
+        return;
+    }
+
+    // Already placed earlier (e.g. authorized, now captured): the confirmation email was sent then
+    if (wasPlaced) {
+        stripeLogger.info('CO with event id: {0} processed, order {1} marked as paid', stripeNotificationObject.custom.stripeEventId, order.orderNo);
+        return;
+    }
 
     const stripeCheckoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
     var isAPMOrder = stripeCheckoutHelper.isAPMOrder(order);
@@ -362,21 +426,14 @@ function processChargeRefunded(stripeNotificationObject, order, stripePaymentIns
  * @param {dw.order.Order} order - Order to place
  */
 function placeOrderAfterReview(stripeNotificationObject, order) {
-    Transaction.wrap(function () {
-        if (order.status !== dw.order.Order.ORDER_STATUS_NEW && order.status !== dw.order.Order.ORDER_STATUS_OPEN && order.status !== dw.order.Order.ORDER_STATUS_COMPLETED) {
-            var placeOrderStatus = OrderMgr.placeOrder(order);
-            if (placeOrderStatus.isError()) {
-                OrderMgr.failOrder(order, true);
-                stripeLogger.info('An error occured durring place order: {0}, error message: {1}', order.orderNo, placeOrderStatus.message);
-            }
-        }
-
-        order.setConfirmationStatus(Order.CONFIRMATION_STATUS_CONFIRMED);
-        order.setPaymentStatus(Order.PAYMENT_STATUS_PAID);
-        order.setExportStatus(Order.EXPORT_STATUS_READY);
-
-        stripeNotificationObject.custom.processingStatus = 'PROCESSED'; // eslint-disable-line
+    var orderConfirmed = Transaction.wrap(function () {
+        return confirmPaidOrder(stripeNotificationObject, order);
     });
+
+    if (!orderConfirmed) {
+        stripeLogger.info('CO with event id: {0} processed, order {1} not updated (already paid, failed or could not be placed)', stripeNotificationObject.custom.stripeEventId, order.orderNo);
+        return;
+    }
 
     var statusMail = true;
     if (isSFRA()) {
@@ -397,8 +454,11 @@ function placeOrderAfterReview(stripeNotificationObject, order) {
  * @param {dw.order.Order} order - Order to place
  */
 function failOrderAfterReview(stripeNotificationObject, order) {
-    // If the order is failed, do not try to fail it
-    if (order.status === dw.order.Order.ORDER_STATUS_FAILED) {
+    // If the order is failed, do not try to fail it (or email the customer) again
+    if (order.status.value === Order.ORDER_STATUS_FAILED) {
+        Transaction.wrap(function () {
+            stripeNotificationObject.custom.processingStatus = 'FAIL_OR_CANCEL'; // eslint-disable-line
+        });
         return;
     }
 
@@ -437,7 +497,7 @@ function processReviewNotification(stripeNotificationObject) {
         }
         const order = OrderMgr.getOrder(paymentIntent.metadata.order_id);
 
-        if (order === null) {
+        if (order === null || isForeignCheckoutSessionEvent(stripeNotificationObject, order, paymentIntent, paymentIntent.id)) {
             return;
         }
 
@@ -457,6 +517,153 @@ function processReviewNotification(stripeNotificationObject) {
 }
 
 /**
+ * Stores a Checkout Session's Payment Intent on the order.
+ * @param {string} paymentIntentId - Payment Intent ID, or null
+ * @param {dw.order.Order} order - Order paid by the session
+ * @param {dw.order.OrderPaymentInstrument} stripePaymentInstrument - Stripe payment instrument
+ * @returns {string} - Payment Intent ID, or null if the session has none
+ */
+function recordCheckoutSessionPaymentIntent(paymentIntentId, order, stripePaymentInstrument) {
+    if (!paymentIntentId || order.custom.stripePaymentIntentID === paymentIntentId) {
+        return paymentIntentId;
+    }
+
+    const stripeChargeCapture = Site.getCurrent().getCustomPreferenceValue('stripeChargeCapture');
+
+    Transaction.wrap(function () {
+        order.custom.stripePaymentIntentID = paymentIntentId; // eslint-disable-line no-param-reassign
+        stripePaymentInstrument.paymentTransaction.setTransactionID(paymentIntentId);
+        stripePaymentInstrument.paymentTransaction.setType(stripeChargeCapture ? PaymentTransaction.TYPE_CAPTURE : PaymentTransaction.TYPE_AUTH);
+    });
+
+    // Lets the Payment Intent be traced back to the order in the Dashboard and in its later events
+    try {
+        require('*/cartridge/scripts/stripe/services/stripeService').paymentIntents.update(paymentIntentId, {
+            metadata: { order_id: order.orderNo, site_id: Site.getCurrent().getID() }
+        });
+    } catch (e) {
+        logger.warn('Could not add order metadata to Payment Intent {0} for order {1}: {2}', paymentIntentId, order.orderNo, e.message);
+    }
+
+    return paymentIntentId;
+}
+
+/**
+ * Processes checkout.session.completed (paid, authorized or pending payment).
+ * @param {dw.object.CustomObject} stripeNotificationObject - Notification CO
+ * @param {dw.order.Order} order - Order paid by the session
+ * @param {dw.order.OrderPaymentInstrument} stripePaymentInstrument - Stripe payment instrument
+ */
+function processCheckoutSessionCompleted(stripeNotificationObject, order, stripePaymentInstrument) {
+    const checkoutSession = JSON.parse(stripeNotificationObject.custom.stripeWebhookData).data.object;
+    const paymentIntentId = recordCheckoutSessionPaymentIntent(checkoutSession.payment_intent || null, order, stripePaymentInstrument);
+
+    if (checkoutSession.payment_status === 'paid') {
+        placeOrder(stripeNotificationObject, order, stripePaymentInstrument);
+        return;
+    }
+
+    var paymentIntentStatus = null;
+    if (paymentIntentId) {
+        try {
+            paymentIntentStatus = require('*/cartridge/scripts/stripe/services/stripeService').paymentIntents.retrieve(paymentIntentId).status;
+        } catch (e) {
+            // Left in PROCESS: retried by the next job run
+            logger.error('Could not retrieve Payment Intent {0} for order {1}: {2}', paymentIntentId, order.orderNo, e.message);
+            return;
+        }
+    }
+
+    if (paymentIntentStatus === 'requires_capture') {
+        placeOrder(stripeNotificationObject, order, stripePaymentInstrument, false);
+        return;
+    }
+
+    Transaction.wrap(function () {
+        order.addNote('Stripe Processing Job Note', 'Checkout Session ' + checkoutSession.id + ' completed, payment pending (Payment Intent status: ' + paymentIntentStatus + ')');
+        stripeNotificationObject.custom.processingStatus = 'PROCESSED'; // eslint-disable-line
+    });
+}
+
+/**
+ * Processes checkout.session.expired: fails the order if it was never paid.
+ * @param {dw.object.CustomObject} stripeNotificationObject - Notification CO
+ */
+function processCheckoutSessionExpired(stripeNotificationObject) {
+    const checkoutSession = JSON.parse(stripeNotificationObject.custom.stripeWebhookData).data.object;
+    const orderNo = stripeNotificationObject.custom.orderId;
+    const order = orderNo ? OrderMgr.getOrder(orderNo) : null;
+
+    Transaction.wrap(function () {
+        stripeNotificationObject.custom.processingStatus = 'PROCESSED'; // eslint-disable-line
+
+        // Sessions of earlier billing page loads carry the same order number
+        if (!order || order.custom.stripeCheckoutSessionID !== checkoutSession.id
+            || order.status.value !== Order.ORDER_STATUS_CREATED) {
+            return;
+        }
+
+        order.addNote('Stripe Processing Job Note', 'Checkout Session ' + checkoutSession.id + ' expired without payment');
+        var failStatus = OrderMgr.failOrder(order, false);
+        if (failStatus.isError()) {
+            logger.error('Could not fail order {0} for expired Checkout Session {1}: {2}', order.orderNo, checkoutSession.id, failStatus.message);
+        }
+    });
+}
+
+/**
+ * @param {dw.object.CustomObject} stripeNotificationObject - Notification CO
+ * @returns {boolean} - False for a charge that is authorized but not captured
+ */
+function isPaymentCaptured(stripeNotificationObject) {
+    const stripeObject = JSON.parse(stripeNotificationObject.custom.stripeWebhookData).data.object;
+    return !(stripeObject.object === 'charge' && stripeObject.captured === false);
+}
+
+/**
+ * Checks that an event for a Checkout Session order comes from that order's own session.
+ * @param {dw.object.CustomObject} stripeNotificationObject - Notification CO
+ * @param {dw.order.Order} order - Order found by the event metadata
+ * @param {Object} stripeObject - Event object (checkout.session, payment_intent or charge)
+ * @param {string} paymentIntentId - Payment Intent ID of the event, or null
+ * @returns {boolean} - True if the event must not update the order
+ */
+function isForeignCheckoutSessionEvent(stripeNotificationObject, order, stripeObject, paymentIntentId) {
+    const orderSessionId = order.custom.stripeCheckoutSessionID;
+    if (!orderSessionId) {
+        return false;
+    }
+
+    var matches;
+    if (stripeObject.object === 'checkout.session') {
+        // Every session created on the billing page carries the same order number
+        matches = stripeObject.id === orderSessionId
+            && require('*/cartridge/scripts/stripe/helpers/checkoutHelper').isCheckoutSessionAmountValid(stripeObject, order);
+    } else if (order.custom.stripePaymentIntentID) {
+        matches = paymentIntentId === order.custom.stripePaymentIntentID;
+    } else {
+        try {
+            const orderSession = require('*/cartridge/scripts/stripe/services/stripeService').checkoutSessions.retrieve(orderSessionId);
+            matches = !!paymentIntentId && orderSession.payment_intent === paymentIntentId;
+        } catch (e) {
+            // Left in PROCESS: retried by the next job run
+            logger.error('Could not retrieve Checkout Session {0} for order {1}: {2}', orderSessionId, order.orderNo, e.message);
+            return true;
+        }
+    }
+
+    if (!matches) {
+        Transaction.wrap(function () {
+            order.addNote('Stripe Processing Job Note', 'Event ' + stripeNotificationObject.custom.stripeEventId + ' does not belong to Checkout Session ' + orderSessionId + ' of this order or its amount does not match, order not updated. Manual review required.');
+            stripeNotificationObject.custom.processingStatus = 'PROCESSED'; // eslint-disable-line
+        });
+        logger.warn('Event {0} does not match Checkout Session {1} of order {2}, order not updated.', stripeNotificationObject.custom.stripeEventId, orderSessionId, order.orderNo);
+    }
+
+    return !matches;
+}
+
+/**
  * Processes a custom object containing notification from Stripe.
  *
  * @param {dw.object.CustomObject} stripeNotificationObject - Notification CO
@@ -467,11 +674,17 @@ function processNotificationObject(stripeNotificationObject) {
         return;
     }
 
+    if (stripeNotificationObject.custom.stripeType === 'checkout.session.expired') {
+        processCheckoutSessionExpired(stripeNotificationObject);
+        return;
+    }
+
     const stripeEventId = stripeNotificationObject.custom.stripeEventId;
 
     // Ensure Payment Intent ID or Source ID existing in Custom Object
-    const coStripePaymentIntentId = stripeNotificationObject.custom.stripePaymentIntentID;
+    const coStripePaymentIntentId = stripeNotificationObject.custom.stripePaymentIntentID || stripeNotificationObject.custom.stripeObjectId;
     const coStripeSourceId = stripeNotificationObject.custom.stripeSourceId;
+
     if (!coStripeSourceId && !coStripePaymentIntentId) {
         stripeLogger.info('\nBoth Payment Intent Id and Source id are empty, event id: {0}', stripeEventId);
         return;
@@ -505,8 +718,7 @@ function processNotificationObject(stripeNotificationObject) {
 
     // Ensure Stripe APM order
     const stripeAPMPaymentInstrument = getStripeAPMPaymentInstrument(order);
-    const stripeCreditPaymentInstrument = getStripeCreditPaymentInstrument(order);
-    const stripePaymentInstrument = stripeAPMPaymentInstrument || stripeCreditPaymentInstrument;
+    const stripePaymentInstrument = stripeAPMPaymentInstrument;
 
     if (!stripePaymentInstrument) {
         stripeLogger.info(
@@ -535,6 +747,11 @@ function processNotificationObject(stripeNotificationObject) {
         }
     }
 
+    const stripeObject = JSON.parse(stripeNotificationObject.custom.stripeWebhookData).data.object;
+    if (isForeignCheckoutSessionEvent(stripeNotificationObject, order, stripeObject, coStripePaymentIntentId || null)) {
+        return;
+    }
+
     const stripeEventType = stripeNotificationObject.custom.stripeType;
     switch (stripeEventType) {
         case 'source.chargeable':
@@ -548,7 +765,21 @@ function processNotificationObject(stripeNotificationObject) {
             break;
         case 'charge.succeeded':
         case 'payment_intent.succeeded':
+            // Checkout Session order without checkout.session.* events: link its Payment Intent here
+            if (order.custom.stripeCheckoutSessionID && !order.custom.stripePaymentIntentID) {
+                recordCheckoutSessionPaymentIntent(coStripePaymentIntentId || null, order, stripePaymentInstrument);
+            }
+            placeOrder(stripeNotificationObject, order, stripePaymentInstrument, isPaymentCaptured(stripeNotificationObject));
+            break;
+        case 'checkout.session.completed':
+            processCheckoutSessionCompleted(stripeNotificationObject, order, stripePaymentInstrument);
+            break;
+        case 'checkout.session.async_payment_succeeded':
+            recordCheckoutSessionPaymentIntent(JSON.parse(stripeNotificationObject.custom.stripeWebhookData).data.object.payment_intent || null, order, stripePaymentInstrument);
             placeOrder(stripeNotificationObject, order, stripePaymentInstrument);
+            break;
+        case 'checkout.session.async_payment_failed':
+            failOrder(stripeNotificationObject, order);
             break;
         case 'charge.refunded':
             processChargeRefunded(stripeNotificationObject, order, stripePaymentInstrument);

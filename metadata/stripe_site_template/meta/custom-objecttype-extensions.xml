@@ -5,7 +5,7 @@
         <description xml:lang="x-default">​Stripe webhook notification processing</description>
         <staging-mode>no-staging</staging-mode>
         <storage-scope>organization</storage-scope>
-        <retention-days>3</retention-days>
+        <retention-days>7</retention-days>
         <key-definition attribute-id="stripeEventId">
             <display-name xml:lang="x-default">Event identifier from Stripe Webhook</display-name>
             <type>string</type>

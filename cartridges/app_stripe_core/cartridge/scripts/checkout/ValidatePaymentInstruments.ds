@@ -21,11 +21,6 @@ importScript("checkout/Utils.ds");
 
 function execute( pdict : PipelineDictionary ) : Number
 {
-	// Stripe changes BEGIN
-	var stripeCheckoutHelper = require('*/cartridge/scripts/stripe/helpers/checkoutHelper');
-	var cardPaymentsHandledByStripe = stripeCheckoutHelper.isStripeCardsPaymentMethodEnabled();
-	// Stripe changes END
-	
 	// get basket from pipeline dictionary
     var paymentInstruments : Collection = pdict.PaymentInstruments;
     
@@ -65,10 +60,7 @@ function execute( pdict : PipelineDictionary ) : Number
 		if( method != null && contains(method, methods) )
 		{
 			// in case of method CREDIT_CARD, check payment cards
-			// Stripe changes BEGIN
-			// Do not check if card type is enabled in BM if card payments are handled by Stripe.
-	        if(!cardPaymentsHandledByStripe && PaymentInstrument.METHOD_CREDIT_CARD.equals(pi.paymentMethod) )
-	        // Stripe changes END
+	        if( PaymentInstrument.METHOD_CREDIT_CARD.equals(pi.paymentMethod) )
 	        {
 	        	// get payment card
 	            var card : PaymentCard = PaymentMgr.getPaymentCard(pi.creditCardType);

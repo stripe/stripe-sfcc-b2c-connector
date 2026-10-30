@@ -19,10 +19,8 @@ var Transaction = require('dw/system/Transaction');
 
 /* Script Modules */
 var app = require('*/cartridge/scripts/app');
-var guard = require('*/cartridge/scripts/guard');
 
 var Cart = app.getModel('Cart');
-var Order = app.getModel('Order');
 var PaymentProcessor = app.getModel('PaymentProcessor');
 
 /**
@@ -188,79 +186,6 @@ function start() {
         });
     }
 }
-
-function clearForms() {
-    // Clears all forms used in the checkout process.
-    session.forms.singleshipping.clearFormElement();
-    session.forms.multishipping.clearFormElement();
-    session.forms.billing.clearFormElement();
-}
-
-/**
- * Asynchronous Callbacks for OCAPI. These functions result in a JSON response.
- * Sets the payment instrument information in the form from values in the httpParameterMap.
- * Checks that the payment instrument selected is valid and authorizes the payment. Renders error
- * message information if the payment is not authorized.
- */
-function submitPaymentJSON() {
-    var order = Order.get(request.httpParameterMap.order_id.stringValue);
-    if (!order.object || request.httpParameterMap.order_token.stringValue !== order.getOrderToken()) {
-        app.getView().render('checkout/components/faults');
-        return;
-    }
-    session.forms.billing.paymentMethods.clearFormElement();
-
-    var requestObject = JSON.parse(request.httpParameterMap.requestBodyAsString);
-    var form = session.forms.billing.paymentMethods;
-
-    for (var requestObjectItem in requestObject) {
-        var asyncPaymentMethodResponse = requestObject[requestObjectItem];
-
-        var terms = requestObjectItem.split('_');
-        if (terms[0] === 'creditCard') {
-            var value = (terms[1] === 'month' || terms[1] === 'year') ?
-                Number(asyncPaymentMethodResponse) : asyncPaymentMethodResponse;
-            form.creditCard[terms[1]].setValue(value);
-        } else if (terms[0] === 'selectedPaymentMethodID') {
-            form.selectedPaymentMethodID.setValue(asyncPaymentMethodResponse);
-        }
-    }
-
-    if (app.getController('COBilling').HandlePaymentSelection('cart').error || handlePayments().error) {
-        app.getView().render('checkout/components/faults');
-        return;
-    }
-    app.getView().render('checkout/components/payment_methods_success');
-}
-
-/*
- * Asynchronous Callbacks for SiteGenesis.
- * Identifies if an order exists, submits the order, and shows a confirmation message.
- */
-function submit() {
-    var order = Order.get(request.httpParameterMap.order_id.stringValue);
-    var orderPlacementStatus;
-    if (order.object && request.httpParameterMap.order_token.stringValue === order.getOrderToken()) {
-        orderPlacementStatus = Order.submit(order.object);
-        if (!orderPlacementStatus.error) {
-            clearForms();
-            return app.getController('COSummary').ShowConfirmation(order.object);
-        }
-    }
-    app.getController('COSummary').Start();
-}
-
-/*
- * Module exports
- */
-
-/*
- * Web exposed methods
- */
-/** @see module:controllers/COPlaceOrder~submitPaymentJSON */
-exports.SubmitPaymentJSON = guard.ensure(['https'], submitPaymentJSON);
-/** @see module:controllers/COPlaceOrder~submitPaymentJSON */
-exports.Submit = guard.ensure(['https'], submit);
 
 /*
  * Local methods

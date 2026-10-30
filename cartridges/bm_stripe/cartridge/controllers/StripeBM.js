@@ -112,7 +112,11 @@ server.post('HandleStripeQuickSetup', function (req, res, next) {
                 'source.chargeable',
                 'charge.refunded',
                 'payment_intent.succeeded',
-                'payment_intent.payment_failed'];
+                'payment_intent.payment_failed',
+                'checkout.session.completed',
+                'checkout.session.async_payment_succeeded',
+                'checkout.session.async_payment_failed',
+                'checkout.session.expired'];
 
             var webHookCreateResult = stripeBMService.webhooks.create(webHookURL, enabledEvents, stripePrivateKey);
             var webHookSecretKey = webHookCreateResult.secret;
@@ -209,11 +213,23 @@ server.get('PaymentsRefund', function (req, res, next) {
 server.post('HandlePaymentsRefund', function (req, res, next) {
     const orderNumber = req.form.stripe_order_number;
     const amountToRefund = req.form.stripe_amount_to_refund;
+    const requestNonce = req.form.stripe_request_nonce;
 
     const stripeBMService = require('*/cartridge/scripts/services/stripeBMService');
     const stripeBmHelper = require('~/cartridge/scripts/helpers/stripeBmHelper');
+    const idempotencyHelper = require('*/cartridge/scripts/stripe/helpers/idempotencyHelper');
 
     const apiKey = stripeBmHelper.getApiKey();
+
+    // The nonce identifies this refund request: resubmits (double click, retry) reuse it, so
+    // Stripe returns the original refund instead of refunding again.
+    if (!requestNonce) {
+        res.json({
+            error: true,
+            message: Resource.msg('paymentsrefund.invalidrequest', 'stripebm', null)
+        });
+        return next();
+    }
 
     try {
         const order = OrderMgr.getOrder(orderNumber);
@@ -226,7 +242,7 @@ server.post('HandlePaymentsRefund', function (req, res, next) {
         }
 
         const amount = stripeBmHelper.toStripeMinorUnits(amountToRefund, order.getCurrencyCode());
-        if (amount === null) {
+        if (!amount) {
             res.json({
                 error: true,
                 message: Resource.msg('paymentsrefund.invalidamount', 'stripebm', null)
@@ -234,11 +250,14 @@ server.post('HandlePaymentsRefund', function (req, res, next) {
             return next();
         }
 
+        const idempotencyIdentity = orderNumber + '-' + requestNonce;
+
         /*
          * check if stripePaymentIntentID is Not empty then refund by payment_intent
          */
         if (order.custom.stripePaymentIntentID) {
-            var refundResult = stripeBMService.refunds.createByPaymentItent(amount, order.custom.stripePaymentIntentID, apiKey);
+            var refundIdempotencyKey = idempotencyHelper.buildKey('bm-refund', idempotencyIdentity, { amount: amount, payment_intent: order.custom.stripePaymentIntentID });
+            var refundResult = stripeBMService.refunds.createByPaymentItent(amount, order.custom.stripePaymentIntentID, apiKey, refundIdempotencyKey);
 
             if (refundResult.status && refundResult.status === 'succeeded') {
                 res.json({
@@ -268,7 +287,8 @@ server.post('HandlePaymentsRefund', function (req, res, next) {
             var paymentInstrument = paymentInstruments[i];
 
             if (paymentInstrument && paymentInstrument.custom.stripeChargeID) {
-                var refundChargeResult = stripeBMService.refunds.createByCharge(amount, paymentInstrument.custom.stripeChargeID, apiKey);
+                var refundChargeIdempotencyKey = idempotencyHelper.buildKey('bm-refund', idempotencyIdentity, { amount: amount, charge: paymentInstrument.custom.stripeChargeID });
+                var refundChargeResult = stripeBMService.refunds.createByCharge(amount, paymentInstrument.custom.stripeChargeID, apiKey, refundChargeIdempotencyKey);
 
                 if (refundChargeResult.status && refundChargeResult.status === 'succeeded') {
                     res.json({
@@ -315,24 +335,36 @@ server.get('PaymentsCapture', function (req, res, next) {
 server.post('HandlePaymentsCapture', function (req, res, next) {
     const orderNumber = req.form.stripe_order_number;
     const amountToCapture = req.form.stripe_amount_to_capture;
+    const requestNonce = req.form.stripe_request_nonce;
 
     const stripeBMService = require('*/cartridge/scripts/services/stripeBMService');
     const stripeBmHelper = require('~/cartridge/scripts/helpers/stripeBmHelper');
+    const idempotencyHelper = require('*/cartridge/scripts/stripe/helpers/idempotencyHelper');
 
     const apiKey = stripeBmHelper.getApiKey();
+
+    // The nonce identifies this capture request: resubmits (double click, retry) reuse it, so
+    // Stripe returns the original capture instead of capturing again.
+    if (!requestNonce) {
+        res.json({
+            error: true,
+            message: Resource.msg('paymentscapture.invalidrequest', 'stripebm', null)
+        });
+        return next();
+    }
 
     try {
         const order = OrderMgr.getOrder(orderNumber);
         if (!order) {
             res.json({
                 error: true,
-                message: Resource.msgf('paymentcapture.ordernotfound', 'stripebm', null, orderNumber)
+                message: Resource.msgf('paymentscapture.ordernotfound', 'stripebm', null, orderNumber)
             });
             return next();
         }
 
         const amount = stripeBmHelper.toStripeMinorUnits(amountToCapture, order.getCurrencyCode());
-        if (amount === null) {
+        if (!amount) {
             res.json({
                 error: true,
                 message: Resource.msg('paymentscapture.invalidamount', 'stripebm', null)
@@ -340,11 +372,14 @@ server.post('HandlePaymentsCapture', function (req, res, next) {
             return next();
         }
 
+        const idempotencyIdentity = orderNumber + '-' + requestNonce;
+
         /*
-         * check if stripePaymentIntentID is Not empty then refund by payment_intent
+         * check if stripePaymentIntentID is Not empty then capture by payment_intent
          */
         if (order.custom.stripePaymentIntentID) {
-            var captureResult = stripeBMService.captures.captureByPaymentIntent(amount, order.custom.stripePaymentIntentID, apiKey);
+            var captureIdempotencyKey = idempotencyHelper.buildKey('bm-capture', idempotencyIdentity, { amount_to_capture: amount, payment_intent: order.custom.stripePaymentIntentID });
+            var captureResult = stripeBMService.captures.captureByPaymentIntent(amount, order.custom.stripePaymentIntentID, apiKey, captureIdempotencyKey);
 
             if (captureResult.status && captureResult.status === 'succeeded') {
                 res.json({
@@ -374,7 +409,8 @@ server.post('HandlePaymentsCapture', function (req, res, next) {
             var paymentInstrument = paymentInstruments[i];
 
             if (paymentInstrument && paymentInstrument.custom.stripeChargeID) {
-                var captureChargeResult = stripeBMService.captures.captureByCharge(amount, paymentInstrument.custom.stripeChargeID, apiKey);
+                var captureChargeIdempotencyKey = idempotencyHelper.buildKey('bm-capture', idempotencyIdentity, { amount: amount, charge: paymentInstrument.custom.stripeChargeID });
+                var captureChargeResult = stripeBMService.captures.captureByCharge(amount, paymentInstrument.custom.stripeChargeID, apiKey, captureChargeIdempotencyKey);
 
                 if (captureChargeResult.status && captureChargeResult.status === 'succeeded') {
                     res.json({
@@ -398,7 +434,7 @@ server.post('HandlePaymentsCapture', function (req, res, next) {
 
         res.json({
             error: true,
-            message: Resource.msg('paymentscharge.cannotchargeorder', 'stripebm', null)
+            message: Resource.msg('paymentscapture.cannotcaptureorder', 'stripebm', null)
         });
 
         return next();

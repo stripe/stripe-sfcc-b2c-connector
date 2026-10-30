@@ -2,9 +2,8 @@
 
 var stripeOptions = {};
 var expressCheckoutElement;
-var stripeApiVersion = document.getElementById('stripeApiVersion').value;
 
-var stripe = Stripe(document.getElementById('stripePublicKey').value, stripeApiVersion);
+var stripe = Stripe(document.getElementById('stripePublicKey').value, stripeOptions);
 
 var stripeOrderCurrencyInput = document.getElementById('stripe_order_currency') ? document.getElementById('stripe_order_currency').value.toLowerCase() : null;
 

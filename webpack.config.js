@@ -1,6 +1,8 @@
 var path = require('path');
 var sgmfScripts = require('sgmf-scripts');
-var ExtractTextPlugin = require('sgmf-scripts')['extract-text-webpack-plugin'];
+var RemoveEmptyScriptsPlugin = require('webpack-remove-empty-scripts');
+var MiniCssExtractPlugin = require('mini-css-extract-plugin');
+var CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 
 module.exports = [{
     mode: 'production',
@@ -16,39 +18,42 @@ module.exports = [{
     name: 'scss',
     entry: sgmfScripts.createScssPath(),
     output: {
-        path: path.resolve('./cartridges/app_stripe_sfra/cartridge/static/'),
-        filename: '[name].css'
+        path: path.resolve('./cartridges/app_stripe_sfra/cartridge/static/')
     },
     module: {
         rules: [{
             test: /\.scss$/,
-            use: ExtractTextPlugin.extract({
-                use: [{
-                    loader: 'css-loader',
-                    options: {
-                        url: false,
-                        minimize: true,
-                        sourceMap: true
-                    }
-                }, {
-                    loader: 'postcss-loader',
-                    options: {
+            use: [{
+                loader: MiniCssExtractPlugin.loader,
+                options: {
+                    esModule: false
+                }
+            }, {
+                loader: 'css-loader',
+                options: {
+                    url: false
+                }
+            }, {
+                loader: 'postcss-loader',
+                options: {
+                    postcssOptions: {
                         plugins: [
                             require('autoprefixer')()
-                        ],
-                        sourceMap: true
+                        ]
                     }
-                }, {
-                    loader: 'sass-loader',
-                    options: {
+                }
+            }, {
+                loader: 'sass-loader',
+                options: {
+                    implementation: require('sass'),
+                    sassOptions: {
                         includePaths: [
                             path.resolve('node_modules'),
                             path.resolve('node_modules/flag-icon-css/sass')
-                        ],
-                        sourceMap: true
+                        ]
                     }
-                }]
-            })
+                }
+            }]
         }]
     },
     resolve: {
@@ -57,6 +62,10 @@ module.exports = [{
         }
     },
     plugins: [
-        new ExtractTextPlugin({ filename: '[name].css' })
-    ]
+        new RemoveEmptyScriptsPlugin(),
+        new MiniCssExtractPlugin({ filename: '[name].css' })
+    ],
+    optimization: {
+        minimizer: ['...', new CssMinimizerPlugin()]
+    }
 }];
